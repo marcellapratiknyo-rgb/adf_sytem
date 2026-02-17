@@ -36,10 +36,15 @@ if (!$role || !in_array($role, ['owner', 'admin', 'manager', 'developer'])) {
 try {
     // Check if specific business database requested
     $bizDb = isset($_GET['db']) ? $_GET['db'] : null;
+    $bizId = isset($_GET['biz_id']) ? (int)$_GET['biz_id'] : null;
     
     if ($bizDb) {
+        // Map database name for production (local names differ from hosting)
+        $actualDbName = function_exists('getDbName') ? getDbName($bizDb) : $bizDb;
+        
         // Connect to specific business database
-        $bizPdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . $bizDb, DB_USER, DB_PASS);
+        $bizPdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . $actualDbName, DB_USER, DB_PASS);
+        $bizPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $bizPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $db = new class($bizPdo) {
             private $pdo;
@@ -55,7 +60,7 @@ try {
                 return $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
         };
-        $activeDbName = $bizDb;
+        $activeDbName = $actualDbName;
     } else {
         $db = Database::getInstance();
         $activeDbName = DB_NAME;
@@ -128,15 +133,30 @@ try {
     );
     $lastMonthExpense = $lastMonthExpenseResult['total'] ?? 0;
     
-    // CASH ACCOUNTS BALANCES
-    $cashAccounts = $db->fetchAll(
-        "SELECT id, account_name, account_type, current_balance 
-         FROM cash_accounts WHERE is_active = 1 ORDER BY account_type, account_name"
-    );
-    
+    // CASH ACCOUNTS BALANCES (from master DB, filtered by business_id)
     $pettyCash = 0;
     $bankBalance = 0;
     $ownerCapital = 0;
+    $cashAccounts = [];
+    
+    try {
+        $masterDbName = defined('MASTER_DB_NAME') ? MASTER_DB_NAME : DB_NAME;
+        $cashPdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . $masterDbName, DB_USER, DB_PASS);
+        $cashPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        
+        if ($bizId) {
+            $cashStmt = $cashPdo->prepare("SELECT id, account_name, account_type, current_balance FROM cash_accounts WHERE is_active = 1 AND business_id = ? ORDER BY account_type, account_name");
+            $cashStmt->execute([$bizId]);
+        } else {
+            $cashStmt = $cashPdo->query("SELECT id, account_name, account_type, current_balance FROM cash_accounts WHERE is_active = 1 ORDER BY account_type, account_name");
+        }
+        $cashAccounts = $cashStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Fallback: try from business DB
+        $cashAccounts = $db->fetchAll(
+            "SELECT id, account_name, account_type, current_balance FROM cash_accounts WHERE is_active = 1 ORDER BY account_type, account_name"
+        );
+    }
     
     foreach ($cashAccounts as $acc) {
         if ($acc['account_type'] === 'cash') {

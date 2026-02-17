@@ -818,10 +818,18 @@ $isDev = ($role === 'developer');
             document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
             
             try {
-                // Get selected business database
-                const selectedDb = document.getElementById('businessSelect').value;
-                const dbParam = selectedDb ? '?db=' + encodeURIComponent(selectedDb) : '';
-                const response = await fetch(basePath + '/api/owner-stats-simple.php' + dbParam);
+                // Get selected business database and ID
+                const select = document.getElementById('businessSelect');
+                const selectedDb = select.value;
+                const selectedOption = select.selectedOptions[0];
+                const bizId = selectedOption ? selectedOption.getAttribute('data-biz-id') : '';
+                
+                let params = [];
+                if (selectedDb) params.push('db=' + encodeURIComponent(selectedDb));
+                if (bizId) params.push('biz_id=' + encodeURIComponent(bizId));
+                const queryString = params.length ? '?' + params.join('&') : '';
+                
+                const response = await fetch(basePath + '/api/owner-stats-simple.php' + queryString);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -880,6 +888,7 @@ $isDev = ($role === 'developer');
                     data.branches.forEach(biz => {
                         const option = document.createElement('option');
                         option.value = biz.database_name || biz.id;
+                        option.setAttribute('data-biz-id', biz.id);
                         option.textContent = biz.branch_name || biz.business_name;
                         select.appendChild(option);
                     });
