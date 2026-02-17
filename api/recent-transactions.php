@@ -27,13 +27,23 @@ if (!in_array($currentUser['role'], ['owner', 'admin', 'manager', 'developer']))
 $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
 if ($limit < 1 || $limit > 50) $limit = 10;
 
+// Get business filter parameters
+$requestedDb = isset($_GET['db']) ? $_GET['db'] : '';
+$requestedBizId = isset($_GET['biz_id']) ? intval($_GET['biz_id']) : 0;
+
 try {
     $mainPdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . getDbName('adf_system') . ";charset=utf8mb4", DB_USER, DB_PASS);
     $mainPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Get active businesses
-    $stmt = $mainPdo->query("SELECT id, business_name, database_name FROM businesses WHERE is_active = 1 ORDER BY id");
-    $businesses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Get active businesses (filter by requested business if specified)
+    if ($requestedDb && $requestedBizId) {
+        $stmt = $mainPdo->prepare("SELECT id, business_name, database_name FROM businesses WHERE id = ? AND is_active = 1");
+        $stmt->execute([$requestedBizId]);
+        $businesses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } else {
+        $stmt = $mainPdo->query("SELECT id, business_name, database_name FROM businesses WHERE is_active = 1 ORDER BY id");
+        $businesses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
     
     $allTransactions = [];
     

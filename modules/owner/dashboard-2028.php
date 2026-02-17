@@ -464,9 +464,9 @@ $isDev = ($role === 'developer');
         }
         
         .op-value {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -1px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
             color: #1e293b;
             margin-bottom: 4px;
         }
@@ -606,6 +606,280 @@ $isDev = ($role === 'developer');
         @keyframes shimmer {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
+        }
+        
+        /* AI Health Section */
+        .ai-health-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .ai-health-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .ai-health-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .ai-icon {
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .ai-health-score {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        
+        .ai-score-value {
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1;
+        }
+        
+        .ai-score-label {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .ai-insights {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .ai-insight {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .ai-insight:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(4px);
+        }
+        
+        .ai-insight-icon {
+            font-size: 20px;
+            min-width: 20px;
+        }
+        
+        .ai-insight-content {
+            flex: 1;
+        }
+        
+        .ai-insight-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .ai-insight-text {
+            font-size: 12px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        .ai-insight-loading {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .shimmer-box {
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            animation: shimmerWhite 1.5s infinite;
+        }
+        
+        @keyframes shimmerWhite {
+            0% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+            100% { opacity: 0.3; }
+        }
+        
+        /* Transactions Section */
+        .transactions-section {
+            margin-bottom: 100px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            padding-left: 4px;
+        }
+        
+        .transactions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .transaction-item {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+        
+        .transaction-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .transaction-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .transaction-icon.income {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+        
+        .transaction-icon.expense {
+            background: linear-gradient(135deg, #f43f5e, #fb7185);
+        }
+        
+        .transaction-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .transaction-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .transaction-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        
+        .transaction-amount {
+            text-align: right;
+        }
+        
+        .transaction-value {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        
+        .transaction-value.income {
+            color: var(--success);
+        }
+        
+        .transaction-value.expense {
+            color: var(--danger);
+        }
+        
+        .transaction-time {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .transaction-loading {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .transaction-loading .shimmer-box {
+            height: 68px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        /* Footer Navigation */
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+            z-index: 1000;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            padding: 8px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            border-radius: 8px;
+        }
+        
+        .nav-item:hover {
+            background: rgba(102, 126, 234, 0.05);
+            color: var(--accent);
+        }
+        
+        .nav-item.active {
+            color: var(--accent);
+        }
+        
+        .nav-icon {
+            font-size: 22px;
+        }
+        
+        .nav-label {
+            font-size: 11px;
+            font-weight: 500;
         }
         
         /* Responsive */
@@ -1147,26 +1421,6 @@ $isDev = ($role === 'developer');
             </div>
         </div>
         
-        <!-- Cash Accounts Section -->
-        <div class="section-title">Cash Accounts Balance</div>
-        <div class="cash-grid">
-            <div class="cash-card primary">
-                <div class="cash-label">Petty Cash</div>
-                <div class="cash-value" id="pettyCash">-</div>
-                <div class="cash-icon">💵</div>
-            </div>
-            <div class="cash-card">
-                <div class="cash-label">Bank Balance</div>
-                <div class="cash-value" id="bankBalance">-</div>
-                <div class="cash-icon">🏦</div>
-            </div>
-            <div class="cash-card">
-                <div class="cash-label">Owner Capital</div>
-                <div class="cash-value" id="ownerCapital">-</div>
-                <div class="cash-icon">👤</div>
-            </div>
-        </div>
-        
         <!-- Overview Grid -->
         <div class="overview-grid">
             <!-- Performance Panel -->
@@ -1203,6 +1457,59 @@ $isDev = ($role === 'developer');
                 </div>
             </div>
         </div>
+        
+        <!-- AI Health Section -->
+        <div class="ai-health-section">
+            <div class="ai-health-header">
+                <div class="ai-health-title">
+                    <span class="ai-icon">🤖</span>
+                    <span>AI Business Health</span>
+                </div>
+                <div class="ai-health-score" id="aiHealthScore">
+                    <div class="ai-score-value">-</div>
+                    <div class="ai-score-label">Health Score</div>
+                </div>
+            </div>
+            <div class="ai-insights" id="aiInsights">
+                <div class="ai-insight-loading">
+                    <div class="shimmer-box"></div>
+                    <div class="shimmer-box"></div>
+                    <div class="shimmer-box"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions Section -->
+        <div class="transactions-section">
+            <div class="section-title">Recent Transactions</div>
+            <div class="transactions-list" id="transactionsList">
+                <div class="transaction-loading">
+                    <div class="shimmer-box"></div>
+                    <div class="shimmer-box"></div>
+                    <div class="shimmer-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer Navigation -->
+    <div class="footer-nav">
+        <a href="#" class="nav-item" id="navDashboard">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">Dashboard</div>
+        </a>
+        <a href="<?php echo $basePath; ?>/modules/investor/index.php" class="nav-item">
+            <div class="nav-icon">💼</div>
+            <div class="nav-label">Investor</div>
+        </a>
+        <a href="<?php echo $basePath; ?>/modules/projects/index.php" class="nav-item">
+            <div class="nav-icon">📋</div>
+            <div class="nav-label">Projek</div>
+        </a>
+        <a href="<?php echo $basePath; ?>/modules/frontdesk/index.php" class="nav-item">
+            <div class="nav-icon">🏨</div>
+            <div class="nav-label">Frontdesk</div>
+        </a>
     </div>
 
     
@@ -1211,12 +1518,9 @@ $isDev = ($role === 'developer');
         const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
         const basePath = isLocal ? '/adf_system' : '';
         
-        // Format currency
+        // Format currency - full numbers with thousand separators
         function formatRp(num) {
-            if (num >= 1000000000) return 'Rp ' + (num / 1000000000).toFixed(1) + 'B';
-            if (num >= 1000000) return 'Rp ' + (num / 1000000).toFixed(1) + 'M';
-            if (num >= 1000) return 'Rp ' + (num / 1000).toFixed(0) + 'K';
-            return 'Rp ' + num.toLocaleString('id-ID');
+            return 'Rp ' + Math.round(num).toLocaleString('id-ID');
         }
         
         // Draw hero chart
@@ -1371,11 +1675,6 @@ $isDev = ($role === 'developer');
                     document.getElementById('monthIncome').textContent = formatRp(data.monthIncome);
                     document.getElementById('monthExpense').textContent = formatRp(data.monthExpense);
                     
-                    // Cash accounts
-                    document.getElementById('pettyCash').textContent = formatRp(data.pettyCash || 0);
-                    document.getElementById('bankBalance').textContent = formatRp(data.bankBalance || 0);
-                    document.getElementById('ownerCapital').textContent = formatRp(data.ownerCapital || 0);
-                    
                     // Performance
                     const profit = data.monthIncome - data.monthExpense;
                     document.getElementById('perfIncome').textContent = formatRp(data.monthIncome);
@@ -1388,6 +1687,239 @@ $isDev = ($role === 'developer');
                     document.getElementById('incomeBar').style.width = ((data.monthIncome / maxVal) * 100) + '%';
                     document.getElementById('expenseBar').style.width = ((data.monthExpense / maxVal) * 100) + '%';
                     document.getElementById('profitBar').style.width = profit > 0 ? ((profit / data.monthIncome) * 100) + '%' : '0%';
+                    
+                    // Generate AI Health insights
+                    generateAIHealth(data);
+                } else {
+                    console.error('API Error:', data.message);
+                }
+            } catch (error) {
+                console.error('Fetch Error:', error);
+            }
+        }
+        
+        // Load Recent Transactions
+        async function loadTransactions() {
+            try {
+                const select = document.getElementById('businessSelect');
+                const selectedDb = select.value;
+                const selectedOption = select.selectedOptions[0];
+                const bizId = selectedOption ? selectedOption.getAttribute('data-biz-id') : '';
+                
+                let params = [];
+                if (selectedDb) params.push('db=' + encodeURIComponent(selectedDb));
+                if (bizId) params.push('biz_id=' + encodeURIComponent(bizId));
+                params.push('limit=10'); // Get last 10 transactions
+                const queryString = params.length ? '?' + params.join('&') : '?limit=10';
+                
+                const response = await fetch(basePath + '/api/recent-transactions.php' + queryString);
+                const data = await response.json();
+                
+                if (data.success && data.transactions) {
+                    const container = document.getElementById('transactionsList');
+                    if (data.transactions.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">No transactions found</div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = data.transactions.map(t => {
+                        const isIncome = t.transaction_type === 'income';
+                        const icon = isIncome ? '💰' : '💸';
+                        const typeClass = isIncome ? 'income' : 'expense';
+                        const sign = isIncome ? '+' : '-';
+                        
+                        return `
+                            <div class="transaction-item">
+                                <div class="transaction-info">
+                                    <div class="transaction-icon ${typeClass}">${icon}</div>
+                                    <div class="transaction-details">
+                                        <div class="transaction-title">${t.description || t.category || 'Transaction'}</div>
+                                        <div class="transaction-desc">${t.account_name || 'Cash Account'}</div>
+                                    </div>
+                                </div>
+                                <div class="transaction-amount">
+                                    <div class="transaction-value ${typeClass}">${sign}${formatRp(t.amount)}</div>
+                                    <div class="transaction-time">${formatDateTime(t.transaction_date)}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    document.getElementById('transactionsList').innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Unable to load transactions</div>';
+                }
+            } catch (error) {
+                console.error('Load transactions error:', error);
+                document.getElementById('transactionsList').innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">Error loading transactions</div>';
+            }
+        }
+        
+        // Format date/time
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) {
+                return diffMins <= 1 ? 'Just now' : diffMins + ' mins ago';
+            } else if (diffHours < 24) {
+                return diffHours + (diffHours === 1 ? ' hour ago' : ' hours ago');
+            } else if (diffDays < 7) {
+                return diffDays + (diffDays === 1 ? ' day ago' : ' days ago');
+            } else {
+                return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            }
+        }
+        
+        // Generate AI Health Insights
+        function generateAIHealth(data) {
+            const income = data.monthIncome || 0;
+            const expense = data.monthExpense || 0;
+            const profit = income - expense;
+            const profitMargin = income > 0 ? ((profit / income) * 100) : 0;
+            
+            // Calculate health score (0-100)
+            let score = 50; // Base score
+            
+            // Profit margin factor (max +30)
+            if (profitMargin > 40) score += 30;
+            else if (profitMargin > 30) score += 25;
+            else if (profitMargin > 20) score += 20;
+            else if (profitMargin > 10) score += 15;
+            else if (profitMargin > 0) score += 10;
+            else score -= 20;
+            
+            // Income trend factor (max +20)
+            const lastMonthIncome = data.lastMonth?.income || 0;
+            if (lastMonthIncome > 0) {
+                const growthRate = ((income - lastMonthIncome) / lastMonthIncome) * 100;
+                if (growthRate > 20) score += 20;
+                else if (growthRate > 10) score += 15;
+                else if (growthRate > 5) score += 10;
+                else if (growthRate > 0) score += 5;
+                else score -= 10;
+            }
+            
+            // Ensure score is between 0-100
+            score = Math.max(0, Math.min(100, Math.round(score)));
+            
+            // Display score
+            const scoreEl = document.getElementById('aiHealthScore');
+            scoreEl.innerHTML = `
+                <div class="ai-score-value">${score}</div>
+                <div class="ai-score-label">Health Score</div>
+            `;
+            
+            // Generate insights
+            const insights = [];
+            
+            // Profit insight
+            if (profit > 0) {
+                insights.push({
+                    icon: '✅',
+                    title: 'Profitable Business',
+                    text: `Your business generated ${formatRp(profit)} profit this month with a ${profitMargin.toFixed(1)}% profit margin.`
+                });
+            } else {
+                insights.push({
+                    icon: '⚠️',
+                    title: 'Loss Alert',
+                    text: `Your business has a loss of ${formatRp(Math.abs(profit))} this month. Review expenses to improve profitability.`
+                });
+            }
+            
+            // Cash flow insight
+            const cashOnHand = (data.pettyCash || 0) + (data.bankBalance || 0);
+            const avgDailyExpense = expense / 30;
+            const daysOfCash = avgDailyExpense > 0 ? (cashOnHand / avgDailyExpense) : 999;
+            
+            if (daysOfCash < 7) {
+                insights.push({
+                    icon: '🔴',
+                    title: 'Critical Cash Flow',
+                    text: `You have only ${Math.round(daysOfCash)} days of cash reserves. Consider increasing capital or reducing expenses.`
+                });
+            } else if (daysOfCash < 30) {
+                insights.push({
+                    icon: '⚡',
+                    title: 'Cash Flow Warning',
+                    text: `Cash reserves cover ${Math.round(daysOfCash)} days. Maintain healthy cash flow for operations.`
+                });
+            } else {
+                insights.push({
+                    icon: '💎',
+                    title: 'Strong Cash Position',
+                    text: `Excellent! You have ${formatRp(cashOnHand)} in cash reserves, covering ${Math.round(Math.min(daysOfCash, 999))} days of operations.`
+                });
+            }
+            
+            // Growth insight
+            if (lastMonthIncome > 0) {
+                const growthRate = ((income - lastMonthIncome) / lastMonthIncome) * 100;
+                if (growthRate > 10) {
+                    insights.push({
+                        icon: '📈',
+                        title: 'Strong Growth',
+                        text: `Revenue increased by ${growthRate.toFixed(1)}% compared to last month. Keep up the momentum!`
+                    });
+                } else if (growthRate < -10) {
+                    insights.push({
+                        icon: '📉',
+                        title: 'Revenue Decline',
+                        text: `Revenue decreased by ${Math.abs(growthRate).toFixed(1)}% from last month. Analyze market conditions.`
+                    });
+                }
+            }
+            
+            // Expense efficiency
+            const expenseRatio = income > 0 ? (expense / income) * 100 : 100;
+            if (expenseRatio < 60) {
+                insights.push({
+                    icon: '🎯',
+                    title: 'Efficient Operations',
+                    text: `Your operational efficiency is excellent at ${(100 - expenseRatio).toFixed(0)}%. Expenses are well controlled.`
+                });
+            } else if (expenseRatio > 90) {
+                insights.push({
+                    icon: '⚠️',
+                    title: 'High Expense Ratio',
+                    text: `Expenses are ${expenseRatio.toFixed(0)}% of revenue. Look for cost optimization opportunities.`
+                });
+            }
+            
+            // Display insights
+            const insightsContainer = document.getElementById('aiInsights');
+            insightsContainer.innerHTML = insights.map(insight => `
+                <div class="ai-insight">
+                    <div class="ai-insight-icon">${insight.icon}</div>
+                    <div class="ai-insight-content">
+                        <div class="ai-insight-title">${insight.title}</div>
+                        <div class="ai-insight-text">${insight.text}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Update dashboard navigation link
+        function updateDashboardNav() {
+            const select = document.getElementById('businessSelect');
+            const selectedOption = select.selectedOptions[0];
+            const bizId = selectedOption ? selectedOption.getAttribute('data-biz-id') : '';
+            const bizName = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+            
+            const navDashboard = document.getElementById('navDashboard');
+            
+            // Determine which dashboard to link to based on business
+            if (bizId && bizName) {
+                // Link to business-specific dashboard
+                navDashboard.href = basePath + '/modules/dashboard/index.php?biz_id=' + bizId;
+            } else {
+                // Link to main dashboard
+                navDashboard.href = basePath + '/modules/dashboard/index.php';
+            }
+        }
                 } else {
                     console.error('API Error:', data.message);
                 }
@@ -1431,15 +1963,22 @@ $isDev = ($role === 'developer');
         // Business change handler
         document.getElementById('businessSelect').addEventListener('change', function() {
             loadStats();
+            loadTransactions();
+            updateDashboardNav();
         });
         
-        // Init - load businesses first, then stats
+        // Init - load businesses first, then stats and transactions
         loadBusinesses().then(() => {
             loadStats();
+            loadTransactions();
+            updateDashboardNav();
         });
         
         // Refresh every 30 seconds
-        setInterval(loadStats, 30000);
+        setInterval(() => {
+            loadStats();
+            loadTransactions();
+        }, 30000);
     </script>
 </body>
 </html>
