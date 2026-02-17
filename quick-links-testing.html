@@ -179,10 +179,10 @@
         <div class="section">
             <div class="section-title">🔍 Debug Tools</div>
             
-            <a href="https://adfsystem.online/list-all-databases.php" target="_blank" class="link-button" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
-                <span class="link-icon">🚨</span>
-                <strong>LIST ALL DATABASES (KLIK INI DULU!)</strong>
-                <span class="link-desc">🔥 Cek database mana yang benar-benar ada & fixing database names</span>
+            <a href="https://adfsystem.online/auto-fix-databases.php" target="_blank" class="link-button" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <span class="link-icon">🔧</span>
+                <strong>AUTO FIX DATABASE NAMES (KLIK INI!)</strong>
+                <span class="link-desc">⚡ Otomatis perbaiki database names di businesses table</span>
             </a>
             
             <a href="https://adfsystem.online/test-database-simple.php" target="_blank" class="link-button" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
@@ -195,12 +195,6 @@
                 <span class="link-icon">🔧</span>
                 <strong>Fix Session</strong>
                 <span class="link-desc">⚡ Perbaiki session untuk akses dashboard</span>
-            </a>
-            
-            <a href="https://adfsystem.online/debug-dashboard-complete.php" target="_blank" class="link-button debug-link">
-                <span class="link-icon">🔬</span>
-                <strong>Complete Debug Script</strong>
-                <span class="link-desc">Cek session, database, businesses, transactions, dan API</span>
             </a>
             
             <a href="https://adfsystem.online/modules/owner/dashboard-2028.php" target="_blank" class="link-button">
@@ -249,15 +243,15 @@
         <div class="instructions">
             <div class="instructions-title">
                 <span>💡</span>
-                <span>Cara Fixing Database Names (CRITICAL!):</span>
+                <span>Cara Fix Dashboard (SIMPLE!):</span>
             </div>
             <ul>
-                <li><strong>STEP 1:</strong> Klik <strong>"LIST ALL DATABASES"</strong> (tombol MERAH) untuk lihat database yang benar-benar ada</li>
-                <li><strong>STEP 2:</strong> Script akan kasih SQL commands untuk fix database names di businesses table</li>
-                <li><strong>STEP 3:</strong> Jalankan SQL commands di phpMyAdmin untuk update businesses table</li>
-                <li><strong>STEP 4:</strong> Klik <strong>"Simple Database Test"</strong> untuk verify setelah fix</li>
-                <li><strong>STEP 5:</strong> Klik <strong>"Fix Session"</strong> lalu buka <strong>"Owner Dashboard"</strong></li>
-                <li><strong>Masalah:</strong> Database "adf_benscafe" tidak ada, harus diganti dengan nama yang benar (kemungkinan adfb2574_benscafe atau nama lain)</li>
+                <li><strong>STEP 1:</strong> Klik <strong>"AUTO FIX DATABASE NAMES"</strong> (tombol ORANGE/KUNING)</li>
+                <li><strong>STEP 2:</strong> Script akan otomatis test & fix database names di businesses table</li>
+                <li><strong>STEP 3:</strong> Tunggu sampai muncul "SUCCESS! Database names have been fixed!"</li>
+                <li><strong>STEP 4:</strong> Klik tombol "Open Dashboard" dari hasil script</li>
+                <li><strong>HARUSNYA:</strong> Dashboard sekarang menampilkan nominal yang benar! 💰</li>
+                <li><strong>Masalah:</strong> Database "adf_benscafe" salah, harus "adfb2574_benscafe" - script akan auto-fix!</li>
             </ul>
         </div>
         
@@ -265,29 +259,21 @@
         <div class="section">
             <div class="section-title">✅ Expected Results</div>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 13px; color: #333;">
-                <strong>Setelah FIX SESSION harus menampilkan:</strong><br>
-                ✅ Session Fixed!<br>
-                ✅ logged_in: true<br>
-                ✅ role: developer<br>
-                ✅ business_id: 2<br>
+                <strong>Auto Fix Database Names akan menampilkan:</strong><br>
+                ✅ Connected to master database: adfb2574_adf<br>
+                ✅ Testing database connections...<br>
+                ✅ adfb2574_narayana_hotel - EXISTS & has cash_book table<br>
+                ✅ adfb2574_benscafe - EXISTS & has cash_book table<br>
+                🔄 Applying database name fixes...<br>
+                ✅ Updated Ben's Cafe to: adfb2574_benscafe<br>
+                🎉 SUCCESS! Database names have been fixed!<br>
                 <br>
-                <strong>Debug Script harus menampilkan:</strong><br>
-                ✅ Session is active<br>
-                ✅ Auth Check: PASSED<br>
-                ✅ Connected to MySQL<br>
-                ✅ Found 2 active businesses<br>
-                ✅ Cash accounts dengan balance<br>
-                ✅ Transactions di setiap database<br>
-                <br>
-                <strong>API Tests harus return:</strong><br>
-                {"success": true, "branches": [...], "count": 2}<br>
-                {"success": true, "monthIncome": ..., "todayIncome": ...}<br>
-                <br>
-                <strong>Dashboard Console harus menampilkan:</strong><br>
-                "=== DASHBOARD INITIALIZATION START ==="<br>
-                "✅ Businesses loaded from API: 2"<br>
-                "🚀 Loading initial stats and transactions..."<br>
-                "✅ Initial load complete"
+                <strong>Setelah fix, Dashboard harus menampilkan:</strong><br>
+                💰 Today Income: Rp 6.404.712 (bukan Rp 0!)<br>
+                💰 Today Expense: Rp 2.382.000<br>
+                📊 Chart dengan data yang benar<br>
+                🎯 AI Health Score dengan insights<br>
+                📝 Recent transactions muncul
             </div>
         </div>
         
