@@ -616,30 +616,54 @@ $isDev = ($role === 'developer');
             }
             
             .hero-section {
-                padding: 24px;
+                padding: 24px 20px;
                 border-radius: 20px;
                 margin-bottom: 24px;
             }
             
             .hero-content {
-                grid-template-columns: 1fr;
+                display: flex;
+                flex-direction: column;
                 gap: 24px;
+                text-align: center;
+            }
+            
+            .hero-chart {
+                order: 0;
+                justify-content: center;
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .hero-info {
+                order: 1;
             }
             
             .hero-title {
-                font-size: 24px;
+                font-size: 26px;
             }
             
             .hero-subtitle {
                 font-size: 13px;
             }
             
-            .hero-stat-value {
-                font-size: 20px;
+            .hero-stats {
+                justify-content: center;
             }
             
-            .hero-chart {
+            .hero-stat-value {
+                font-size: 22px;
+            }
+            
+            .hero-legend {
+                flex-direction: row;
+                gap: 20px;
                 justify-content: center;
+            }
+            
+            #heroChart {
+                width: 180px;
+                height: 180px;
             }
             
             .operational-section {
@@ -647,13 +671,31 @@ $isDev = ($role === 'developer');
                 margin-bottom: 24px;
             }
             
+            .operational-title {
+                text-align: center;
+                font-size: 15px;
+            }
+            
             .operational-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
+                gap: 14px;
+            }
+            
+            .op-card {
+                padding: 18px 14px;
+                text-align: center;
+            }
+            
+            .op-label {
+                font-size: 10px;
             }
             
             .op-value {
-                font-size: 20px;
+                font-size: 22px;
+            }
+            
+            .op-desc {
+                font-size: 10px;
             }
             
             .cash-grid {
@@ -710,25 +752,35 @@ $isDev = ($role === 'developer');
             }
             
             .hero-section {
-                padding: 18px;
-                border-radius: 16px;
-                margin-bottom: 18px;
+                padding: 20px 16px;
+                border-radius: 20px;
+                margin-bottom: 20px;
             }
             
             .hero-content {
-                gap: 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .hero-info {
+                order: 1;
             }
             
             .hero-title {
-                font-size: 20px;
+                font-size: 24px;
+                margin-bottom: 6px;
             }
             
             .hero-subtitle {
                 font-size: 12px;
+                margin-bottom: 20px;
             }
             
             .hero-stats {
-                gap: 20px;
+                gap: 24px;
+                justify-content: center;
             }
             
             .hero-stat-label {
@@ -736,16 +788,32 @@ $isDev = ($role === 'developer');
             }
             
             .hero-stat-value {
-                font-size: 18px;
+                font-size: 20px;
+            }
+            
+            .hero-chart {
+                order: 0;
+                flex-direction: column;
+                gap: 20px;
+                align-items: center;
+                justify-content: center;
             }
             
             #heroChart {
-                width: 120px;
-                height: 120px;
+                width: 200px;
+                height: 200px;
             }
             
             .hero-legend {
-                gap: 10px;
+                flex-direction: row;
+                gap: 16px;
+                justify-content: center;
+            }
+            
+            .hero-legend-item {
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
             }
             
             .hero-legend-label {
@@ -753,43 +821,49 @@ $isDev = ($role === 'developer');
             }
             
             .hero-legend-value {
-                font-size: 14px;
+                font-size: 16px;
+                font-weight: 600;
             }
             
             .operational-section {
                 padding: 16px;
-                margin-bottom: 18px;
-                border-radius: 16px;
+                margin-bottom: 20px;
+                border-radius: 20px;
             }
             
             .operational-title {
-                font-size: 13px;
-                margin-bottom: 14px;
+                font-size: 14px;
+                margin-bottom: 16px;
+                text-align: center;
             }
             
             .operational-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
             }
             
             .op-card {
-                padding: 14px;
+                padding: 16px 12px;
+                text-align: center;
             }
             
             .op-label {
-                font-size: 10px;
+                font-size: 9px;
+                margin-bottom: 8px;
             }
             
             .op-value {
-                font-size: 18px;
+                font-size: 20px;
+                margin-bottom: 4px;
             }
             
             .op-desc {
-                font-size: 10px;
+                font-size: 9px;
             }
             
             .op-icon {
-                font-size: 28px;
+                font-size: 32px;
+                margin-bottom: 8px;
             }
             
             .stats-grid {
@@ -1155,7 +1229,7 @@ $isDev = ($role === 'developer');
             
             // Responsive canvas size
             const isMobile = window.innerWidth <= 768;
-            const size = isMobile ? 140 : 180;
+            const size = isMobile ? 200 : 180;
             canvas.width = size;
             canvas.height = size;
             
