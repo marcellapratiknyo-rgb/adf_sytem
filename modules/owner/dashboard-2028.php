@@ -1,7 +1,7 @@
 <?php
 /**
  * OWNER DASHBOARD 2028
- * Data langsung dari PHP - No JavaScript API calls
+ * Data langsung dari PHP - Same logic as System Dashboard (index.php)
  */
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../../config/config.php';
@@ -32,13 +32,14 @@ if (!$role || !in_array($role, ['admin', 'owner', 'manager', 'developer'])) {
 $userName = $_SESSION['username'] ?? 'Owner';
 $isDev = ($role === 'developer');
 
-// DATABASE NARAYANA LANGSUNG
+// DATABASE CONFIG
 $dbHost = DB_HOST;
 $dbUser = DB_USER;
 $dbPass = DB_PASS;
-$dbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
+$masterDbName = $isProduction ? 'adfb2574_adf' : 'adf_system';
+$businessDbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
 
-// Get stats
+// Get stats - SAME LOGIC AS SYSTEM DASHBOARD (index.php)
 $stats = [
     'today_income' => 0,
     'today_expense' => 0,
@@ -46,18 +47,46 @@ $stats = [
     'month_expense' => 0,
     'total_transactions' => 0
 ];
+
+$capitalStats = ['received' => 0, 'used' => 0, 'balance' => 0];
+$pettyCashStats = ['received' => 0, 'used' => 0, 'balance' => 0];
+$totalOperationalCash = 0;
+$totalOperationalExpense = 0;
+
 $transactions = [];
 $error = null;
 
 try {
-    $pdo = new PDO("mysql:host=$dbHost;dbname=$dbName;charset=utf8mb4", $dbUser, $dbPass);
+    // Connect to business database
+    $pdo = new PDO("mysql:host=$dbHost;dbname=$businessDbName;charset=utf8mb4", $dbUser, $dbPass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Connect to master database for cash_accounts
+    $masterPdo = new PDO("mysql:host=$dbHost;dbname=$masterDbName;charset=utf8mb4", $dbUser, $dbPass);
+    $masterPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     $today = date('Y-m-d');
     $thisMonth = date('Y-m');
+    $businessId = 1; // Narayana Hotel
     
-    // Today Income
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE(transaction_date) = ? AND transaction_type = 'income'");
+    // Get owner_capital account IDs from master DB
+    $stmt = $masterPdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'owner_capital'");
+    $stmt->execute([$businessId]);
+    $capitalAccounts = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Get cash (Petty Cash) account IDs from master DB
+    $stmt = $masterPdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'cash'");
+    $stmt->execute([$businessId]);
+    $pettyCashAccounts = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Build exclude owner capital condition for income/expense totals
+    $excludeOwnerCapital = '';
+    if (!empty($capitalAccounts)) {
+        $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $capitalAccounts) . "))";
+    }
+    
+    // Today Income (exclude owner capital)
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE(transaction_date) = ? AND transaction_type = 'income'" . $excludeOwnerCapital);
     $stmt->execute([$today]);
     $stats['today_income'] = (float)$stmt->fetchColumn();
     
@@ -66,8 +95,8 @@ try {
     $stmt->execute([$today]);
     $stats['today_expense'] = (float)$stmt->fetchColumn();
     
-    // Month Income
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ? AND transaction_type = 'income'");
+    // Month Income (exclude owner capital)
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ? AND transaction_type = 'income'" . $excludeOwnerCapital);
     $stmt->execute([$thisMonth]);
     $stats['month_income'] = (float)$stmt->fetchColumn();
     
@@ -75,6 +104,58 @@ try {
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ? AND transaction_type = 'expense'");
     $stmt->execute([$thisMonth]);
     $stats['month_expense'] = (float)$stmt->fetchColumn();
+    
+    // Query Modal Owner stats (from cash_book with cash_account_id filter)
+    if (!empty($capitalAccounts)) {
+        $placeholders = implode(',', array_fill(0, count($capitalAccounts), '?'));
+        $query = "
+            SELECT 
+                COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END), 0) as received,
+                COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as used,
+                COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) - 
+                 SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as balance
+            FROM cash_book 
+            WHERE cash_account_id IN ($placeholders)
+            AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+        ";
+        $params = array_merge($capitalAccounts, [$thisMonth]);
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $capitalStats['received'] = (float)($result['received'] ?? 0);
+        $capitalStats['used'] = (float)($result['used'] ?? 0);
+        $capitalStats['balance'] = (float)($result['balance'] ?? 0);
+    }
+    
+    // Query Petty Cash stats
+    if (!empty($pettyCashAccounts)) {
+        $placeholders = implode(',', array_fill(0, count($pettyCashAccounts), '?'));
+        $query = "
+            SELECT 
+                COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END), 0) as received,
+                COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as used,
+                COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) - 
+                 SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as balance
+            FROM cash_book 
+            WHERE cash_account_id IN ($placeholders)
+            AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+        ";
+        $params = array_merge($pettyCashAccounts, [$thisMonth]);
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $pettyCashStats['received'] = (float)($result['received'] ?? 0);
+        $pettyCashStats['used'] = (float)($result['used'] ?? 0);
+        $pettyCashStats['balance'] = (float)($result['balance'] ?? 0);
+    }
+    
+    // TOTAL KAS OPERASIONAL = Petty Cash balance + Modal Owner balance
+    $totalOperationalCash = $pettyCashStats['balance'] + $capitalStats['balance'];
+    
+    // TOTAL PENGELUARAN OPERASIONAL = Combined expense
+    $totalOperationalExpense = $pettyCashStats['used'] + $capitalStats['used'];
     
     // Total transactions
     $stmt = $pdo->query("SELECT COUNT(*) FROM cash_book");
@@ -737,25 +818,25 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             </div>
         </div>
         
-        <!-- Operational Section -->
+        <!-- Operational Section - SAME DATA AS SYSTEM DASHBOARD -->
         <div class="operational-section">
-            <div class="operational-title">💰 Daily Operational - <?= date('F Y') ?></div>
+            <div class="operational-title">💰 Kas Operasional Harian - <?= date('F Y') ?></div>
             <div class="operational-grid">
                 <div class="op-card modal-owner">
                     <div class="op-label">💵 Modal Owner</div>
-                    <div class="op-value"><?= rp($stats['month_income']) ?></div>
+                    <div class="op-value"><?= rp($capitalStats['balance']) ?></div>
                 </div>
                 <div class="op-card petty-cash">
                     <div class="op-label">💰 Petty Cash</div>
-                    <div class="op-value"><?= rp($stats['today_income']) ?></div>
+                    <div class="op-value"><?= rp($pettyCashStats['balance']) ?></div>
                 </div>
                 <div class="op-card digunakan">
                     <div class="op-label">💸 Digunakan</div>
-                    <div class="op-value"><?= rp($stats['month_expense']) ?></div>
+                    <div class="op-value"><?= rp($totalOperationalExpense) ?></div>
                 </div>
                 <div class="op-card total-kas">
                     <div class="op-label">💎 Total Kas</div>
-                    <div class="op-value"><?= rp($netProfit) ?></div>
+                    <div class="op-value"><?= rp($totalOperationalCash) ?></div>
                 </div>
             </div>
         </div>
