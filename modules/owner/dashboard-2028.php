@@ -1,7 +1,7 @@
 <?php
-// Use same session name as main app (config.php defines NARAYANA_SESSION)
-session_name('NARAYANA_SESSION');
-session_start();
+// Include main config (handles session with NARAYANA_SESSION name)
+define('APP_ACCESS', true);
+require_once __DIR__ . '/../../config/config.php';
 
 // Determine base path
 $isLocal = strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') !== false;
