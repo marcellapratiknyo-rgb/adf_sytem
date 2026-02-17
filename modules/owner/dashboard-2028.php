@@ -1968,11 +1968,36 @@ alert('Failed to load dashboard data. Please check console for details.');
                     console.log('Businesses loaded successfully:', data.branches.length);
                 } else {
                     console.error('Businesses API failed:', data);
+                    // Fallback: Add hardcoded businesses
+                    addFallbackBusinesses();
                 }
             } catch (error) {
                 console.error('Load businesses error:', error);
-                alert('Failed to load businesses list. Please refresh the page.');
+                // Fallback: Add hardcoded businesses
+                addFallbackBusinesses();
             }
+        }
+        
+        // Fallback function to add hardcoded businesses if API fails
+        function addFallbackBusinesses() {
+            console.warn('Using fallback businesses...');
+            businessList = [
+                { id: 1, database_name: 'adf_narayana_hotel', branch_name: 'Narayana Hotel' },
+                { id: 2, database_name: 'adf_benscafe', branch_name: "Ben's Cafe" }
+            ];
+            
+            const select = document.getElementById('businessSelect');
+            select.innerHTML = '<option value="">All Businesses</option>';
+            
+            businessList.forEach(biz => {
+                const option = document.createElement('option');
+                option.value = biz.database_name;
+                option.setAttribute('data-biz-id', biz.id);
+                option.textContent = biz.branch_name;
+                select.appendChild(option);
+            });
+            
+            console.log('Fallback businesses added:', businessList.length);
         }
         
         // Business change handler

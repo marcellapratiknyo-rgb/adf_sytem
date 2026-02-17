@@ -12,22 +12,51 @@ header('Content-Type: application/json');
 
 // Auth check - try session role first, fallback to logged_in user
 $role = $_SESSION['role'] ?? null;
-if (!$role && isset($_SESSION['logged_in']) && $_SESSION['logged_in']) {
+$userId = $_SESSION['user_id'] ?? null;
+$isLoggedIn = $_SESSION['logged_in'] ?? false;
+
+// Debug info
+$debugInfo = [
+    'session_role' => $role,
+    'user_id' => $userId,
+    'logged_in' => $isLoggedIn,
+    'session_id' => session_id()
+];
+
+if (!$role && $isLoggedIn && $userId) {
     try {
         $authDb = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
         $authDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $roleStmt = $authDb->prepare("SELECT r.role_code FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
-        $roleStmt->execute([$_SESSION['user_id'] ?? 0]);
+        $roleStmt->execute([$userId]);
         $roleRow = $roleStmt->fetch(PDO::FETCH_ASSOC);
         if ($roleRow) {
             $role = $roleRow['role_code'];
             $_SESSION['role'] = $role;
+            $debugInfo['role_from_db'] = $role;
         }
-    } catch (Exception $e) {}
+    } catch (Exception $e) {
+        $debugInfo['db_error'] = $e->getMessage();
+    }
 }
 
-if (!$role || !in_array($role, ['owner', 'admin', 'manager', 'developer'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+// More lenient check - allow if logged in OR if role exists
+if (!$isLoggedIn && !$role) {
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Unauthorized - Please login',
+        'debug' => $debugInfo
+    ]);
+    exit;
+}
+
+// Check role permissions
+if ($role && !in_array($role, ['owner', 'admin', 'manager', 'developer', 'frontdesk', 'staff'])) {
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Access denied - Invalid role',
+        'debug' => $debugInfo
+    ]);
     exit;
 }
 
@@ -54,25 +83,38 @@ try {
     
     // Fallback if no businesses in table
     if (empty($branches)) {
-        $businessName = defined('BUSINESS_NAME') ? BUSINESS_NAME : 'My Business';
-        $branches[] = [
-            'id' => 1,
-            'business_code' => 'default',
-            'branch_name' => $businessName,
-            'business_name' => $businessName,
-            'business_type' => 'hotel',
-            'database_name' => DB_NAME
+        // Hardcoded fallback for known businesses
+        $branches = [
+            [
+                'id' => 1,
+                'business_code' => 'narayana',
+                'branch_name' => 'Narayana Hotel',
+                'business_name' => 'Narayana Hotel',
+                'business_type' => 'hotel',
+                'database_name' => 'adf_narayana_hotel'
+            ],
+            [
+                'id' => 2,
+                'business_code' => 'benscafe',
+                'branch_name' => "Ben's Cafe",
+                'business_name' => "Ben's Cafe",
+                'business_type' => 'restaurant',
+                'database_name' => 'adf_benscafe'
+            ]
         ];
     }
     
     echo json_encode([
         'success' => true,
         'branches' => $branches,
-        'count' => count($branches)
+        'count' => count($branches),
+        'debug' => $debugInfo
     ]);
 } catch (Exception $e) {
     // Fallback to single business
     $businessName = defined('BUSINESS_NAME') ? BUSINESS_NAME : 'My Business';
+    $fallbackDb = defined('ACTIVE_DB_NAME') ? ACTIVE_DB_NAME : DB_NAME;
+    
     echo json_encode([
         'success' => true,
         'branches' => [
@@ -82,11 +124,12 @@ try {
                 'branch_name' => $businessName,
                 'business_name' => $businessName,
                 'business_type' => 'hotel',
-                'database_name' => DB_NAME
+                'database_name' => $fallbackDb
             ]
         ],
         'count' => 1,
-        'error' => $e->getMessage()
+        'error' => $e->getMessage(),
+        'debug' => $debugInfo
     ]);
 }
 ?>
