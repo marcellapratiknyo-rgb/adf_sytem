@@ -179,17 +179,50 @@ try {
             return $stmt->fetch(PDO::FETCH_ASSOC);
         };
         
+        // Reusable function to get account IDs with fallback for missing columns
+        $getAccountIdsSafe = function($pdo, $accountType, $businessId = null) {
+            try {
+                // Try with business_id filter first (if column exists)
+                if ($businessId !== null) {
+                    $stmt = $pdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = ? AND is_active = 1");
+                    $stmt->execute([$businessId, $accountType]);
+                } else {
+                    $stmt = $pdo->prepare("SELECT id FROM cash_accounts WHERE account_type = ? AND is_active = 1");
+                    $stmt->execute([$accountType]);
+                }
+                return $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (Exception $e) {
+                // Fallback: try without is_active filter
+                try {
+                    if ($businessId !== null) {
+                        $stmt = $pdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = ?");
+                        $stmt->execute([$businessId, $accountType]);
+                    } else {
+                        $stmt = $pdo->prepare("SELECT id FROM cash_accounts WHERE account_type = ?");
+                        $stmt->execute([$accountType]);
+                    }
+                    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                } catch (Exception $e2) {
+                    // Last fallback: no business_id filter (for hosting if column doesn't exist)
+                    try {
+                        $stmt = $pdo->prepare("SELECT id FROM cash_accounts WHERE account_type = ? AND is_active = 1");
+                        $stmt->execute([$accountType]);
+                        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    } catch (Exception $e3) {
+                        // Absolute last fallback
+                        $stmt = $pdo->prepare("SELECT id FROM cash_accounts WHERE account_type = ?");
+                        $stmt->execute([$accountType]);
+                        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    }
+                }
+            }
+        };
+        
         if ($bizId) {
             // SINGLE BUSINESS - get account IDs by type
-            $getIds = function($type) use ($masterPdo, $bizId) {
-                $stmt = $masterPdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = ? AND is_active = 1");
-                $stmt->execute([$bizId, $type]);
-                return $stmt->fetchAll(PDO::FETCH_COLUMN);
-            };
-            
-            $capitalIds = $getIds('owner_capital');
-            $cashIds = $getIds('cash');
-            $bankIds = $getIds('bank');
+            $capitalIds = $getAccountIdsSafe($masterPdo, 'owner_capital', $bizId);
+            $cashIds = $getAccountIdsSafe($masterPdo, 'cash', $bizId);
+            $bankIds = $getAccountIdsSafe($masterPdo, 'bank', $bizId);
             
             // Store for debug
             $debugAccountIds = [
@@ -234,18 +267,15 @@ try {
                     $bPdoCalc = new PDO('mysql:host=' . DB_HOST . ';dbname=' . $bDbName, DB_USER, DB_PASS);
                     $bPdoCalc->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     
-                    // Get account IDs for this business
-                    $capIds = $masterPdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'owner_capital' AND is_active = 1");
-                    $capIds->execute([$b['id']]);
-                    $capitalStats = $calcCashBalance($bPdoCalc, $capIds->fetchAll(PDO::FETCH_COLUMN), $thisMonth);
+                    // Get account IDs for this business using safe function
+                    $capIds = $getAccountIdsSafe($masterPdo, 'owner_capital', $b['id']);
+                    $capitalStats = $calcCashBalance($bPdoCalc, $capIds, $thisMonth);
                     
-                    $cIds = $masterPdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' AND is_active = 1");
-                    $cIds->execute([$b['id']]);
-                    $cashStats = $calcCashBalance($bPdoCalc, $cIds->fetchAll(PDO::FETCH_COLUMN), $thisMonth);
+                    $cIds = $getAccountIdsSafe($masterPdo, 'cash', $b['id']);
+                    $cashStats = $calcCashBalance($bPdoCalc, $cIds, $thisMonth);
                     
-                    $bIds = $masterPdo->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' AND is_active = 1");
-                    $bIds->execute([$b['id']]);
-                    $bankStats = $calcCashBalance($bPdoCalc, $bIds->fetchAll(PDO::FETCH_COLUMN), $thisMonth);
+                    $bIds = $getAccountIdsSafe($masterPdo, 'bank', $b['id']);
+                    $bankStats = $calcCashBalance($bPdoCalc, $bIds, $thisMonth);
                     
                     $ownerCapital += (float)($capitalStats['balance'] ?? 0);
                     $pettyCash += (float)($cashStats['balance'] ?? 0);
