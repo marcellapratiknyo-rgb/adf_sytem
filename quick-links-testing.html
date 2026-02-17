@@ -179,10 +179,16 @@
         <div class="section">
             <div class="section-title">🔍 Debug Tools</div>
             
+            <a href="https://adfsystem.online/list-all-databases.php" target="_blank" class="link-button" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <span class="link-icon">🚨</span>
+                <strong>LIST ALL DATABASES (KLIK INI DULU!)</strong>
+                <span class="link-desc">🔥 Cek database mana yang benar-benar ada & fixing database names</span>
+            </a>
+            
             <a href="https://adfsystem.online/test-database-simple.php" target="_blank" class="link-button" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">
                 <span class="link-icon">⚡</span>
-                <strong>SIMPLE DATABASE TEST (KLIK INI!)</strong>
-                <span class="link-desc">✨ Test koneksi database & cek data langsung</span>
+                <strong>Simple Database Test</strong>
+                <span class="link-desc">✨ Test koneksi database & cek data transaksi</span>
             </a>
             
             <a href="https://adfsystem.online/fix-session.php" target="_blank" class="link-button" style="background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);">
@@ -243,14 +249,15 @@
         <div class="instructions">
             <div class="instructions-title">
                 <span>💡</span>
-                <span>Cara Testing (PENTING!):</span>
+                <span>Cara Fixing Database Names (CRITICAL!):</span>
             </div>
             <ul>
-                <li><strong>STEP 1:</strong> Klik <strong>"SIMPLE DATABASE TEST"</strong> untuk cek apakah database punya data</li>
-                <li><strong>STEP 2:</strong> Jika ada data, klik <strong>"Fix Session"</strong> untuk set session yang benar</li>
-                <li><strong>STEP 3:</strong> Buka <strong>"Owner Dashboard"</strong>, tekan <strong>F12</strong> → tab <strong>Console</strong></li>
-                <li><strong>STEP 4:</strong> Test <strong>API Tests</strong> untuk lihat JSON responses</li>
-                <li><strong>Screenshot:</strong> Kirim screenshot Simple Database Test untuk analisis</li>
+                <li><strong>STEP 1:</strong> Klik <strong>"LIST ALL DATABASES"</strong> (tombol MERAH) untuk lihat database yang benar-benar ada</li>
+                <li><strong>STEP 2:</strong> Script akan kasih SQL commands untuk fix database names di businesses table</li>
+                <li><strong>STEP 3:</strong> Jalankan SQL commands di phpMyAdmin untuk update businesses table</li>
+                <li><strong>STEP 4:</strong> Klik <strong>"Simple Database Test"</strong> untuk verify setelah fix</li>
+                <li><strong>STEP 5:</strong> Klik <strong>"Fix Session"</strong> lalu buka <strong>"Owner Dashboard"</strong></li>
+                <li><strong>Masalah:</strong> Database "adf_benscafe" tidak ada, harus diganti dengan nama yang benar (kemungkinan adfb2574_benscafe atau nama lain)</li>
             </ul>
         </div>
         
