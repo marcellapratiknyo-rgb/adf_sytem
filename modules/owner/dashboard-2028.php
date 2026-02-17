@@ -1324,7 +1324,7 @@ $isDev = ($role === 'developer');
         <div class="business-selector">
             <select class="business-select" id="businessSelect">
                 <option value="">Loading businesses...</option>
-                <option value="adf_narayana_hotel" data-biz-id="1">Narayana Hotel</option>
+                <option value="adfb2574_narayana_hotel" data-biz-id="1">Narayana Hotel</option>
                 <option value="adf_benscafe" data-biz-id="2">Ben's Cafe</option>
             </select>
         </div>
@@ -1990,7 +1990,7 @@ $isDev = ($role === 'developer');
                     console.warn('⚠️ API failed or empty, keeping hardcoded businesses');
                     // Use hardcoded businesses from HTML
                     businessList = [
-                        { id: 1, database_name: 'adf_narayana_hotel', branch_name: 'Narayana Hotel' },
+                        { id: 1, database_name: 'adfb2574_narayana_hotel', branch_name: 'Narayana Hotel' },
                         { id: 2, database_name: 'adf_benscafe', branch_name: "Ben's Cafe" }
                     ];
                 }
@@ -2000,7 +2000,7 @@ $isDev = ($role === 'developer');
                 console.error('Error stack:', error.stack);
                 // Fallback: use hardcoded businesses from HTML
                 businessList = [
-                    { id: 1, database_name: 'adf_narayana_hotel', branch_name: 'Narayana Hotel' },
+                    { id: 1, database_name: 'adfb2574_narayana_hotel', branch_name: 'Narayana Hotel' },
                     { id: 2, database_name: 'adf_benscafe', branch_name: "Ben's Cafe" }
                 ];
                 console.log('✅ Using fallback hardcoded businesses');

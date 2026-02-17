@@ -216,9 +216,9 @@ try {
             branch_name,
             business_type,
             database_name,
-            status
+            is_active
         FROM businesses
-        WHERE status = 'active'
+        WHERE is_active = 1
         ORDER BY id ASC
     ");
     
@@ -230,7 +230,7 @@ try {
     } else {
         echo '<p class="success">✅ Found ' . count($businesses) . ' active business(es)</p>';
         echo '<table>';
-        echo '<tr><th>ID</th><th>Code</th><th>Branch Name</th><th>Type</th><th>Database</th><th>Status</th></tr>';
+        echo '<tr><th>ID</th><th>Code</th><th>Branch Name</th><th>Type</th><th>Database</th><th>Active</th></tr>';
         foreach ($businesses as $biz) {
             echo '<tr>';
             echo '<td><strong>' . $biz['id'] . '</strong></td>';
@@ -238,7 +238,7 @@ try {
             echo '<td>' . htmlspecialchars($biz['branch_name']) . '</td>';
             echo '<td>' . htmlspecialchars($biz['business_type']) . '</td>';
             echo '<td><span class="info">' . htmlspecialchars($biz['database_name']) . '</span></td>';
-            echo '<td><span class="badge badge-success">' . $biz['status'] . '</span></td>';
+            echo '<td><span class="badge badge-success">' . ($biz['is_active'] ? 'Yes' : 'No') . '</span></td>';
             echo '</tr>';
         }
         echo '</table>';

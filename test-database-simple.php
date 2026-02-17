@@ -86,8 +86,8 @@ header('Content-Type: text/html; charset=UTF-8');
         echo "<div class='box'>";
         echo "<h2>✅ Database Connected</h2>";
         
-        // Check businesses table
-        $bizStmt = $pdo->query("SELECT * FROM businesses WHERE status = 'active' ORDER BY id");
+        // Check businesses table - use is_active NOT status
+        $bizStmt = $pdo->query("SELECT * FROM businesses WHERE is_active = 1 ORDER BY id");
         $businesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
         
         echo "<h3>Businesses Found: " . count($businesses) . "</h3>";
