@@ -380,12 +380,10 @@ echo '<div class="section">';
 echo '<h2>6. API Tests</h2>';
 echo '<p>Test the APIs with current session:</p>';
 
-$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'];
-$basePath = dirname($_SERVER['SCRIPT_NAME']);
-if ($basePath === '/' || $basePath === '\\') {
-    $basePath = '';
-}
+// Use actual domain for easy testing
+$protocol = 'https';
+$host = 'adfsystem.online';
+$basePath = '';
 
 $apiTests = [
     'Branches API' => $protocol . '://' . $host . $basePath . '/api/owner-branches-simple.php',

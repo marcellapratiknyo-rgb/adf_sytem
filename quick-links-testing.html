@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Links - Dashboard Testing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .domain {
+            background: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #a855f7;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            color: #a855f7;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(to bottom, #a855f7, #764ba2);
+            border-radius: 2px;
+        }
+        
+        .link-button {
+            display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .link-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .link-button:active {
+            transform: translateY(0);
+        }
+        
+        .link-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        
+        .link-desc {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+            display: block;
+        }
+        
+        .debug-link {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        
+        .api-link {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 30px;
+        }
+        
+        .instructions-title {
+            color: #856404;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .instructions ul {
+            color: #856404;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .link-button {
+                padding: 12px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Quick Links Testing</h1>
+        <p class="subtitle">Dashboard Owner - Debug & Testing Tools</p>
+        
+        <div class="domain">
+            🌐 adfsystem.online
+        </div>
+        
+        <!-- DEBUG SECTION -->
+        <div class="section">
+            <div class="section-title">🔍 Debug Tools</div>
+            
+            <a href="https://adfsystem.online/debug-dashboard-complete.php" target="_blank" class="link-button debug-link">
+                <span class="link-icon">🔬</span>
+                <strong>Complete Debug Script</strong>
+                <span class="link-desc">Cek session, database, businesses, transactions, dan API</span>
+            </a>
+            
+            <a href="https://adfsystem.online/modules/owner/dashboard-2028.php" target="_blank" class="link-button">
+                <span class="link-icon">📊</span>
+                <strong>Owner Dashboard</strong>
+                <span class="link-desc">Dashboard utama owner dengan stats dan AI Health</span>
+            </a>
+        </div>
+        
+        <!-- API TESTS -->
+        <div class="section">
+            <div class="section-title">🧪 API Tests</div>
+            
+            <a href="https://adfsystem.online/api/owner-branches-simple.php" target="_blank" class="link-button api-link">
+                <span class="link-icon">🏢</span>
+                <strong>Branches API</strong>
+                <span class="link-desc">List semua bisnis yang aktif</span>
+            </a>
+            
+            <a href="https://adfsystem.online/api/owner-stats-simple.php" target="_blank" class="link-button api-link">
+                <span class="link-icon">📈</span>
+                <strong>Stats API (All Businesses)</strong>
+                <span class="link-desc">Statistik gabungan semua bisnis</span>
+            </a>
+            
+            <a href="https://adfsystem.online/api/owner-stats-simple.php?db=adf_narayana_hotel&biz_id=1" target="_blank" class="link-button api-link">
+                <span class="link-icon">🏨</span>
+                <strong>Stats API - Narayana Hotel</strong>
+                <span class="link-desc">Statistik khusus Narayana Hotel</span>
+            </a>
+            
+            <a href="https://adfsystem.online/api/owner-stats-simple.php?db=adf_benscafe&biz_id=2" target="_blank" class="link-button api-link">
+                <span class="link-icon">☕</span>
+                <strong>Stats API - Ben's Cafe</strong>
+                <span class="link-desc">Statistik khusus Ben's Cafe</span>
+            </a>
+            
+            <a href="https://adfsystem.online/api/recent-transactions.php" target="_blank" class="link-button api-link">
+                <span class="link-icon">💳</span>
+                <strong>Recent Transactions API</strong>
+                <span class="link-desc">10 transaksi terbaru semua bisnis</span>
+            </a>
+        </div>
+        
+        <!-- INSTRUCTIONS -->
+        <div class="instructions">
+            <div class="instructions-title">
+                <span>💡</span>
+                <span>Cara Testing:</span>
+            </div>
+            <ul>
+                <li><strong>Debug Script:</strong> Klik link "Complete Debug Script" untuk cek semua sistem</li>
+                <li><strong>Dashboard:</strong> Setelah buka dashboard, tekan <strong>F12</strong> → pilih tab <strong>Console</strong></li>
+                <li><strong>API Tests:</strong> Akan menampilkan JSON response, cek apakah success: true</li>
+                <li><strong>Screenshot:</strong> Kirim screenshot Console dan Debug Script untuk analisis</li>
+            </ul>
+        </div>
+        
+        <!-- EXPECTED RESULTS -->
+        <div class="section">
+            <div class="section-title">✅ Expected Results</div>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 13px; color: #333;">
+                <strong>Debug Script harus menampilkan:</strong><br>
+                ✅ Session is active<br>
+                ✅ Connected to MySQL<br>
+                ✅ Found 2 active businesses<br>
+                ✅ Cash accounts dengan balance<br>
+                ✅ Transactions di setiap database<br>
+                <br>
+                <strong>API Tests harus return:</strong><br>
+                {"success": true, "branches": [...], "count": 2}<br>
+                {"success": true, "monthIncome": ..., "todayIncome": ...}<br>
+                <br>
+                <strong>Dashboard Console harus menampilkan:</strong><br>
+                "=== DASHBOARD INITIALIZATION START ==="<br>
+                "✅ Businesses loaded from API: 2"<br>
+                "🚀 Loading initial stats and transactions..."<br>
+                "✅ Initial load complete"
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🚀 ADF System - Owner Dashboard Testing</p>
+            <p>Last Updated: <?php echo date('Y-m-d H:i:s'); ?> | v2.0</p>
+        </div>
+    </div>
+    
+    <script>
+        // Add animation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.5s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // Add click tracking
+            const links = document.querySelectorAll('.link-button');
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    const linkText = this.querySelector('strong').textContent;
+                    console.log('Clicked:', linkText);
+                    
+                    // Visual feedback
+                    this.style.opacity = '0.7';
+                    setTimeout(() => {
+                        this.style.opacity = '1';
+                    }, 200);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
