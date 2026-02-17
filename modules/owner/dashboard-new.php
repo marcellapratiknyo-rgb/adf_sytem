@@ -599,8 +599,12 @@ $userName = $_SESSION['username'] ?? 'Owner';
             const selector = document.getElementById('businessSelector');
             
             try {
-                const response = await fetch('../../api/owner-branches.php');
+                // Use simple API for single-database setup
+                const response = await fetch('../../api/owner-branches-simple.php');
                 const data = await response.json();
+                
+                console.log('=== BRANCHES API Response ===');
+                console.log('Response:', data);
                 
                 if (data.success && data.branches && data.branches.length > 0) {
                     businessData = data.branches;
@@ -627,10 +631,20 @@ $userName = $_SESSION['username'] ?? 'Owner';
         // Load financial stats
         async function loadStats(branchId) {
             try {
-                const response = await fetch(`../../api/owner-stats.php?branch_id=${branchId}`);
+                // Use simple API for single-database setup
+                const response = await fetch(`../../api/owner-stats-simple.php?branch_id=${branchId}`);
                 const data = await response.json();
                 
+                console.log('=== STATS API Response ===');
+                console.log('Branch ID:', branchId);
+                console.log('Response:', data);
+                
                 if (data.success) {
+                    console.log('Today Income:', data.todayIncome);
+                    console.log('Today Expense:', data.todayExpense);
+                    console.log('Month Income:', data.monthIncome);
+                    console.log('Month Expense:', data.monthExpense);
+                    
                     // Today stats
                     document.getElementById('todayIncome').innerHTML = formatCurrency(data.todayIncome);
                     document.getElementById('todayExpense').innerHTML = formatCurrency(data.todayExpense);

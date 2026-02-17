@@ -657,7 +657,8 @@ $userName = $_SESSION['username'] ?? 'Dev Owner';
             const selector = document.getElementById('businessSelector');
             
             try {
-                const response = await fetch('../../api/owner-branches.php');
+                // Use simple API for single-database setup
+                const response = await fetch('../../api/owner-branches-simple.php');
                 const data = await response.json();
                 
                 console.log('=== BRANCHES API Response ===');
@@ -688,7 +689,8 @@ $userName = $_SESSION['username'] ?? 'Dev Owner';
         // Load financial stats
         async function loadStats(branchId) {
             try {
-                const response = await fetch(`../../api/owner-stats.php?branch_id=${branchId}`);
+                // Use simple API for single-database setup
+                const response = await fetch(`../../api/owner-stats-simple.php?branch_id=${branchId}`);
                 const data = await response.json();
                 
                 console.log('=== STATS API Response ===');
