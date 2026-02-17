@@ -3,12 +3,11 @@
  * API: Owner Statistics - Simple Version
  * Direct query to current database (no multi-tenant)
  */
-session_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
-require_once '../config/config.php';
-require_once '../config/database.php';
+// Use same session name as main app
+define('APP_ACCESS', true);
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');
 
