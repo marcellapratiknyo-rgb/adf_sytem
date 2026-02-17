@@ -118,7 +118,7 @@ $isDev = ($role === 'developer');
         
         /* Page Title */
         .page-title {
-            margin-bottom: 32px;
+            margin-bottom: 24px;
         }
         
         .page-title h1 {
@@ -131,6 +131,124 @@ $isDev = ($role === 'developer');
         .page-title p {
             color: var(--text-secondary);
             font-size: 14px;
+        }
+        
+        /* Hero Section with Chart */
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 40px;
+            align-items: center;
+        }
+        
+        .hero-info {
+            color: white;
+        }
+        
+        .hero-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .hero-subtitle {
+            font-size: 15px;
+            opacity: 0.9;
+            margin-bottom: 24px;
+        }
+        
+        .hero-stats {
+            display: flex;
+            gap: 32px;
+        }
+        
+        .hero-stat {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .hero-stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .hero-stat-value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+        
+        .hero-chart {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        #heroChart {
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+        }
+        
+        .hero-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .hero-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+        
+        .hero-legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .hero-legend-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .hero-legend-label {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .hero-legend-value {
+            font-size: 16px;
+            font-weight: 600;
         }
         
         /* Stats Grid */
@@ -258,6 +376,113 @@ $isDev = ($role === 'developer');
         
         .cash-card.primary .cash-icon {
             opacity: 0.4;
+        }
+        
+        /* Operational Cash Section - like System Dashboard */
+        .operational-section {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.1);
+        }
+        
+        .operational-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .operational-title::before {
+            content: '💰';
+            font-size: 20px;
+        }
+        
+        .operational-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        
+        .op-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .op-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+        }
+        
+        .op-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+        
+        .op-card.modal-owner {
+            --gradient-start: #10b981;
+            --gradient-end: #34d399;
+        }
+        
+        .op-card.petty-cash {
+            --gradient-start: #f59e0b;
+            --gradient-end: #fbbf24;
+        }
+        
+        .op-card.digunakan {
+            --gradient-start: #f43f5e;
+            --gradient-end: #fb7185;
+        }
+        
+       .op-card.total-kas {
+            --gradient-start: #6366f1;
+            --gradient-end: #818cf8;
+        }
+        
+        .op-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gradient-start);
+        }
+        
+        .op-value {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .op-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .op-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 36px;
+            opacity: 0.15;
         }
         
         /* Overview Panel */
@@ -390,6 +615,47 @@ $isDev = ($role === 'developer');
                 gap: 10px;
             }
             
+            .hero-section {
+                padding: 24px;
+                border-radius: 20px;
+                margin-bottom: 24px;
+            }
+            
+            .hero-content {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+            
+            .hero-title {
+                font-size: 24px;
+            }
+            
+            .hero-subtitle {
+                font-size: 13px;
+            }
+            
+            .hero-stat-value {
+                font-size: 20px;
+            }
+            
+            .hero-chart {
+                justify-content: center;
+            }
+            
+            .operational-section {
+                padding: 20px;
+                margin-bottom: 24px;
+            }
+            
+            .operational-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .op-value {
+                font-size: 20px;
+            }
+            
             .cash-grid {
                 grid-template-columns: 1fr;
                 gap: 10px;
@@ -441,6 +707,89 @@ $isDev = ($role === 'developer');
             
             .page-title p {
                 font-size: 12px;
+            }
+            
+            .hero-section {
+                padding: 18px;
+                border-radius: 16px;
+                margin-bottom: 18px;
+            }
+            
+            .hero-content {
+                gap: 18px;
+            }
+            
+            .hero-title {
+                font-size: 20px;
+            }
+            
+            .hero-subtitle {
+                font-size: 12px;
+            }
+            
+            .hero-stats {
+                gap: 20px;
+            }
+            
+            .hero-stat-label {
+                font-size: 10px;
+            }
+            
+            .hero-stat-value {
+                font-size: 18px;
+            }
+            
+            #heroChart {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .hero-legend {
+                gap: 10px;
+            }
+            
+            .hero-legend-label {
+                font-size: 10px;
+            }
+            
+            .hero-legend-value {
+                font-size: 14px;
+            }
+            
+            .operational-section {
+                padding: 16px;
+                margin-bottom: 18px;
+                border-radius: 16px;
+            }
+            
+            .operational-title {
+                font-size: 13px;
+                margin-bottom: 14px;
+            }
+            
+            .operational-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .op-card {
+                padding: 14px;
+            }
+            
+            .op-label {
+                font-size: 10px;
+            }
+            
+            .op-value {
+                font-size: 18px;
+            }
+            
+            .op-desc {
+                font-size: 10px;
+            }
+            
+            .op-icon {
+                font-size: 28px;
             }
             
             .stats-grid {
@@ -631,6 +980,76 @@ $isDev = ($role === 'developer');
             </select>
         </div>
         
+        <!-- Hero Section with Chart -->
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="hero-info">
+                    <div class="hero-title">Financial Performance</div>
+                    <div class="hero-subtitle" id="currentDate">Loading...</div>
+                    <div class="hero-stats">
+                        <div class="hero-stat">
+                            <div class="hero-stat-label">Month Income</div>
+                            <div class="hero-stat-value" id="heroIncome">-</div>
+                        </div>
+                        <div class="hero-stat">
+                            <div class="hero-stat-label">Month Expense</div>
+                            <div class="hero-stat-value" id="heroExpense">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-chart">
+                    <canvas id="heroChart"></canvas>
+                    <div class="hero-legend">
+                        <div class="hero-legend-item">
+                            <div class="hero-legend-dot" style="background: linear-gradient(135deg, #10b981, #34d399);"></div>
+                            <div class="hero-legend-text">
+                                <div class="hero-legend-label">Income</div>
+                                <div class="hero-legend-value" id="heroLegendIncome">-</div>
+                            </div>
+                        </div>
+                        <div class="hero-legend-item">
+                            <div class="hero-legend-dot" style="background: linear-gradient(135deg, #f43f5e, #fb7185);"></div>
+                            <div class="hero-legend-text">
+                                <div class="hero-legend-label">Expense</div>
+                                <div class="hero-legend-value" id="heroLegendExpense">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Operational Cash Section (like System Dashboard) -->
+        <div class="operational-section">
+            <div class="operational-title">Daily Operational - February 2026</div>
+            <div class="operational-grid">
+                <div class="op-card modal-owner">
+                    <div class="op-label">💵 Modal Owner</div>
+                    <div class="op-value" id="modalOwner">-</div>
+                    <div class="op-desc">Setoran owner</div>
+                    <div class="op-icon">💰</div>
+                </div>
+                <div class="op-card petty-cash">
+                    <div class="op-label">💰 Petty Cash</div>
+                    <div class="op-value" id="pettyCashOp">-</div>
+                    <div class="op-desc">Uang cash dari tamu</div>
+                    <div class="op-icon">💵</div>
+                </div>
+                <div class="op-card digunakan">
+                    <div class="op-label">💸 Digunakan</div>
+                    <div class="op-value" id="digunakan">-</div>
+                    <div class="op-desc">Total pengeluaran operasional</div>
+                    <div class="op-icon">📊</div>
+                </div>
+                <div class="op-card total-kas">
+                    <div class="op-label">💎 Total Kas</div>
+                    <div class="op-value" id="totalKas">-</div>
+                    <div class="op-desc">Uang cash tersedia</div>
+                    <div class="op-icon">💼</div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Today Stats -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -710,32 +1129,9 @@ $isDev = ($role === 'developer');
                     </div>
                 </div>
             </div>
-            
-            <!-- Chart Panel -->
-            <div class="panel">
-                <div class="panel-title">Income vs Expense</div>
-                <div class="chart-container">
-                    <canvas id="pieChart"></canvas>
-                    <div class="chart-legend">
-                        <div class="legend-item">
-                            <span class="legend-label">
-                                <span class="legend-dot" style="background: linear-gradient(135deg, #10b981, #34d399);"></span>
-                                Income
-                            </span>
-                            <span class="legend-value" id="legendIncome">-</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-label">
-                                <span class="legend-dot" style="background: linear-gradient(135deg, #f43f5e, #fb7185);"></span>
-                                Expense
-                            </span>
-                            <span class="legend-value" id="legendExpense">-</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
+
     
     <script>
         // Base path: /adf_system for local, empty for hosting
@@ -750,21 +1146,23 @@ $isDev = ($role === 'developer');
             return 'Rp ' + num.toLocaleString('id-ID');
         }
         
-        // Draw pie chart
-        function drawPieChart(income, expense) {
-            const canvas = document.getElementById('pieChart');
+        // Draw hero chart
+        function drawHeroChart(income, expense) {
+            const canvas = document.getElementById('heroChart');
+            if (!canvas) return;
+            
             const ctx = canvas.getContext('2d');
             const total = income + expense;
             
             // Responsive canvas size
-            const isMobile = window.innerWidth <= 480;
-            const size = isMobile ? 120 : 160;
+            const isMobile = window.innerWidth <= 768;
+            const size = isMobile ? 140 : 180;
             canvas.width = size;
             canvas.height = size;
             
             const centerX = canvas.width / 2;
             const centerY = canvas.height / 2;
-            const radius = (size / 2) - 10;
+            const radius = (size / 2) - 12;
             
             // Clear
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -773,7 +1171,7 @@ $isDev = ($role === 'developer');
                 // Empty state
                 ctx.beginPath();
                 ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                ctx.fillStyle = '#e2e8f0';
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
                 ctx.fill();
                 return;
             }
@@ -781,7 +1179,7 @@ $isDev = ($role === 'developer');
             const incomeAngle = (income / total) * 2 * Math.PI;
             const startAngle = -Math.PI / 2;
             
-            // Income slice (emerald gradient)
+            // Income slice (emerald)
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.arc(centerX, centerY, radius, startAngle, startAngle + incomeAngle);
@@ -792,7 +1190,7 @@ $isDev = ($role === 'developer');
             ctx.fillStyle = incomeGrad;
             ctx.fill();
             
-            // Expense slice (rose gradient)
+            // Expense slice (rose)
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.arc(centerX, centerY, radius, startAngle + incomeAngle, startAngle + 2 * Math.PI);
@@ -805,9 +1203,17 @@ $isDev = ($role === 'developer');
             
             // Center hole (donut)
             ctx.beginPath();
-            ctx.arc(centerX, centerY, radius * 0.55, 0, 2 * Math.PI);
-            ctx.fillStyle = '#ffffff';
+            ctx.arc(centerX, centerY, radius * 0.6, 0, 2 * Math.PI);
+            ctx.fillStyle = 'rgba(118, 75, 162, 0.8)'; // Purple matching hero background
             ctx.fill();
+            
+            // Center text - percentage
+            const incomePercent = Math.round((income / total) * 100);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold ' + (size / 6) + 'px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(incomePercent + '%', centerX, centerY);
         }
         
         // Load data
@@ -837,6 +1243,41 @@ $isDev = ($role === 'developer');
                 console.log('API Response:', data);
                 
                 if (data.success) {
+                    // Hero section
+                    document.getElementById('heroIncome').textContent = formatRp(data.monthIncome);
+                    document.getElementById('heroExpense').textContent = formatRp(data.monthExpense);
+                    document.getElementById('heroLegendIncome').textContent = formatRp(data.monthIncome);
+                    document.getElementById('heroLegendExpense').textContent = formatRp(data.monthExpense);
+                    drawHeroChart(data.monthIncome, data.monthExpense);
+                    
+                    // Operational Cash Section (like system dashboard)
+                    // Modal Owner = received/setoran dari owner_capital accounts
+                    let modalOwnerReceived = 0;
+                    if (data.cashAccounts && Array.isArray(data.cashAccounts)) {
+                        const ownerCapitalAcc = data.cashAccounts.find(acc => acc.account_type === 'owner_capital');
+                        modalOwnerReceived = ownerCapitalAcc?.received || 0;
+                    }
+                    document.getElementById('modalOwner').textContent = formatRp(modalOwnerReceived);
+                    
+                    // Petty Cash Balance (from cash accounts)
+                    document.getElementById('pettyCashOp').textContent = formatRp(data.pettyCash || 0);
+                    
+                    // Digunakan = Total pengeluaran operasional (Petty Cash used + Modal Owner used)
+                    let pettyCashUsed = 0;
+                    let modalOwnerUsed = 0;
+                    if (data.cashAccounts && Array.isArray(data.cashAccounts)) {
+                        const cashAcc = data.cashAccounts.find(acc => acc.account_type === 'cash');
+                        const ownerCapitalAcc = data.cashAccounts.find(acc => acc.account_type === 'owner_capital');
+                        pettyCashUsed = cashAcc?.used || 0;
+                        modalOwnerUsed = ownerCapitalAcc?.used || 0;
+                    }
+                    const digunakan = pettyCashUsed + modalOwnerUsed;
+                    document.getElementById('digunakan').textContent = formatRp(digunakan);
+                    
+                    // Total Kas = Petty Cash balance + Owner Capital balance
+                    const totalKas = (data.pettyCash || 0) + (data.ownerCapital || 0);
+                    document.getElementById('totalKas').textContent = formatRp(totalKas);
+                    
                     // Today stats
                     document.getElementById('todayIncome').textContent = formatRp(data.todayIncome);
                     document.getElementById('todayExpense').textContent = formatRp(data.todayExpense);
@@ -860,13 +1301,6 @@ $isDev = ($role === 'developer');
                     document.getElementById('incomeBar').style.width = ((data.monthIncome / maxVal) * 100) + '%';
                     document.getElementById('expenseBar').style.width = ((data.monthExpense / maxVal) * 100) + '%';
                     document.getElementById('profitBar').style.width = profit > 0 ? ((profit / data.monthIncome) * 100) + '%' : '0%';
-                    
-                    // Legend
-                    document.getElementById('legendIncome').textContent = formatRp(data.monthIncome);
-                    document.getElementById('legendExpense').textContent = formatRp(data.monthExpense);
-                    
-                    // Draw chart
-                    drawPieChart(data.monthIncome, data.monthExpense);
                 } else {
                     console.error('API Error:', data.message);
                 }
