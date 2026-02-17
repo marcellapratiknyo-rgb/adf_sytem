@@ -35,14 +35,19 @@ try {
     // Get all businesses from database
     $stmt = $pdo->query("SELECT id, business_name, address, phone FROM businesses ORDER BY id");
     $allBusinesses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
     $branches = [];
-    
-    // Admin, owner, developer, manager have access to ALL businesses
+    // Mapping id ke business_type (hardcode jika belum ada di DB)
+    $businessTypeMap = [
+        // Ganti sesuai id di tabel businesses
+        1 => 'hotel', // Narayana Hotel
+        2 => 'cafe',  // Ben's Cafe
+    ];
     foreach ($allBusinesses as $business) {
+        $type = $businessTypeMap[$business['id']] ?? (stripos($business['business_name'], 'hotel') !== false ? 'hotel' : 'cafe');
         $branches[] = [
             'id' => $business['id'],
             'branch_name' => $business['business_name'],
+            'business_type' => $type,
             'city' => $business['address'] ?? '-',
             'phone' => $business['phone'] ?? '-'
         ];
