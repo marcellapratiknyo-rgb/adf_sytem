@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'owner', 'manager', 'developer'])) {
-    header('Location: /login.php');
+    header('Location: /adf_system/login.php');
     exit;
 }
 $userName = $_SESSION['username'] ?? 'Owner';
