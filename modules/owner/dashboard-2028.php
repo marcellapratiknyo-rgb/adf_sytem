@@ -7,12 +7,28 @@ require_once __DIR__ . '/../../config/config.php';
 $isLocal = strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false || strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') !== false;
 $basePath = $isLocal ? '/adf_system' : '';
 
-if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['admin', 'owner', 'manager', 'developer'])) {
+// Auth check - try session role, fallback to DB lookup
+$role = $_SESSION['role'] ?? null;
+if (!$role && isset($_SESSION['logged_in']) && $_SESSION['logged_in']) {
+    try {
+        $authDb = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+        $authDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $roleStmt = $authDb->prepare("SELECT r.role_code FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
+        $roleStmt->execute([$_SESSION['user_id'] ?? 0]);
+        $roleRow = $roleStmt->fetch(PDO::FETCH_ASSOC);
+        if ($roleRow) {
+            $role = $roleRow['role_code'];
+            $_SESSION['role'] = $role;
+        }
+    } catch (Exception $e) {}
+}
+
+if (!$role || !in_array($role, ['admin', 'owner', 'manager', 'developer'])) {
     header('Location: ' . $basePath . '/login.php');
     exit;
 }
 $userName = $_SESSION['username'] ?? 'Owner';
-$isDev = ($_SESSION['role'] ?? '') === 'developer';
+$isDev = ($role === 'developer');
 ?>
 <!DOCTYPE html>
 <html lang="en">

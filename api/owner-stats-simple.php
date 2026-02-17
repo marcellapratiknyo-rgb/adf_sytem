@@ -11,9 +11,25 @@ require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');
 
-// Simple auth check
-if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['owner', 'admin', 'manager', 'developer'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized - Session: ' . json_encode($_SESSION)]);
+// Auth check - try session role first, fallback to logged_in user
+$role = $_SESSION['role'] ?? null;
+if (!$role && isset($_SESSION['logged_in']) && $_SESSION['logged_in']) {
+    // User logged in but role not in session - try to fetch from DB
+    try {
+        $authDb = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+        $authDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $roleStmt = $authDb->prepare("SELECT r.role_code FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
+        $roleStmt->execute([$_SESSION['user_id'] ?? 0]);
+        $roleRow = $roleStmt->fetch(PDO::FETCH_ASSOC);
+        if ($roleRow) {
+            $role = $roleRow['role_code'];
+            $_SESSION['role'] = $role; // cache for next time
+        }
+    } catch (Exception $e) {}
+}
+
+if (!$role || !in_array($role, ['owner', 'admin', 'manager', 'developer'])) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 
