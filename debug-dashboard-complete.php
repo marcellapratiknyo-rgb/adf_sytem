@@ -97,8 +97,43 @@ header('Content-Type: text/html; charset=UTF-8');
 <h1>🔍 Dashboard Complete Debug - <?php echo date('Y-m-d H:i:s'); ?></h1>
 
 <?php
-// Database config
-require_once __DIR__ . '/config/database.php';
+// ===========================
+// DATABASE CONNECTION SETUP
+// ===========================
+// Detect environment
+$isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false && 
+                strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') === false);
+
+if ($isProduction) {
+    // Production (Hosting)
+    if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', 'adfb2574_adf');
+    if (!defined('DB_USER')) define('DB_USER', 'adfb2574_adfsystem');
+    if (!defined('DB_PASS')) define('DB_PASS', '@Nnoc2025');
+} else {
+    // Local development
+    if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', 'adf_system');
+    if (!defined('DB_USER')) define('DB_USER', 'root');
+    if (!defined('DB_PASS')) define('DB_PASS', '');
+}
+
+// Create PDO connection
+$pdo = null;
+try {
+    $pdo = new PDO(
+        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        DB_USER,
+        DB_PASS,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false
+        ]
+    );
+} catch (PDOException $e) {
+    // Connection failed, will be handled below
+}
 
 // ===========================
 // 1. SESSION CHECK
@@ -140,43 +175,6 @@ if (empty($_SESSION)) {
 echo '</div>';
 
 // ===========================
-// DATABASE CONNECTION SETUP
-// ===========================
-// Detect environment
-$isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false && 
-                strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') === false);
-
-if ($isProduction) {
-    // Production (Hosting)
-    define('DB_HOST', 'localhost');
-    define('DB_NAME', 'adfb2574_adf');
-    define('DB_USER', 'adfb2574_adfsystem');
-    define('DB_PASS', '@Nnoc2025');
-} else {
-    // Local development
-    define('DB_HOST', 'localhost');
-    define('DB_NAME', 'adf_system');
-    define('DB_USER', 'root');
-    define('DB_PASS', '');
-}
-
-// Create PDO connection
-try {
-    $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-        DB_USER,
-        DB_PASS,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false
-        ]
-    );
-} catch (PDOException $e) {
-    $pdo = null;
-}
-
-// ===========================
 // 2. DATABASE CONNECTION
 // ===========================
 echo '<div class="section">';
@@ -189,10 +187,10 @@ if ($pdo === null) {
     try {
         // Test main database
         $testQuery = $pdo->query("SELECT DATABASE() as current_db, VERSION() as mysql_version");
-    $dbInfo = $testQuery->fetch(PDO::FETCH_ASSOC);
-    
-    echo '<p class="success">✅ Connected to MySQL</p>';
-    echo '<table>';
+        $dbInfo = $testQuery->fetch(PDO::FETCH_ASSOC);
+        
+        echo '<p class="success">✅ Connected to MySQL</p>';
+        echo '<table>';
     echo '<tr><td><strong>Current Database</strong></td><td>' . $dbInfo['current_db'] . '</td></tr>';
     echo '<tr><td><strong>MySQL Version</strong></td><td>' . $dbInfo['mysql_version'] . '</td></tr>';
     echo '</table>';
