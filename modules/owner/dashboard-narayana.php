@@ -9,10 +9,10 @@ require_once __DIR__ . '/../../config/config.php';
 $isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
 $basePath = $isProduction ? '' : '/adf_system';
 
-// Database Narayana LANGSUNG
-$dbHost = 'localhost';
-$dbUser = $isProduction ? 'adfb2574_admin' : 'root';
-$dbPass = $isProduction ? 'Warnet_jaya1' : '';
+// PAKAI CREDENTIALS DARI CONFIG.PHP!
+$dbHost = DB_HOST;
+$dbUser = DB_USER;
+$dbPass = DB_PASS;
 $dbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
 
 // Get stats langsung dari database
