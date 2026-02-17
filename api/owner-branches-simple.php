@@ -31,21 +31,62 @@ if (!$role || !in_array($role, ['owner', 'admin', 'manager', 'developer'])) {
     exit;
 }
 
-// Return single business based on current system
-$businessName = defined('BUSINESS_NAME') ? BUSINESS_NAME : 'My Business';
-$businessType = 'hotel'; // default
-
-echo json_encode([
-    'success' => true,
-    'branches' => [
-        [
+// Query all businesses from master database
+try {
+    $masterDbName = defined('MASTER_DB_NAME') ? MASTER_DB_NAME : DB_NAME;
+    $masterPdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . $masterDbName, DB_USER, DB_PASS);
+    $masterPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    $bizStmt = $masterPdo->query("SELECT id, business_code, business_name, business_type, database_name FROM businesses WHERE is_active = 1 ORDER BY business_name");
+    $businesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    $branches = [];
+    foreach ($businesses as $biz) {
+        $branches[] = [
+            'id' => (int)$biz['id'],
+            'business_code' => $biz['business_code'],
+            'branch_name' => $biz['business_name'],
+            'business_name' => $biz['business_name'],
+            'business_type' => $biz['business_type'],
+            'database_name' => $biz['database_name']
+        ];
+    }
+    
+    // Fallback if no businesses in table
+    if (empty($branches)) {
+        $businessName = defined('BUSINESS_NAME') ? BUSINESS_NAME : 'My Business';
+        $branches[] = [
             'id' => 1,
+            'business_code' => 'default',
             'branch_name' => $businessName,
             'business_name' => $businessName,
-            'business_type' => $businessType,
+            'business_type' => 'hotel',
             'database_name' => DB_NAME
-        ]
-    ],
-    'count' => 1
-]);
+        ];
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'branches' => $branches,
+        'count' => count($branches)
+    ]);
+} catch (Exception $e) {
+    // Fallback to single business
+    $businessName = defined('BUSINESS_NAME') ? BUSINESS_NAME : 'My Business';
+    echo json_encode([
+        'success' => true,
+        'branches' => [
+            [
+                'id' => 1,
+                'business_code' => 'default',
+                'branch_name' => $businessName,
+                'business_name' => $businessName,
+                'business_type' => 'hotel',
+                'database_name' => DB_NAME
+            ]
+        ],
+        'count' => 1,
+        'error' => $e->getMessage()
+    ]);
+}
 ?>

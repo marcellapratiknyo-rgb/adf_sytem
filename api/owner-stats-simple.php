@@ -34,7 +34,32 @@ if (!$role || !in_array($role, ['owner', 'admin', 'manager', 'developer'])) {
 }
 
 try {
-    $db = Database::getInstance();
+    // Check if specific business database requested
+    $bizDb = isset($_GET['db']) ? $_GET['db'] : null;
+    
+    if ($bizDb) {
+        // Connect to specific business database
+        $bizPdo = new PDO('mysql:host=' . DB_HOST . ';dbname=' . $bizDb, DB_USER, DB_PASS);
+        $bizPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $db = new class($bizPdo) {
+            private $pdo;
+            public function __construct($pdo) { $this->pdo = $pdo; }
+            public function fetchOne($sql, $params = []) {
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute($params);
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            public function fetchAll($sql, $params = []) {
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute($params);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+        };
+        $activeDbName = $bizDb;
+    } else {
+        $db = Database::getInstance();
+        $activeDbName = DB_NAME;
+    }
     
     $today = date('Y-m-d');
     $thisMonth = date('Y-m');
@@ -123,7 +148,7 @@ try {
             'today' => $today,
             'thisMonth' => $thisMonth,
             'lastMonth' => $lastMonth,
-            'database' => DB_NAME
+            'database' => $activeDbName
         ]
     ]);
     

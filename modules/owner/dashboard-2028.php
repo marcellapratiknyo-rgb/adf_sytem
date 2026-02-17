@@ -818,7 +818,10 @@ $isDev = ($role === 'developer');
             document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options);
             
             try {
-                const response = await fetch(basePath + '/api/owner-stats-simple.php');
+                // Get selected business database
+                const selectedDb = document.getElementById('businessSelect').value;
+                const dbParam = selectedDb ? '?db=' + encodeURIComponent(selectedDb) : '';
+                const response = await fetch(basePath + '/api/owner-stats-simple.php' + dbParam);
                 const data = await response.json();
                 
                 if (data.success) {
@@ -860,6 +863,9 @@ $isDev = ($role === 'developer');
             }
         }
         
+        // Store business data for DB lookup
+        let businessList = [];
+        
         // Load businesses
         async function loadBusinesses() {
             try {
@@ -867,19 +873,20 @@ $isDev = ($role === 'developer');
                 const data = await response.json();
                 
                 if (data.success && data.branches) {
+                    businessList = data.branches;
                     const select = document.getElementById('businessSelect');
                     select.innerHTML = '<option value="">All Businesses</option>';
                     
                     data.branches.forEach(biz => {
                         const option = document.createElement('option');
-                        option.value = biz.id;
+                        option.value = biz.database_name || biz.id;
                         option.textContent = biz.branch_name || biz.business_name;
                         select.appendChild(option);
                     });
                     
                     // Auto-select first if only one
                     if (data.branches.length === 1) {
-                        select.value = data.branches[0].id;
+                        select.value = data.branches[0].database_name || data.branches[0].id;
                     }
                 }
             } catch (error) {
