@@ -1611,6 +1611,11 @@ $isDev = ($role === 'developer');
                 const selectedOption = select.selectedOptions[0];
                 const bizId = selectedOption ? selectedOption.getAttribute('data-biz-id') : '';
                 
+                console.log('=== LOAD STATS START ===');
+                console.log('Selected DB:', selectedDb);
+                console.log('Selected Biz ID:', bizId);
+                console.log('Select element has', select.options.length, 'options');
+                
                 let params = [];
                 if (selectedDb) params.push('db=' + encodeURIComponent(selectedDb));
                 if (bizId) params.push('biz_id=' + encodeURIComponent(bizId));
@@ -1620,10 +1625,13 @@ $isDev = ($role === 'developer');
                 const data = await response.json();
                 
                 // Debug: Log API response
+                console.log('=== STATS API DEBUG ===');
                 console.log('API URL:', basePath + '/api/owner-stats-simple.php' + queryString);
+                console.log('Response status:', response.status);
                 console.log('API Response:', data);
                 console.log('cashAccounts array:', data.cashAccounts);
                 console.log('Is cashAccounts an array?', Array.isArray(data.cashAccounts));
+                console.log('======================');
                 
                 if (data.success) {
                     // Hero section
