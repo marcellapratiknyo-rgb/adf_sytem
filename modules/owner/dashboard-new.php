@@ -11,7 +11,7 @@ $userName = $_SESSION['username'] ?? 'Owner';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard Owner - Monitoring Bisnis</title>
+    <title>Owner Dashboard - Business Monitoring</title>
     <style>
         * {
             margin: 0;
@@ -20,26 +20,36 @@ $userName = $_SESSION['username'] ?? 'Owner';
         }
         
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #8b5cf6;
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
             --success: #10b981;
             --danger: #ef4444;
             --warning: #f59e0b;
             --info: #3b82f6;
-            --dark: #1f2937;
-            --light: #f3f4f6;
+            --dark: #0f172a;
+            --gray-900: #0f172a;
+            --gray-800: #1e293b;
+            --gray-700: #334155;
+            --gray-600: #475569;
+            --gray-500: #64748b;
+            --gray-400: #94a3b8;
+            --gray-300: #cbd5e1;
+            --gray-200: #e2e8f0;
+            --gray-100: #f1f5f9;
+            --gray-50: #f8fafc;
             --white: #ffffff;
-            --text: #374151;
-            --text-light: #6b7280;
-            --border: #e5e7eb;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --text-lighter: #94a3b8;
+            --border: #e2e8f0;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: var(--light);
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50);
             color: var(--text);
-            line-height: 1.6;
+            line-height: 1.5;
             font-size: 14px;
         }
         
@@ -158,16 +168,13 @@ $userName = $_SESSION['username'] ?? 'Owner';
             margin-bottom: 12px;
         }
         
-        /* Business Selector */
-        .section {
-            margin-bottom: 20px;
-        }
-        
+        /* Business Selector - Fase 2 */
         .business-selector {
             background: var(--white);
-            padding: 16px;
             border-radius: 12px;
+            padding: 16px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         
         .selector-label {
@@ -205,85 +212,247 @@ $userName = $_SESSION['username'] ?? 'Owner';
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
         
-        /* Stats Cards Grid - Mobile First */
-        .stats-section {
-            margin: 20px 0;
+        .business-dropdown option {
+            padding: 12px;
+            font-size: 15px;
         }
         
-        .section-title {
-            font-size: 16px;
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-light);
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Financial Overview - Clean 2028 Design */
+        .overview-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-panel {
+            background: var(--white);
+            border: 1px solid var(--border);\n            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .panel-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        .metric-item {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 28px;
             font-weight: 700;
-            color: var(--dark);
-            margin-bottom: 12px;
+            color: var(--gray-900);
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+        
+        .metric-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .metric-sublabel {
+            font-size: 10px;
+            color: var(--gray-400);
+            margin-top: 2px;
+        }
+        
+        /* Pie Chart - Side by Side with Stats */
+        .chart-panel {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 20px;
+            align-self: flex-start;
+        }
+        
+        .pie-chart {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            margin-bottom: 16px;
+        }
+        
+        .pie-chart canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .chart-legend {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+        
+        .legend-label {
             display: flex;
             align-items: center;
             gap: 8px;
+            color: var(--gray-600);
+        }
+        
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .legend-value {
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        /* Stats Cards Grid - Compact Mobile First */
+        .stats-section {
+            margin: 12px 0;
+        }
+        
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 12px;
+            gap: 8px;
+        }
+        
+        .stats-grid.compact {
+            grid-template-columns: repeat(2, 1fr);
         }
         
         .stat-card {
             background: var(--white);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 10px;
+            padding: 10px;
             transition: all 0.2s ease;
         }
         
         .stat-card:hover {
             border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
-            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+            transform: translateY(-1px);
         }
         
         .stat-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 6px;
         }
         
         .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 16px;
+            flex-shrink: 0;
         }
         
-        .stat-icon.green { background: rgba(16, 185, 129, 0.1); }
-        .stat-icon.red { background: rgba(239, 68, 68, 0.1); }
-        .stat-icon.blue { background: rgba(59, 130, 246, 0.1); }
-        .stat-icon.purple { background: rgba(139, 92, 246, 0.1); }
-        .stat-icon.orange { background: rgba(251, 146, 60, 0.1); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.12); }
+        .stat-icon.red { background: rgba(239, 68, 68, 0.12); }
+        .stat-icon.blue { background: rgba(59, 130, 246, 0.12); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.12); }
+        .stat-icon.orange { background: rgba(251, 146, 60, 0.12); }
         
         .stat-info {
             flex: 1;
+            min-width: 0;
         }
         
         .stat-label {
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 600;
             color: var(--text-light);
-            margin-bottom: 2px;
+            margin-bottom: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .stat-period {
-            font-size: 11px;
+            font-size: 9px;
             color: var(--text-lighter);
         }
         
         .stat-value {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--dark);
             margin-top: 4px;
+            line-height: 1.2;
+        }
+        
+        .stat-value.small {
+            font-size: 15px;
         }
         
         .stat-value.positive { color: var(--success); }
@@ -292,22 +461,44 @@ $userName = $_SESSION['username'] ?? 'Owner';
         .stat-change {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            font-size: 12px;
+            gap: 3px;
+            font-size: 10px;
             font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 6px;
-            margin-top: 8px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-top: 6px;
         }
         
         .stat-change.up {
-            background: rgba(16, 185, 129, 0.1);
+            background: rgba(16, 185, 129, 0.12);
             color: var(--success);
         }
         
         .stat-change.down {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(239, 68, 68, 0.12);
             color: var(--danger);
+        }
+        
+        /* Mini visual bar */
+        .stat-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .stat-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 16px 0;
         }
         
         /* Skeleton Loading */
@@ -322,6 +513,11 @@ $userName = $_SESSION['username'] ?? 'Owner';
             height: 32px;
             width: 60%;
             margin: 8px 0;
+        }
+        
+        .skeleton-label {
+            height: 16px;
+            width: 40%;
         }
         
         @keyframes loading {
@@ -355,9 +551,29 @@ $userName = $_SESSION['username'] ?? 'Owner';
                 font-size: 15px;
             }
             
+            .overview-container {
+                grid-template-columns: 2fr 1fr;
+            }
+            
+            .metrics-grid {
+                gap: 24px;
+            }
+            
+            .metric-value {
+                font-size: 32px;
+            }
+            
             .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+            
+            .stats-grid.compact {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .stat-value {
+                font-size: 20px;
             }
             
             .header {
@@ -383,6 +599,8 @@ $userName = $_SESSION['username'] ?? 'Owner';
     </style>
 </head>
 <body>
+
+    
     <!-- Header -->
     <header class="header">
         <div class="header-top">
@@ -395,8 +613,8 @@ $userName = $_SESSION['username'] ?? 'Owner';
                 <span><?= htmlspecialchars($userName) ?></span>
             </div>
         </div>
-        <div class="greeting">Selamat datang,</div>
-        <div class="page-title">Dashboard Monitoring</div>
+        <div class="greeting">Welcome back,</div>
+        <div class="page-title">Financial Monitoring</div>
     </header>
     
     <!-- Main Container -->
@@ -404,24 +622,73 @@ $userName = $_SESSION['username'] ?? 'Owner';
         <!-- Phase 2: Business Selector ✓ -->
         <section class="section">
             <div class="business-selector">
-                <label class="selector-label">Pilih Bisnis</label>
+                <label class="selector-label">Select Business</label>
                 <select class="business-dropdown" id="businessSelector">
-                    <option value="">Memuat data...</option>
+                    <option value="">Loading data...</option>
                 </select>
             </div>
         </section>
         
-        <!-- Phase 3: Stats Cards - Financial Health Monitoring -->
+        <!-- Financial Overview - Clean & Compact -->
+        <div class="overview-container">
+            <!-- Stats Panel -->
+            <div class="stats-panel">
+                <div class="panel-title">This Month Performance</div>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="metricIncome">0</div>
+                        <div class="metric-label">Income</div>
+                        <div class="metric-sublabel">This month</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metricExpense">0</div>
+                        <div class="metric-label">Expense</div>
+                        <div class="metric-sublabel">This month</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="metricProfit">0</div>
+                        <div class="metric-label">Net Profit</div>
+                        <div class="metric-sublabel">This month</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pie Chart Panel -->
+            <div class="chart-panel">
+                <div class="chart-title">Distribution</div>
+                <div class="pie-chart">
+                    <canvas id="pieChart"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-label">
+                            <div class="legend-dot" style="background: var(--gray-900)"></div>
+                            <span>Income</span>
+                        </div>
+                        <div class="legend-value" id="legendIncome">0</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-label">
+                            <div class="legend-dot" style="background: var(--gray-400)"></div>
+                            <span>Expense</span>
+                        </div>
+                        <div class="legend-value" id="legendExpense">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Phase 3: Stats Cards - Compact Design -->
         <section class="stats-section">
-            <h2 class="section-title">💰 Hari Ini</h2>
-            <div class="stats-grid">
+            <h2 class="section-title">Today's Activity</h2>
+            <div class="stats-grid compact">
                 <!-- Today Income -->
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon green">📈</div>
                         <div class="stat-info">
-                            <div class="stat-label">Pemasukan</div>
-                            <div class="stat-period">Hari ini</div>
+                            <div class="stat-label">Income</div>
+                            <div class="stat-period">Today</div>
                         </div>
                     </div>
                     <div class="stat-value positive" id="todayIncome">
@@ -434,8 +701,8 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     <div class="stat-header">
                         <div class="stat-icon red">📉</div>
                         <div class="stat-info">
-                            <div class="stat-label">Pengeluaran</div>
-                            <div class="stat-period">Hari ini</div>
+                            <div class="stat-label">Expense</div>
+                            <div class="stat-period">Today</div>
                         </div>
                     </div>
                     <div class="stat-value negative" id="todayExpense">
@@ -448,8 +715,8 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     <div class="stat-header">
                         <div class="stat-icon blue">💎</div>
                         <div class="stat-info">
-                            <div class="stat-label">Laba Bersih</div>
-                            <div class="stat-period">Hari ini</div>
+                            <div class="stat-label">Net Profit</div>
+                            <div class="stat-period">Today</div>
                         </div>
                     </div>
                     <div class="stat-value" id="todayProfit">
@@ -465,9 +732,9 @@ $userName = $_SESSION['username'] ?? 'Owner';
                 <!-- Month Income -->
                 <div class="stat-card">
                     <div class="stat-header">
-                        <div class="stat-icon green">📊</div>
+                        <div class="stat-icon green">�</div>
                         <div class="stat-info">
-                            <div class="stat-label">Total Pemasukan</div>
+                            <div class="stat-label">Pemasukan</div>
                             <div class="stat-period">Bulan ini</div>
                         </div>
                     </div>
@@ -484,8 +751,8 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     <div class="stat-header">
                         <div class="stat-icon red">💳</div>
                         <div class="stat-info">
-                            <div class="stat-label">Total Pengeluaran</div>
-                            <div class="stat-period">Bulan ini</div>
+                            <div class="stat-label">Expense</div>
+                            <div class="stat-period">This month</div>
                         </div>
                     </div>
                     <div class="stat-value negative" id="monthExpense">
@@ -501,8 +768,8 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     <div class="stat-header">
                         <div class="stat-icon purple">🏆</div>
                         <div class="stat-info">
-                            <div class="stat-label">Laba Bersih</div>
-                            <div class="stat-period">Bulan ini</div>
+                            <div class="stat-label">Net Profit</div>
+                            <div class="stat-period">This month</div>
                         </div>
                     </div>
                     <div class="stat-value" id="monthProfit">
@@ -517,18 +784,18 @@ $userName = $_SESSION['username'] ?? 'Owner';
         
         <!-- Hotel Specific: Occupancy (Hidden for cafe/all) -->
         <section class="stats-section" id="hotelStats" style="display: none;">
-            <h2 class="section-title">🏨 Hotel Occupancy</h2>
-            <div class="stats-grid">
+            <h2 class="section-title">🏨 Occupancy</h2>
+            <div class="stats-grid compact">
                 <!-- Occupancy Rate -->
                 <div class="stat-card">
                     <div class="stat-header">
                         <div class="stat-icon orange">📍</div>
                         <div class="stat-info">
-                            <div class="stat-label">Occupancy Rate</div>
+                            <div class="stat-label">Occupancy</div>
                             <div class="stat-period">Status saat ini</div>
                         </div>
                     </div>
-                    <div class="stat-value" id="occupancyRate">
+                    <div class="stat-value small" id="occupancyRate">
                         <div class="skeleton skeleton-value"></div>
                     </div>
                 </div>
@@ -538,11 +805,11 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     <div class="stat-header">
                         <div class="stat-icon green">🛏️</div>
                         <div class="stat-info">
-                            <div class="stat-label">Kamar Tersedia</div>
+                            <div class="stat-label">Tersedia</div>
                             <div class="stat-period">Available</div>
                         </div>
                     </div>
-                    <div class="stat-value" id="availableRooms">
+                    <div class="stat-value small" id="availableRooms">
                         <div class="skeleton skeleton-value"></div>
                     </div>
                 </div>
@@ -552,11 +819,11 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     <div class="stat-header">
                         <div class="stat-icon blue">👥</div>
                         <div class="stat-info">
-                            <div class="stat-label">Kamar Terisi</div>
+                            <div class="stat-label">Terisi</div>
                             <div class="stat-period">Occupied</div>
                         </div>
                     </div>
-                    <div class="stat-value" id="occupiedRooms">
+                    <div class="stat-value small" id="occupiedRooms">
                         <div class="skeleton skeleton-value"></div>
                     </div>
                 </div>
@@ -594,6 +861,60 @@ $userName = $_SESSION['username'] ?? 'Owner';
             return (parseFloat(value) || 0).toFixed(1) + '%';
         }
         
+        // Format short numbers for big display (like reference image: 26, 12, 37)
+        function formatShort(amount) {
+            const num = parseFloat(amount) || 0;
+            if (num === 0) return '0';
+            
+            const absNum = Math.abs(num);
+            if (absNum >= 1000000000) {
+                return (num / 1000000000).toFixed(1) + 'B';
+            } else if (absNum >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (absNum >= 1000) {
+                return (num / 1000).toFixed(0) + 'K';
+            } else {
+                return num.toFixed(0);
+            }
+        }
+        
+        // Draw Pie Chart - Clean Minimalist Style
+        function drawPieChart(income, expense) {
+            const canvas = document.getElementById('pieChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = 140;
+            canvas.height = 140;
+            
+            const total = income + expense;
+            if (total === 0) return;
+            
+            const incomeAngle = (income / total) * 2 * Math.PI;
+            const centerX = 70;
+            const centerY = 70;
+            const radius = 60;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Income slice (dark)
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + incomeAngle);
+            ctx.closePath();
+            ctx.fillStyle = '#0f172a'; // gray-900
+            ctx.fill();
+            
+            // Draw Expense slice (light)
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, -Math.PI / 2 + incomeAngle, -Math.PI / 2 + 2 * Math.PI);
+            ctx.closePath();
+            ctx.fillStyle = '#94a3b8'; // gray-400
+            ctx.fill();
+        }
+        
         // Load businesses from API
         async function loadBusinesses() {
             const selector = document.getElementById('businessSelector');
@@ -608,7 +929,7 @@ $userName = $_SESSION['username'] ?? 'Owner';
                 
                 if (data.success && data.branches && data.branches.length > 0) {
                     businessData = data.branches;
-                    selector.innerHTML = '<option value="all">🏢 Semua Bisnis</option>';
+                    selector.innerHTML = '<option value="all">All Businesses</option>';
                     
                     data.branches.forEach(branch => {
                         const icon = branch.business_type === 'hotel' ? '🏨' : '☕';
@@ -619,12 +940,12 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     // Load initial stats
                     loadStats('all');
                 } else {
-                    selector.innerHTML = '<option value="">Tidak ada data bisnis</option>';
+                    selector.innerHTML = '<option value="">No business data</option>';
                     console.error('No branches found:', data);
                 }
             } catch (error) {
                 console.error('Error loading businesses:', error);
-                selector.innerHTML = '<option value="">Gagal memuat data</option>';
+                selector.innerHTML = '<option value="">Failed to load data</option>';
             }
         }
         
@@ -645,20 +966,33 @@ $userName = $_SESSION['username'] ?? 'Owner';
                     console.log('Month Income:', data.monthIncome);
                     console.log('Month Expense:', data.monthExpense);
                     
-                    // Today stats
+                    const monthProfit = data.monthIncome - data.monthExpense;
+                    const todayProfit = data.todayIncome - data.todayExpense;
+                    
+                    // Main Metrics Panel
+                    document.getElementById('metricIncome').innerHTML = formatShort(data.monthIncome);
+                    document.getElementById('metricExpense').innerHTML = formatShort(data.monthExpense);
+                    document.getElementById('metricProfit').innerHTML = formatShort(monthProfit);
+                    
+                    // Pie Chart Legend
+                    document.getElementById('legendIncome').innerHTML = formatShort(data.monthIncome);
+                    document.getElementById('legendExpense').innerHTML = formatShort(data.monthExpense);
+                    
+                    // Draw Pie Chart
+                    drawPieChart(data.monthIncome, data.monthExpense);
+                    
+                    // Today stats (detail cards)
                     document.getElementById('todayIncome').innerHTML = formatCurrency(data.todayIncome);
                     document.getElementById('todayExpense').innerHTML = formatCurrency(data.todayExpense);
                     
-                    const todayProfit = data.todayIncome - data.todayExpense;
                     const todayProfitEl = document.getElementById('todayProfit');
                     todayProfitEl.innerHTML = formatCurrency(todayProfit);
                     todayProfitEl.className = 'stat-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
                     
-                    // Month stats
+                    // Month stats (detail cards)
                     document.getElementById('monthIncome').innerHTML = formatCurrency(data.monthIncome);
                     document.getElementById('monthExpense').innerHTML = formatCurrency(data.monthExpense);
                     
-                    const monthProfit = data.monthIncome - data.monthExpense;
                     const monthProfitEl = document.getElementById('monthProfit');
                     monthProfitEl.innerHTML = formatCurrency(monthProfit);
                     monthProfitEl.className = 'stat-value ' + (monthProfit >= 0 ? 'positive' : 'negative');
@@ -684,10 +1018,12 @@ $userName = $_SESSION['username'] ?? 'Owner';
                         expenseChangeEl.innerHTML = `${expenseGrowth >= 0 ? '↑' : '↓'} ${Math.abs(expenseGrowth)}% dari bulan lalu`;
                     }
                 } else {
-                    console.error('Failed to load stats:', data.message);
+                    console.error('Stats API failed:', data.message || 'Unknown error');
+                    alert('Error loading stats: ' + (data.message || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error loading stats:', error);
+                alert('Network error loading stats: ' + error.message);
             }
         }
         

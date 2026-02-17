@@ -70,12 +70,36 @@ try {
     );
     $lastMonthExpense = $lastMonthExpenseResult['total'] ?? 0;
     
+    // CASH ACCOUNTS BALANCES
+    $cashAccounts = $db->fetchAll(
+        "SELECT id, account_name, account_type, current_balance 
+         FROM cash_accounts WHERE is_active = 1 ORDER BY account_type, account_name"
+    );
+    
+    $pettyCash = 0;
+    $bankBalance = 0;
+    $ownerCapital = 0;
+    
+    foreach ($cashAccounts as $acc) {
+        if ($acc['account_type'] === 'cash') {
+            $pettyCash += (float)$acc['current_balance'];
+        } elseif ($acc['account_type'] === 'bank') {
+            $bankBalance += (float)$acc['current_balance'];
+        } elseif ($acc['account_type'] === 'owner_capital') {
+            $ownerCapital += (float)$acc['current_balance'];
+        }
+    }
+    
     echo json_encode([
         'success' => true,
         'todayIncome' => (float)$todayIncome,
         'todayExpense' => (float)$todayExpense,
         'monthIncome' => (float)$monthIncome,
         'monthExpense' => (float)$monthExpense,
+        'pettyCash' => $pettyCash,
+        'bankBalance' => $bankBalance,
+        'ownerCapital' => $ownerCapital,
+        'cashAccounts' => $cashAccounts,
         'lastMonth' => [
             'income' => (float)$lastMonthIncome,
             'expense' => (float)$lastMonthExpense
