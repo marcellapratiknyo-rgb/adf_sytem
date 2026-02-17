@@ -1241,6 +1241,8 @@ $isDev = ($role === 'developer');
                 // Debug: Log API response
                 console.log('API URL:', basePath + '/api/owner-stats-simple.php' + queryString);
                 console.log('API Response:', data);
+                console.log('cashAccounts array:', data.cashAccounts);
+                console.log('Is cashAccounts an array?', Array.isArray(data.cashAccounts));
                 
                 if (data.success) {
                     // Hero section
@@ -1254,12 +1256,18 @@ $isDev = ($role === 'developer');
                     // Modal Owner = received/setoran dari owner_capital accounts
                     let modalOwnerReceived = 0;
                     if (data.cashAccounts && Array.isArray(data.cashAccounts)) {
+                        console.log('Finding owner_capital account...');
                         const ownerCapitalAcc = data.cashAccounts.find(acc => acc.account_type === 'owner_capital');
+                        console.log('Owner Capital Account:', ownerCapitalAcc);
                         modalOwnerReceived = ownerCapitalAcc?.received || 0;
+                        console.log('Modal Owner Received:', modalOwnerReceived);
+                    } else {
+                        console.warn('cashAccounts is not an array or is undefined!');
                     }
                     document.getElementById('modalOwner').textContent = formatRp(modalOwnerReceived);
                     
                     // Petty Cash Balance (from cash accounts)
+                    console.log('Petty Cash from API:', data.pettyCash);
                     document.getElementById('pettyCashOp').textContent = formatRp(data.pettyCash || 0);
                     
                     // Digunakan = Total pengeluaran operasional (Petty Cash used + Modal Owner used)
@@ -1270,12 +1278,18 @@ $isDev = ($role === 'developer');
                         const ownerCapitalAcc = data.cashAccounts.find(acc => acc.account_type === 'owner_capital');
                         pettyCashUsed = cashAcc?.used || 0;
                         modalOwnerUsed = ownerCapitalAcc?.used || 0;
+                        console.log('Cash Account:', cashAcc);
+                        console.log('Petty Cash Used:', pettyCashUsed);
+                        console.log('Modal Owner Used:', modalOwnerUsed);
                     }
                     const digunakan = pettyCashUsed + modalOwnerUsed;
+                    console.log('Total Digunakan:', digunakan);
                     document.getElementById('digunakan').textContent = formatRp(digunakan);
                     
                     // Total Kas = Petty Cash balance + Owner Capital balance
+                    console.log('Owner Capital from API:', data.ownerCapital);
                     const totalKas = (data.pettyCash || 0) + (data.ownerCapital || 0);
+                    console.log('Total Kas:', totalKas, '=', data.pettyCash, '+', data.ownerCapital);
                     document.getElementById('totalKas').textContent = formatRp(totalKas);
                     
                     // Today stats
