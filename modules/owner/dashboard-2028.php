@@ -1085,17 +1085,17 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
 
     <!-- Footer Nav -->
     <nav class="nav-bottom">
-        <a href="<?= $basePath ?>/index.php" class="nav-item">
+        <a href="<?= $basePath ?>/modules/owner/dashboard-2028.php" class="nav-item active">
             <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#127968;</span>
             <span>Home</span>
         </a>
-        <a href="#" class="nav-item active">
-            <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128202;</span>
-            <span>Overview</span>
+        <a href="<?= $basePath ?>/modules/owner/frontdesk-mobile.php" class="nav-item">
+            <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128197;</span>
+            <span>Frontdesk</span>
         </a>
-        <a href="<?= $basePath ?>/modules/cashbook/index.php" class="nav-item">
-            <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128179;</span>
-            <span>Cashbook</span>
+        <a href="<?= $basePath ?>/modules/owner/investor-monitor.php" class="nav-item">
+            <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128200;</span>
+            <span>Proyek</span>
         </a>
         <a href="<?= $basePath ?>/logout.php" class="nav-item">
             <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128682;</span>
