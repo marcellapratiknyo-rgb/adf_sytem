@@ -33,6 +33,7 @@ $pageTitle = 'Front Desk Dashboard - Occupancy & Analytics';
 try {
     $today = date('Y-m-d');
     $tomorrow = date('Y-m-d', strtotime('+1 day'));
+    $thisMonth = date('Y-m');
 
     // ==========================================
     // AUTO-CHECKOUT OVERDUE BOOKINGS
@@ -439,7 +440,28 @@ try {
         $stats['revenue_today'] = $stats['direct_payments_today'];
     }
 
-    // 11. Guest Data for Today
+    // 11. Monthly Revenue - only from active bookings (confirmed + checked_in)
+    $monthRevenueResult = $db->fetchOne("
+        SELECT COALESCE(SUM(bp.amount), 0) as total
+        FROM booking_payments bp
+        JOIN bookings b ON bp.booking_id = b.id
+        WHERE DATE_FORMAT(bp.payment_date, '%Y-%m') = ?
+        AND b.status IN ('confirmed', 'checked_in')
+    ", [$thisMonth]);
+    $stats['month_revenue'] = $monthRevenueResult['total'] ?? 0;
+
+    // Fallback: use bookings.paid_amount for this month
+    if ($stats['month_revenue'] == 0) {
+        $fallbackMonth = $db->fetchOne("
+            SELECT COALESCE(SUM(paid_amount), 0) as total
+            FROM bookings
+            WHERE DATE_FORMAT(created_at, '%Y-%m') = ?
+            AND status IN ('confirmed', 'checked_in')
+        ", [$thisMonth]);
+        $stats['month_revenue'] = $fallbackMonth['total'] ?? 0;
+    }
+
+    // 12. Guest Data for Today
     // Fix: Show ALL checked_in guests regardless of dates
     $guestsTodayResult = $db->fetchAll("
         SELECT 
@@ -490,8 +512,9 @@ try {
         'in_house' => 0, 'checkout_today' => 0, 'arrival_today' => 0,
         'predicted_tomorrow' => 0, 'total_rooms' => 0, 'occupied_rooms' => 0,
         'available_rooms' => 0, 'occupancy_rate' => 0, 'revenue_today' => 0,
-        'expected_revenue' => 0, 'inhouse_revenue' => 0, 'direct_payments_today' => 0,
-        'ota_revenue_today' => 0, 'guests_today' => [], 'checkout_guests' => []
+        'expected_revenue' => 0, 'inhouse_revenue' => 0, 'month_revenue' => 0,
+        'direct_payments_today' => 0, 'ota_revenue_today' => 0, 
+        'guests_today' => [], 'checkout_guests' => []
     ];
 }
 
@@ -1728,40 +1751,47 @@ include '../../includes/header.php';
                 <span style="font-size: 0.6rem; color: var(--text-secondary); font-weight: 400;">Real-time tracking</span>
             </div>
             
-            <!-- Revenue Cards - Compact 3 Column -->
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+            <!-- Revenue Cards - 2x2 Grid -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
                 
-                <!-- Actual Revenue -->
+                <!-- Actual Revenue (Today) -->
                 <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(52, 211, 153, 0.05)); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 0.6rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-                        <span style="font-size: 1.2rem;">💰</span>
-                        <span style="font-size: 0.55rem; background: rgba(16, 185, 129, 0.15); color: #059669; padding: 0.15rem 0.35rem; border-radius: 8px; font-weight: 600;">TODAY</span>
+                        <span style="font-size: 1rem;">💰</span>
+                        <span style="font-size: 0.5rem; background: rgba(16, 185, 129, 0.15); color: #059669; padding: 0.12rem 0.3rem; border-radius: 8px; font-weight: 600;">TODAY</span>
                     </div>
-                    <div style="font-size: 0.6rem; color: #059669; font-weight: 500; margin-bottom: 0.2rem;">Actual Revenue</div>
-                    <div style="font-size: 1rem; font-weight: 800; color: #047857;">Rp <?php echo number_format($stats['revenue_today'], 0, ',', '.'); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Pembayaran hari ini</div>
+                    <div style="font-size: 0.55rem; color: #059669; font-weight: 500; margin-bottom: 0.15rem;">Today Revenue</div>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #047857;">Rp <?php echo number_format($stats['revenue_today'], 0, ',', '.'); ?></div>
                 </div>
                 
                 <!-- In-House Revenue -->
                 <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05)); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; padding: 0.6rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-                        <span style="font-size: 1.2rem;">🏨</span>
-                        <span style="font-size: 0.55rem; background: rgba(99, 102, 241, 0.15); color: #6366f1; padding: 0.15rem 0.35rem; border-radius: 8px; font-weight: 600;">IN-HOUSE</span>
+                        <span style="font-size: 1rem;">🏨</span>
+                        <span style="font-size: 0.5rem; background: rgba(99, 102, 241, 0.15); color: #6366f1; padding: 0.12rem 0.3rem; border-radius: 8px; font-weight: 600;">ACTIVE</span>
                     </div>
-                    <div style="font-size: 0.6rem; color: #6366f1; font-weight: 500; margin-bottom: 0.2rem;">In-House Revenue</div>
-                    <div style="font-size: 1rem; font-weight: 800; color: #4f46e5;">Rp <?php echo number_format($stats['inhouse_revenue'], 0, ',', '.'); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Reservasi aktif (paid)</div>
+                    <div style="font-size: 0.55rem; color: #6366f1; font-weight: 500; margin-bottom: 0.15rem;">In-House Revenue</div>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #4f46e5;">Rp <?php echo number_format($stats['inhouse_revenue'], 0, ',', '.'); ?></div>
+                </div>
+                
+                <!-- Monthly Revenue -->
+                <div style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.05)); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 10px; padding: 0.6rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
+                        <span style="font-size: 1rem;">📅</span>
+                        <span style="font-size: 0.5rem; background: rgba(236, 72, 153, 0.15); color: #db2777; padding: 0.12rem 0.3rem; border-radius: 8px; font-weight: 600;">MONTH</span>
+                    </div>
+                    <div style="font-size: 0.55rem; color: #db2777; font-weight: 500; margin-bottom: 0.15rem;">This Month</div>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #be185d;">Rp <?php echo number_format($stats['month_revenue'], 0, ',', '.'); ?></div>
                 </div>
                 
                 <!-- Expected Revenue -->
                 <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(251, 191, 36, 0.05)); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 10px; padding: 0.6rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-                        <span style="font-size: 1.2rem;">📊</span>
-                        <span style="font-size: 0.55rem; background: rgba(245, 158, 11, 0.15); color: #d97706; padding: 0.15rem 0.35rem; border-radius: 8px; font-weight: 600;">PENDING</span>
+                        <span style="font-size: 1rem;">📊</span>
+                        <span style="font-size: 0.5rem; background: rgba(245, 158, 11, 0.15); color: #d97706; padding: 0.12rem 0.3rem; border-radius: 8px; font-weight: 600;">TARGET</span>
                     </div>
-                    <div style="font-size: 0.6rem; color: #d97706; font-weight: 500; margin-bottom: 0.2rem;">Expected Revenue</div>
-                    <div style="font-size: 1rem; font-weight: 800; color: #b45309;">Rp <?php echo number_format($stats['expected_revenue'], 0, ',', '.'); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Total harga booking aktif</div>
+                    <div style="font-size: 0.55rem; color: #d97706; font-weight: 500; margin-bottom: 0.15rem;">Expected Revenue</div>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #b45309;">Rp <?php echo number_format($stats['expected_revenue'], 0, ',', '.'); ?></div>
                 </div>
             </div>
         </div>

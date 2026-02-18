@@ -143,15 +143,29 @@ try {
             $stats['inhouse_revenue'] = 0;
         }
 
-        // Monthly revenue
+        // Monthly revenue - only from active bookings (confirmed + checked_in)
         try {
             $stmt = $pdo->prepare("
-                SELECT COALESCE(SUM(amount), 0) as total
-                FROM booking_payments
-                WHERE DATE_FORMAT(payment_date, '%Y-%m') = ?
+                SELECT COALESCE(SUM(bp.amount), 0) as total
+                FROM booking_payments bp
+                JOIN bookings b ON bp.booking_id = b.id
+                WHERE DATE_FORMAT(bp.payment_date, '%Y-%m') = ?
+                AND b.status IN ('confirmed', 'checked_in')
             ");
             $stmt->execute([$thisMonth]);
             $stats['month_revenue'] = (float)$stmt->fetchColumn();
+            
+            // Fallback: use bookings.paid_amount for this month
+            if ($stats['month_revenue'] == 0) {
+                $stmt = $pdo->prepare("
+                    SELECT COALESCE(SUM(paid_amount), 0) as total
+                    FROM bookings
+                    WHERE DATE_FORMAT(created_at, '%Y-%m') = ?
+                    AND status IN ('confirmed', 'checked_in')
+                ");
+                $stmt->execute([$thisMonth]);
+                $stats['month_revenue'] = (float)$stmt->fetchColumn();
+            }
         } catch (Exception $e) {
             $stats['month_revenue'] = 0;
         }
