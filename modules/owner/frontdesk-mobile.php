@@ -129,6 +129,16 @@ try {
                 WHERE b.status IN ('confirmed', 'checked_in')
             ");
             $stats['inhouse_revenue'] = (float)$stmt->fetchColumn();
+            
+            // Fallback: If booking_payments empty, use bookings.paid_amount
+            if ($stats['inhouse_revenue'] == 0) {
+                $stmt = $pdo->query("
+                    SELECT COALESCE(SUM(paid_amount), 0) as total
+                    FROM bookings
+                    WHERE status IN ('confirmed', 'checked_in')
+                ");
+                $stats['inhouse_revenue'] = (float)$stmt->fetchColumn();
+            }
         } catch (Exception $e) {
             $stats['inhouse_revenue'] = 0;
         }

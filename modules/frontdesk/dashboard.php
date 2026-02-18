@@ -406,6 +406,16 @@ try {
     ");
     $stats['inhouse_revenue'] = $inHouseRevenueResult['total'] ?? 0;
 
+    // Fallback: If booking_payments empty, use bookings.paid_amount
+    if ($stats['inhouse_revenue'] == 0) {
+        $fallbackRevenue = $db->fetchOne("
+            SELECT COALESCE(SUM(paid_amount), 0) as total
+            FROM bookings
+            WHERE status IN ('confirmed', 'checked_in')
+        ");
+        $stats['inhouse_revenue'] = $fallbackRevenue['total'] ?? 0;
+    }
+
     // 10. Direct Booking Payments Today (alternative source if cash_book empty)
     $directPaymentsResult = $db->fetchOne("
         SELECT COALESCE(SUM(amount), 0) as total
@@ -413,6 +423,16 @@ try {
         WHERE DATE(payment_date) = ?
     ", [$today]);
     $stats['direct_payments_today'] = $directPaymentsResult['total'] ?? 0;
+
+    // Fallback for today's payments from bookings.paid_amount (created today)
+    if ($stats['direct_payments_today'] == 0) {
+        $fallbackToday = $db->fetchOne("
+            SELECT COALESCE(SUM(paid_amount), 0) as total
+            FROM bookings
+            WHERE DATE(created_at) = ? AND status IN ('confirmed', 'checked_in')
+        ", [$today]);
+        $stats['direct_payments_today'] = $fallbackToday['total'] ?? 0;
+    }
 
     // Use direct payments if cash_book revenue is 0 but booking_payments has data
     if ($stats['revenue_today'] == 0 && $stats['direct_payments_today'] > 0) {

@@ -93,6 +93,16 @@ try {
     ");
     $stats['inhouse_revenue'] = $inHouseRevenueResult['total'] ?? 0;
 
+    // Fallback: If booking_payments empty, use bookings.paid_amount
+    if ($stats['inhouse_revenue'] == 0) {
+        $fallbackRevenue = $db->fetchOne("
+            SELECT COALESCE(SUM(paid_amount), 0) as total
+            FROM bookings
+            WHERE status IN ('confirmed', 'checked_in')
+        ");
+        $stats['inhouse_revenue'] = $fallbackRevenue['total'] ?? 0;
+    }
+
     // Current occupancy - count all checked_in (overdue already auto-checked-out)
     $occupiedResult = $db->fetchOne("
         SELECT COUNT(DISTINCT room_id) as count FROM bookings 
