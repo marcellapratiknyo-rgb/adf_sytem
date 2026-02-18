@@ -75,7 +75,7 @@ try {
     ");
     $stats['total_rooms'] = $totalResult['count'] ?? 0;
 
-    // Today's revenue
+    // Today's revenue (payments made today)
     $revenueResult = $db->fetchOne("
         SELECT COALESCE(SUM(bp.amount), 0) as total
         FROM booking_payments bp
@@ -83,6 +83,15 @@ try {
         WHERE DATE(bp.payment_date) = ?
     ", [$today]);
     $stats['revenue_today'] = $revenueResult['total'] ?? 0;
+
+    // In-House Revenue (total paid from currently checked-in guests)
+    $inHouseRevenueResult = $db->fetchOne("
+        SELECT COALESCE(SUM(bp.amount), 0) as total
+        FROM booking_payments bp
+        JOIN bookings b ON bp.booking_id = b.id
+        WHERE b.status = 'checked_in'
+    ");
+    $stats['inhouse_revenue'] = $inHouseRevenueResult['total'] ?? 0;
 
     // Current occupancy - count all checked_in (overdue already auto-checked-out)
     $occupiedResult = $db->fetchOne("
@@ -98,7 +107,7 @@ try {
     error_log("Front Desk Stats Error: " . $e->getMessage());
     $stats = [
         'checkins' => 0, 'checkouts' => 0, 'available' => 0, 
-        'total_rooms' => 0, 'revenue_today' => 0, 'occupied' => 0,
+        'total_rooms' => 0, 'revenue_today' => 0, 'inhouse_revenue' => 0, 'occupied' => 0,
         'occupancy_rate' => 0
     ];
 }
@@ -474,6 +483,12 @@ include '../../includes/header.php';
             <div class="stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">📈</div>
             <div class="stat-value" style="font-size: 1.25rem;">Rp <?php echo number_format($stats['revenue_today'], 0, ',', '.'); ?></div>
             <div class="stat-label">Pendapatan Hari Ini</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">🏨</div>
+            <div class="stat-value" style="font-size: 1.25rem;">Rp <?php echo number_format($stats['inhouse_revenue'], 0, ',', '.'); ?></div>
+            <div class="stat-label">Revenue In-House</div>
         </div>
 
         <div class="stat-card">

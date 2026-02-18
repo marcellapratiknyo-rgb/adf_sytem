@@ -51,6 +51,7 @@ $stats = [
     'total_rooms' => 0,
     'occupancy' => 0,
     'today_revenue' => 0,
+    'inhouse_revenue' => 0,
     'month_revenue' => 0
 ];
 $inHouseGuests = [];
@@ -117,6 +118,19 @@ try {
             $stats['today_revenue'] = (float)$stmt->fetchColumn();
         } catch (Exception $e) {
             $stats['today_revenue'] = 0;
+        }
+
+        // In-House Revenue (total paid from checked-in guests)
+        try {
+            $stmt = $pdo->query("
+                SELECT COALESCE(SUM(bp.amount), 0) as total
+                FROM booking_payments bp
+                JOIN bookings b ON bp.booking_id = b.id
+                WHERE b.status = 'checked_in'
+            ");
+            $stats['inhouse_revenue'] = (float)$stmt->fetchColumn();
+        } catch (Exception $e) {
+            $stats['inhouse_revenue'] = 0;
         }
 
         // Monthly revenue
@@ -430,25 +444,25 @@ function rp($num) {
         
         .revenue-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
         }
         
         .revenue-item {
             text-align: center;
-            padding: 12px;
+            padding: 10px 8px;
             background: var(--bg);
             border-radius: 12px;
         }
         
         .revenue-label {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--text-muted);
             margin-bottom: 4px;
         }
         
         .revenue-value {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--success);
         }
@@ -726,6 +740,10 @@ function rp($num) {
                 <div class="revenue-item">
                     <div class="revenue-label">Today</div>
                     <div class="revenue-value"><?= rp($stats['today_revenue']) ?></div>
+                </div>
+                <div class="revenue-item">
+                    <div class="revenue-label">In-House</div>
+                    <div class="revenue-value" style="color: #10b981;"><?= rp($stats['inhouse_revenue']) ?></div>
                 </div>
                 <div class="revenue-item">
                     <div class="revenue-label">This Month</div>
