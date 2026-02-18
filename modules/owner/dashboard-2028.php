@@ -970,17 +970,17 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <!-- Today Quick Stats -->
                 <div class="hero-today-row">
                     <div class="hero-today-item">
-                        <span class="hero-today-label">Hari Ini In</span>
+                        <span class="hero-today-label">Today In</span>
                         <span class="hero-today-value income"><?= rp($stats['today_income']) ?></span>
                     </div>
                     <div class="hero-today-divider"></div>
                     <div class="hero-today-item">
-                        <span class="hero-today-label">Hari Ini Out</span>
+                        <span class="hero-today-label">Today Out</span>
                         <span class="hero-today-value expense"><?= rp($stats['today_expense']) ?></span>
                     </div>
                     <div class="hero-today-divider"></div>
                     <div class="hero-today-item">
-                        <span class="hero-today-label">Rasio Expense</span>
+                        <span class="hero-today-label">Expense Ratio</span>
                         <span class="hero-today-value" style="color:<?= $expenseRatio < 50 ? '#34d399' : ($expenseRatio < 75 ? '#fbbf24' : '#fb7185') ?>"><?= number_format($expenseRatio, 1) ?>%</span>
                     </div>
                 </div>
@@ -990,31 +990,31 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         <!-- Operational Section - SAME DATA AS SYSTEM DASHBOARD -->
         <div class="operational-section">
             <div class="operational-title">💰 Daily Operational - <?= date('F Y') ?></div>
-            <div style="font-size: 9px; color: #0369a1; margin-top: -8px; margin-bottom: 10px;">📊 Kas Operasional Harian (Petty Cash + Modal Owner)</div>
+            <div style="font-size: 9px; color: #0369a1; margin-top: -8px; margin-bottom: 10px;">📊 Daily Operational Cash (Petty Cash + Owner Capital)</div>
             <div class="operational-grid">
                 <div class="op-card modal-owner">
-                    <div class="op-label">Modal Owner</div>
+                    <div class="op-label">Owner Capital</div>
                     <div class="op-value"><?= rp($capitalStats['received']) ?></div>
-                    <div style="font-size: 8px; color: #059669; margin-top: 2px;">Setoran owner</div>
+                    <div style="font-size: 8px; color: #059669; margin-top: 2px;">Owner deposit</div>
                 </div>
                 <div class="op-card petty-cash">
                     <div class="op-label">Petty Cash</div>
                     <div class="op-value"><?= rp($pettyCashStats['balance']) ?></div>
-                    <div style="font-size: 8px; color: #d97706; margin-top: 2px;">Uang cash dari tamu</div>
+                    <div style="font-size: 8px; color: #d97706; margin-top: 2px;">Cash from guests</div>
                 </div>
                 <div class="op-card digunakan">
-                    <div class="op-label">Digunakan</div>
+                    <div class="op-label">Used</div>
                     <div class="op-value"><?= rp($totalOperationalExpense) ?></div>
-                    <div style="font-size: 8px; color: #dc2626; margin-top: 2px;">Total pengeluaran</div>
+                    <div style="font-size: 8px; color: #dc2626; margin-top: 2px;">Total expenses</div>
                 </div>
                 <div class="op-card total-kas">
-                    <div class="op-label">Total Kas</div>
+                    <div class="op-label">Total Cash</div>
                     <div class="op-value"><?= rp($totalOperationalCash) ?></div>
-                    <div style="font-size: 8px; color: #4f46e5; margin-top: 2px;">Uang cash tersedia</div>
+                    <div style="font-size: 8px; color: #4f46e5; margin-top: 2px;">Available cash</div>
                 </div>
             </div>
             <a href="<?= $basePath ?>/modules/owner/owner-capital-monitor.php" class="op-detail-btn">
-                📋 Detail Monitor (Modal Owner & Petty Cash)
+                📋 Detail Monitor (Owner Capital & Petty Cash)
             </a>
         </div>
         
@@ -1033,13 +1033,13 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             <div class="ai-content">
                 <?php
                 if ($expenseRatio < 50) {
-                    echo "🟢 <strong>Excellent!</strong> Expense ratio " . number_format($expenseRatio, 1) . "% dari income. Keuangan sangat sehat dengan margin profit tinggi.";
+                    echo "🟢 <strong>Excellent!</strong> Expense ratio " . number_format($expenseRatio, 1) . "% of income. Very healthy finances with high profit margin.";
                 } elseif ($expenseRatio < 70) {
-                    echo "🟡 <strong>Good.</strong> Expense ratio " . number_format($expenseRatio, 1) . "% dari income. Pertahankan efisiensi operasional.";
+                    echo "🟡 <strong>Good.</strong> Expense ratio " . number_format($expenseRatio, 1) . "% of income. Maintain operational efficiency.";
                 } elseif ($expenseRatio < 90) {
-                    echo "🟠 <strong>Warning.</strong> Expense ratio " . number_format($expenseRatio, 1) . "% dari income. Perlu optimasi pengeluaran untuk meningkatkan margin.";
+                    echo "🟠 <strong>Warning.</strong> Expense ratio " . number_format($expenseRatio, 1) . "% of income. Need to optimize expenses to improve margin.";
                 } else {
-                    echo "🔴 <strong>Critical!</strong> Expense ratio " . number_format($expenseRatio, 1) . "% dari income. Segera evaluasi pengeluaran dan strategi revenue.";
+                    echo "🔴 <strong>Critical!</strong> Expense ratio " . number_format($expenseRatio, 1) . "% of income. Immediately evaluate expenses and revenue strategy.";
                 }
                 ?>
             </div>
@@ -1066,7 +1066,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         
         <!-- Recent Transactions -->
         <div class="tx-card">
-            <div class="tx-title">⚡ Transaksi Terbaru</div>
+            <div class="tx-title">⚡ Recent Transactions</div>
             <ul class="tx-list">
                 <?php foreach ($transactions as $tx): ?>
                 <li class="tx-item">
@@ -1080,7 +1080,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 </li>
                 <?php endforeach; ?>
                 <?php if (empty($transactions)): ?>
-                <li class="tx-item" style="justify-content:center;color:var(--text-muted)">Belum ada transaksi</li>
+                <li class="tx-item" style="justify-content:center;color:var(--text-muted)">No transactions yet</li>
                 <?php endif; ?>
             </ul>
         </div>
@@ -1101,7 +1101,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         </a>
         <a href="<?= $basePath ?>/modules/owner/investor-monitor.php" class="nav-item">
             <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128200;</span>
-            <span>Proyek</span>
+            <span>Projects</span>
         </a>
         <a href="<?= $basePath ?>/logout.php" class="nav-item">
             <span class="nav-icon" style="font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;">&#128682;</span>

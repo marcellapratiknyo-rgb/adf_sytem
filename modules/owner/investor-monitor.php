@@ -102,7 +102,7 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Proyek & Investor - Owner</title>
+    <title>Projects & Investors - Owner</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -463,11 +463,11 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         
         <?php if ($selectedProject): ?>
         <!-- Project Detail View -->
-        <a href="investor-monitor.php" class="back-btn">← Kembali</a>
+        <a href="investor-monitor.php" class="back-btn">← Back</a>
         
         <div class="header">
             <div class="header-title">📊 <?= htmlspecialchars($selectedProject['project_name']) ?></div>
-            <div class="header-subtitle">Detail pengeluaran proyek</div>
+            <div class="header-subtitle">Project expense details</div>
         </div>
         
         <!-- Project Stats -->
@@ -477,11 +477,11 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
                 <div class="overview-value" style="color: var(--info);"><?= rp($selectedProject['budget'] ?? 0) ?></div>
             </div>
             <div class="overview-card">
-                <div class="overview-label">💸 Terpakai</div>
+                <div class="overview-label">💸 Spent</div>
                 <div class="overview-value" style="color: var(--danger);"><?= rp($selectedProject['total_expenses'] ?? 0) ?></div>
             </div>
             <div class="overview-card highlight">
-                <div class="overview-label">🏦 Sisa Budget</div>
+                <div class="overview-label">🏦 Remaining Budget</div>
                 <div class="overview-value"><?= rp(($selectedProject['budget'] ?? 0) - ($selectedProject['total_expenses'] ?? 0)) ?></div>
             </div>
         </div>
@@ -494,7 +494,7 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         ?>
         <div class="progress-container">
             <div class="progress-header">
-                <span class="progress-label">Penggunaan Budget</span>
+                <span class="progress-label">Budget Usage</span>
                 <span class="progress-percent" style="color: <?= $projectUsage < 70 ? 'var(--success)' : ($projectUsage < 90 ? 'var(--warning)' : 'var(--danger)') ?>"><?= $projectUsage ?>%</span>
             </div>
             <div class="progress-bar">
@@ -503,7 +503,7 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         </div>
         
         <!-- Expenses -->
-        <div class="section-title">📋 Riwayat Pengeluaran (<?= count($projectExpenses) ?>)</div>
+        <div class="section-title">📋 Expense History (<?= count($projectExpenses) ?>)</div>
         <div class="expense-list">
             <?php if (!empty($projectExpenses)): ?>
                 <?php foreach ($projectExpenses as $exp): ?>
@@ -513,39 +513,39 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
                         <div class="expense-amount"><?= rpFull($exp['amount_idr'] ?? $exp['amount'] ?? 0) ?></div>
                     </div>
                     <div class="expense-meta">
-                        <span><?= $exp['category_name'] ?? 'Umum' ?></span>
+                        <span><?= $exp['category_name'] ?? 'General' ?></span>
                         <span><?= date('d M Y', strtotime($exp['expense_date'])) ?></span>
                     </div>
                 </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="empty-state">Belum ada pengeluaran</div>
+                <div class="empty-state">No expenses yet</div>
             <?php endif; ?>
         </div>
         
         <?php else: ?>
         <!-- Overview View -->
         <div class="header">
-            <div class="header-title">📊 Proyek & Investor</div>
-            <div class="header-subtitle">Monitoring keuangan proyek</div>
+            <div class="header-title">📊 Projects & Investors</div>
+            <div class="header-subtitle">Project financial monitoring</div>
         </div>
         
         <!-- Overview Stats -->
         <div class="overview-grid">
             <div class="overview-card">
-                <div class="overview-label">👥 Total Modal Investor</div>
+                <div class="overview-label">👥 Total Investor Capital</div>
                 <div class="overview-value" style="color: var(--success);"><?= rp($totalCapital) ?></div>
-                <div class="overview-hint"><?= count($investors) ?> investor</div>
+                <div class="overview-hint"><?= count($investors) ?> investors</div>
             </div>
             <div class="overview-card">
-                <div class="overview-label">📁 Total Budget Proyek</div>
+                <div class="overview-label">📁 Total Project Budget</div>
                 <div class="overview-value" style="color: var(--info);"><?= rp($totalBudget) ?></div>
-                <div class="overview-hint"><?= count($projects) ?> proyek</div>
+                <div class="overview-hint"><?= count($projects) ?> projects</div>
             </div>
             <div class="overview-card highlight">
-                <div class="overview-label">💸 Total Pengeluaran</div>
+                <div class="overview-label">💸 Total Expenses</div>
                 <div class="overview-value"><?= rp($totalExpenses) ?></div>
-                <div class="overview-hint">Semua proyek</div>
+                <div class="overview-hint">All projects</div>
             </div>
         </div>
         

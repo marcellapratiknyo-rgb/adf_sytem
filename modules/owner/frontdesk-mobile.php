@@ -496,8 +496,8 @@ function rp($num) {
         <!-- No Frontdesk Tables -->
         <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 16px; padding: 24px; margin-bottom: 16px; text-align: center;">
             <div style="font-size: 48px; margin-bottom: 12px;">🏨</div>
-            <div style="font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 8px;">Modul Frontdesk Tidak Tersedia</div>
-            <div style="font-size: 12px; color: #a16207;">Database frontdesk (rooms, bookings) belum dikonfigurasi untuk bisnis ini.</div>
+            <div style="font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 8px;">Frontdesk Module Not Available</div>
+            <div style="font-size: 12px; color: #a16207;">Frontdesk database (rooms, bookings) is not configured for this business.</div>
         </div>
         <?php elseif ($error): ?>
         <!-- Error -->
@@ -511,7 +511,7 @@ function rp($num) {
             <div>
                 <div class="occupancy-label">Occupancy Rate</div>
                 <div class="occupancy-value"><?= $stats['occupancy'] ?>%</div>
-                <div class="occupancy-detail"><?= $stats['occupied'] ?> dari <?= $stats['total_rooms'] ?> kamar terisi</div>
+                <div class="occupancy-detail"><?= $stats['occupied'] ?> of <?= $stats['total_rooms'] ?> rooms occupied</div>
             </div>
             <div>
                 <div class="occupancy-bar">
@@ -523,41 +523,41 @@ function rp($num) {
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card checkin">
-                <div class="stat-label">📥 Check-In Hari Ini</div>
+                <div class="stat-label">📥 Today's Check-In</div>
                 <div class="stat-value"><?= $stats['checkins'] ?></div>
-                <div class="stat-hint">Tamu akan datang</div>
+                <div class="stat-hint">Guests arriving</div>
             </div>
             <div class="stat-card checkout">
-                <div class="stat-label">📤 Check-Out Hari Ini</div>
+                <div class="stat-label">📤 Today's Check-Out</div>
                 <div class="stat-value"><?= $stats['checkouts'] ?></div>
-                <div class="stat-hint">Tamu akan pergi</div>
+                <div class="stat-hint">Guests leaving</div>
             </div>
             <div class="stat-card available">
-                <div class="stat-label">🛏️ Kamar Tersedia</div>
+                <div class="stat-label">🛏️ Available Rooms</div>
                 <div class="stat-value"><?= $stats['available'] ?></div>
-                <div class="stat-hint">Siap dijual</div>
+                <div class="stat-hint">Ready to sell</div>
             </div>
             <div class="stat-card occupied">
-                <div class="stat-label">🔒 Kamar Terisi</div>
+                <div class="stat-label">🔒 Occupied Rooms</div>
                 <div class="stat-value"><?= $stats['occupied'] ?></div>
-                <div class="stat-hint">Tamu menginap</div>
+                <div class="stat-hint">Guests staying</div>
             </div>
         </div>
         
         <!-- Revenue -->
         <div class="revenue-grid">
             <div class="revenue-card">
-                <div class="revenue-label">💰 Pendapatan Hari Ini</div>
+                <div class="revenue-label">💰 Today's Revenue</div>
                 <div class="revenue-value"><?= rp($stats['today_revenue']) ?></div>
             </div>
             <div class="revenue-card">
-                <div class="revenue-label">📊 Pendapatan Bulan Ini</div>
+                <div class="revenue-label">📊 This Month's Revenue</div>
                 <div class="revenue-value"><?= rp($stats['month_revenue']) ?></div>
             </div>
         </div>
         
         <!-- Room Status -->
-        <div class="section-title">🚪 Status Kamar</div>
+        <div class="section-title">🚪 Room Status</div>
         <div class="room-grid">
             <div class="room-status-card">
                 <div class="room-status-icon">✅</div>
@@ -582,7 +582,7 @@ function rp($num) {
         </div>
         
         <!-- In-House Guests -->
-        <div class="section-title">👤 Tamu In-House (<?= count($inHouseGuests) ?>)</div>
+        <div class="section-title">👤 In-House Guests (<?= count($inHouseGuests) ?>)</div>
         <div class="guest-list">
             <?php if (!empty($inHouseGuests)): ?>
                 <?php foreach ($inHouseGuests as $guest): ?>
@@ -598,13 +598,13 @@ function rp($num) {
                 </div>
                 <?php endforeach; ?>
             <?php else: ?>
-                <div class="empty-state">Tidak ada tamu in-house</div>
+                <div class="empty-state">No in-house guests</div>
             <?php endif; ?>
         </div>
         
         <!-- Today's Arrivals -->
         <?php if (!empty($todayArrivals)): ?>
-        <div class="section-title">📥 Kedatangan Hari Ini (<?= count($todayArrivals) ?>)</div>
+        <div class="section-title">📥 Today's Arrivals (<?= count($todayArrivals) ?>)</div>
         <div class="guest-list">
             <?php foreach ($todayArrivals as $arrival): ?>
             <div class="guest-item">
@@ -624,7 +624,7 @@ function rp($num) {
         
         <!-- Today's Departures -->
         <?php if (!empty($todayDepartures)): ?>
-        <div class="section-title">📤 Keberangkatan Hari Ini (<?= count($todayDepartures) ?>)</div>
+        <div class="section-title">📤 Today's Departures (<?= count($todayDepartures) ?>)</div>
         <div class="guest-list">
             <?php foreach ($todayDepartures as $departure): ?>
             <div class="guest-item">
@@ -656,7 +656,7 @@ function rp($num) {
         </a>
         <a href="<?= $basePath ?>/modules/owner/investor-monitor.php" class="nav-item">
             <span class="nav-icon">📈</span>
-            <span>Proyek</span>
+            <span>Projects</span>
         </a>
         <a href="<?= $basePath ?>/logout.php" class="nav-item">
             <span class="nav-icon">🚪</span>
