@@ -119,12 +119,16 @@ try {
 // DAILY-FILTERED: Owner Transfer for selected date range
 // ============================================
 $ownerTransferFiltered = 0;
+$saldoCashBank = 0;
+$saldoPettyCash = 0;
+$sisaOwner = 0;
 try {
+    $filterStart = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
+    $filterEnd = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
+    
+    // Owner transfer for selected date
     if (!empty($modalOwnerAccounts ?? [])) {
         $placeholders = implode(',', array_fill(0, count($modalOwnerAccounts), '?'));
-        $filterStart = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
-        $filterEnd = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
-        
         $stmt = $db->getConnection()->prepare("
             SELECT COALESCE(SUM(amount), 0) as total 
             FROM cash_book 
@@ -138,9 +142,6 @@ try {
     }
     
     // Daily-filtered income (excluding owner capital)
-    $filterStart = isset($_GET['start_date']) ? $_GET['start_date'] : date('Y-m-d');
-    $filterEnd = isset($_GET['end_date']) ? $_GET['end_date'] : date('Y-m-d');
-    
     $dailyIncomeFiltered = $db->fetchOne(
         "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
          WHERE transaction_type = 'income' AND transaction_date BETWEEN ? AND ?" . $excludeOwnerCapital,
@@ -148,6 +149,7 @@ try {
     );
     $filteredIncome = $dailyIncomeFiltered['total'] ?? 0;
     
+    // Daily-filtered expense
     $dailyExpenseFiltered = $db->fetchOne(
         "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
          WHERE transaction_type = 'expense' AND transaction_date BETWEEN ? AND ?",
@@ -155,14 +157,33 @@ try {
     );
     $filteredExpense = $dailyExpenseFiltered['total'] ?? 0;
     
-    // Saldo Cash = SAME as dashboard buku kas (ALL income - ALL expense from ALL transactions)
-    $allIncomeResult = $db->fetchOne(
-        "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book WHERE transaction_type = 'income'"
-    );
-    $allExpenseResult = $db->fetchOne(
-        "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book WHERE transaction_type = 'expense'"
-    );
-    $saldoCashDashboard = ($allIncomeResult['total'] ?? 0) - ($allExpenseResult['total'] ?? 0);
+    // Get Saldo from cash_accounts table (same as dashboard shows)
+    // Cash + Bank balance
+    $stmt = $masterDb->prepare("
+        SELECT COALESCE(SUM(current_balance), 0) as total 
+        FROM cash_accounts 
+        WHERE business_id = ? AND account_type IN ('cash', 'bank') AND is_active = 1
+    ");
+    $stmt->execute([$businessId]);
+    $saldoCashBank = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // Petty Cash balance only
+    $stmt = $masterDb->prepare("
+        SELECT COALESCE(SUM(current_balance), 0) as total 
+        FROM cash_accounts 
+        WHERE business_id = ? AND account_type = 'cash' AND is_active = 1
+    ");
+    $stmt->execute([$businessId]);
+    $saldoPettyCash = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    
+    // Sisa Owner balance
+    $stmt = $masterDb->prepare("
+        SELECT COALESCE(SUM(current_balance), 0) as total 
+        FROM cash_accounts 
+        WHERE business_id = ? AND account_type = 'owner_capital' AND is_active = 1
+    ");
+    $stmt->execute([$businessId]);
+    $sisaOwner = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
     
 } catch (Exception $e) {
     error_log("Error fetching daily-filtered data: " . $e->getMessage());
@@ -542,37 +563,53 @@ function closePDFPreview() {
     </div>
 
 <!-- Laporan Harian Summary -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.65rem; margin-bottom: 1.25rem;">
     
-    <!-- Saldo Cash (sama dengan dashboard buku kas) -->
-    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #6366f1;">
-        <div style="font-size: 0.7rem; color: #6366f1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;">Saldo Cash</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: <?php echo $saldoCashDashboard >= 0 ? '#4f46e5' : '#dc2626'; ?>;">
-            <?php echo formatCurrency($saldoCashDashboard); ?>
+    <!-- Saldo Cash & Bank -->
+    <div class="card" style="padding: 0.85rem 1rem; border-left: 4px solid #6366f1; margin: 0;">
+        <div style="font-size: 0.65rem; color: #6366f1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem;">🏦 Saldo Cash & Bank</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: <?php echo $saldoCashBank >= 0 ? '#4f46e5' : '#dc2626'; ?>;">
+            <?php echo formatCurrency($saldoCashBank); ?>
+        </div>
+    </div>
+    
+    <!-- Saldo Petty Cash -->
+    <div class="card" style="padding: 0.85rem 1rem; border-left: 4px solid #f59e0b; margin: 0;">
+        <div style="font-size: 0.65rem; color: #d97706; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem;">💵 Petty Cash</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #d97706;">
+            <?php echo formatCurrency($saldoPettyCash); ?>
+        </div>
+    </div>
+    
+    <!-- Sisa dari Owner -->
+    <div class="card" style="padding: 0.85rem 1rem; border-left: 4px solid #8b5cf6; margin: 0;">
+        <div style="font-size: 0.65rem; color: #7c3aed; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem;">👤 Sisa Owner</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #7c3aed;">
+            <?php echo formatCurrency($sisaOwner); ?>
         </div>
     </div>
     
     <!-- Pemasukan -->
-    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #10b981;">
-        <div style="font-size: 0.7rem; color: #059669; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;">Pemasukan</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: #059669;">
+    <div class="card" style="padding: 0.85rem 1rem; border-left: 4px solid #10b981; margin: 0;">
+        <div style="font-size: 0.65rem; color: #059669; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem;">📈 Pemasukan</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #059669;">
             <?php echo formatCurrency($filteredIncome); ?>
         </div>
     </div>
     
     <!-- Pengeluaran -->
-    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #ef4444;">
-        <div style="font-size: 0.7rem; color: #dc2626; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;">Pengeluaran</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: #dc2626;">
+    <div class="card" style="padding: 0.85rem 1rem; border-left: 4px solid #ef4444; margin: 0;">
+        <div style="font-size: 0.65rem; color: #dc2626; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem;">📉 Pengeluaran</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #dc2626;">
             <?php echo formatCurrency($filteredExpense); ?>
         </div>
     </div>
     
     <!-- Transfer dari Owner - ONLY if > 0 -->
     <?php if ($ownerTransferFiltered > 0): ?>
-    <div class="card" style="padding: 1rem 1.15rem; border-left: 4px solid #f59e0b;">
-        <div style="font-size: 0.7rem; color: #d97706; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem;">Transfer Owner</div>
-        <div style="font-size: 1.5rem; font-weight: 800; color: #d97706;">
+    <div class="card" style="padding: 0.85rem 1rem; border-left: 4px solid #0ea5e9; margin: 0;">
+        <div style="font-size: 0.65rem; color: #0284c7; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 0.3rem;">💸 Transfer Owner</div>
+        <div style="font-size: 1.35rem; font-weight: 800; color: #0284c7;">
             <?php echo formatCurrency($ownerTransferFiltered); ?>
         </div>
     </div>
