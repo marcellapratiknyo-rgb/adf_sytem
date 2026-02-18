@@ -114,10 +114,73 @@ try {
         round(($stats['occupied'] / $stats['total_rooms']) * 100, 1) : 0;
 
     // ============================================
-    // REPORT DATA - Daily, Monthly, Yearly
+    // CASH BOOK DATA - For Daily Cash Report
     // ============================================
     $thisMonth = date('Y-m');
     $thisYear = date('Y');
+    
+    // Connect to master DB to get owner_capital account IDs
+    $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+    $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    $businessIdentifier = ACTIVE_BUSINESS_ID;
+    $businessMapping = ['narayana-hotel' => 1, 'bens-cafe' => 2];
+    $businessId = $businessMapping[$businessIdentifier] ?? 1;
+    
+    // Get owner_capital account IDs
+    $stmt = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'owner_capital'");
+    $stmt->execute([$businessId]);
+    $ownerCapitalIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Build exclusion clause for owner capital
+    $excludeOwnerCapital = '';
+    if (!empty($ownerCapitalIds)) {
+        $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $ownerCapitalIds) . "))";
+    }
+    
+    // Get today's income (excluding owner capital / modal owner)
+    $todayIncomeResult = $db->fetchOne(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
+         WHERE transaction_type = 'income' AND transaction_date = ?" . $excludeOwnerCapital,
+        [$today]
+    );
+    $stats['cash_income_today'] = $todayIncomeResult['total'] ?? 0;
+    
+    // Get today's expenses
+    $todayExpenseResult = $db->fetchOne(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
+         WHERE transaction_type = 'expense' AND transaction_date = ?",
+        [$today]
+    );
+    $stats['cash_expense_today'] = $todayExpenseResult['total'] ?? 0;
+    
+    // Get petty cash from owner TODAY ONLY (income to owner_capital account today)
+    $stats['owner_transfer_today'] = 0;
+    if (!empty($ownerCapitalIds)) {
+        $placeholders = implode(',', array_fill(0, count($ownerCapitalIds), '?'));
+        $ownerTodayResult = $db->fetchOne(
+            "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
+             WHERE transaction_type = 'income' AND transaction_date = ?
+             AND cash_account_id IN ($placeholders)",
+            array_merge([$today], $ownerCapitalIds)
+        );
+        $stats['owner_transfer_today'] = $ownerTodayResult['total'] ?? 0;
+    }
+    
+    // Get TOTAL cash balance (all time: income - expense)
+    $totalCashIncomeResult = $db->fetchOne(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
+         WHERE transaction_type = 'income'" . $excludeOwnerCapital
+    );
+    $totalCashExpenseResult = $db->fetchOne(
+        "SELECT COALESCE(SUM(amount), 0) as total FROM cash_book 
+         WHERE transaction_type = 'expense'"
+    );
+    $stats['cash_balance'] = ($totalCashIncomeResult['total'] ?? 0) - ($totalCashExpenseResult['total'] ?? 0);
+    
+    // ============================================
+    // REPORT DATA - Daily, Monthly, Yearly
+    // ============================================
     
     // DAILY REPORT - Today's bookings and revenue
     $dailyBookings = $db->fetchOne("
@@ -208,7 +271,9 @@ try {
         'occupancy_rate' => 0, 'daily_bookings' => 0, 'daily_revenue' => 0,
         'monthly_bookings' => 0, 'monthly_revenue' => 0, 'yearly_bookings' => 0,
         'yearly_revenue' => 0, 'daily_checkins' => 0, 'daily_checkouts' => 0,
-        'monthly_nights' => 0, 'yearly_nights' => 0, 'recent_bookings' => []
+        'monthly_nights' => 0, 'yearly_nights' => 0, 'recent_bookings' => [],
+        'cash_income_today' => 0, 'cash_expense_today' => 0, 
+        'owner_transfer_today' => 0, 'cash_balance' => 0
     ];
 }
 
@@ -737,29 +802,58 @@ include '../../includes/header.php';
         <!-- Report Summary Cards -->
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
             
-            <!-- Daily Report Card -->
-            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px; padding: 1.25rem; color: white;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <!-- Daily Cash Report Card - Redesigned -->
+            <div style="background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #334155 100%); border-radius: 20px; padding: 1.5rem; color: white; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative; overflow: hidden;">
+                <!-- Decorative circles -->
+                <div style="position: absolute; top: -30px; right: -30px; width: 100px; height: 100px; background: rgba(16,185,129,0.15); border-radius: 50%;"></div>
+                <div style="position: absolute; bottom: -20px; left: -20px; width: 80px; height: 80px; background: rgba(99,102,241,0.15); border-radius: 50%;"></div>
+                
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; position: relative;">
                     <div>
-                        <div style="font-size: 0.85rem; opacity: 0.9; margin-bottom: 0.25rem;">📅 Laporan Harian</div>
-                        <div style="font-size: 0.75rem; opacity: 0.7;"><?php echo date('d M Y'); ?></div>
+                        <div style="font-size: 1rem; font-weight: 600; letter-spacing: 0.5px;">💰 Kas Harian</div>
+                        <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 0.25rem;"><?php echo date('d M Y'); ?></div>
                     </div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 0.5rem; border-radius: 10px;">
-                        <span style="font-size: 1.5rem;">📊</span>
+                    <div style="background: linear-gradient(135deg, #10b981, #059669); width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(16,185,129,0.4);">
+                        <span style="font-size: 1.25rem;">📊</span>
                     </div>
                 </div>
-                <div style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.5rem;">
-                    Rp <?php echo number_format($stats['daily_revenue'], 0, ',', '.'); ?>
+                
+                <!-- Main Balance -->
+                <div style="background: rgba(255,255,255,0.08); border-radius: 14px; padding: 1rem; margin-bottom: 1rem; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 0.35rem;">Saldo Kas</div>
+                    <div style="font-size: 1.6rem; font-weight: 800; color: <?php echo $stats['cash_balance'] >= 0 ? '#10b981' : '#ef4444'; ?>;">
+                        Rp <?php echo number_format($stats['cash_balance'], 0, ',', '.'); ?>
+                    </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2);">
-                    <div>
-                        <div style="font-size: 1.25rem; font-weight: 700;"><?php echo $stats['daily_bookings']; ?></div>
-                        <div style="font-size: 0.7rem; opacity: 0.8;">Reservasi</div>
+                
+                <!-- 3-Column Grid: Income, Expense, Owner Transfer -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr <?php echo $stats['owner_transfer_today'] > 0 ? '1fr' : ''; ?>; gap: 0.75rem;">
+                    <!-- Today's Income -->
+                    <div style="background: rgba(16,185,129,0.15); border-radius: 10px; padding: 0.75rem; border-left: 3px solid #10b981;">
+                        <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; margin-bottom: 0.25rem;">📈 Masuk</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: #10b981;">
+                            +<?php echo number_format($stats['cash_income_today'], 0, ',', '.'); ?>
+                        </div>
                     </div>
-                    <div>
-                        <div style="font-size: 1.25rem; font-weight: 700;"><?php echo $stats['daily_checkins']; ?> / <?php echo $stats['daily_checkouts']; ?></div>
-                        <div style="font-size: 0.7rem; opacity: 0.8;">In / Out</div>
+                    
+                    <!-- Today's Expense -->
+                    <div style="background: rgba(239,68,68,0.15); border-radius: 10px; padding: 0.75rem; border-left: 3px solid #ef4444;">
+                        <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; margin-bottom: 0.25rem;">📉 Keluar</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: #ef4444;">
+                            -<?php echo number_format($stats['cash_expense_today'], 0, ',', '.'); ?>
+                        </div>
                     </div>
+                    
+                    <!-- Owner Transfer Today (only show if > 0) -->
+                    <?php if ($stats['owner_transfer_today'] > 0): ?>
+                    <div style="background: rgba(99,102,241,0.15); border-radius: 10px; padding: 0.75rem; border-left: 3px solid #6366f1;">
+                        <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; margin-bottom: 0.25rem;">👤 Owner</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: #6366f1;">
+                            +<?php echo number_format($stats['owner_transfer_today'], 0, ',', '.'); ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
             
