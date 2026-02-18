@@ -385,26 +385,36 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             color: #dc2626;
         }
         
-        /* Hero Section with Pie Chart */
+        /* Hero Section - Digital Premium 2027 */
         .hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 16px;
-            padding: 16px;
+            background: linear-gradient(160deg, #0f0c29 0%, #302b63 40%, #24243e 100%);
+            border-radius: 20px;
+            padding: 18px 16px 14px;
             margin-bottom: 16px;
             color: white;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 12px 40px rgba(15, 12, 41, 0.5), inset 0 1px 0 rgba(255,255,255,0.08);
         }
         
         .hero::before {
             content: '';
             position: absolute;
-            top: -50%;
-            right: -30%;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            top: -80px;
+            right: -60px;
+            width: 220px;
+            height: 220px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: -30px;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
             border-radius: 50%;
         }
         
@@ -414,39 +424,42 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         }
         
         .hero-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            margin-bottom: 2px;
+            letter-spacing: -0.2px;
+            margin-bottom: 1px;
         }
         
         .hero-subtitle {
-            font-size: 11px;
-            opacity: 0.9;
-            margin-bottom: 4px;
+            font-size: 10px;
+            opacity: 0.55;
+            font-weight: 400;
+            letter-spacing: 0.3px;
         }
         
         .hero-date {
             font-size: 10px;
-            opacity: 0.7;
+            opacity: 0.5;
         }
         
-        /* Chart Container */
+        /* Chart Container - Compact */
         .chart-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-            margin: 16px 0 0 0;
+            gap: 18px;
+            margin: 14px 0 0 0;
         }
         
         .pie-wrapper {
             position: relative;
-            width: 140px;
-            height: 140px;
+            width: 160px;
+            height: 160px;
+            flex-shrink: 0;
         }
         
         #pieChart {
-            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+            filter: drop-shadow(0 0 18px rgba(99,102,241,0.25)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
         
         .pie-center {
@@ -455,10 +468,13 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 50%;
-            width: 70px;
-            height: 70px;
+            width: 72px;
+            height: 72px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -466,53 +482,78 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         }
         
         .pie-center-label {
-            font-size: 8px;
-            opacity: 0.8;
+            font-size: 7px;
+            opacity: 0.6;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
         }
         
         .pie-center-value {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #34d399, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
+        /* Legend - Glass Chips */
         .legend {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
         }
         
         .legend-item {
             display: flex;
             align-items: center;
             gap: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 6px 10px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            transition: background 0.2s;
+        }
+        .legend-item:active {
+            background: rgba(255,255,255,0.1);
         }
         
         .legend-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            flex-shrink: 0;
         }
         
-        .legend-dot.income { background: linear-gradient(135deg, #10b981, #34d399); }
-        .legend-dot.expense { background: linear-gradient(135deg, #f43f5e, #fb7185); }
+        .legend-dot.income { background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.5); }
+        .legend-dot.expense { background: #fb7185; box-shadow: 0 0 8px rgba(251,113,133,0.5); }
         
         .legend-text {
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
         
         .legend-label {
-            font-size: 9px;
-            opacity: 0.7;
+            font-size: 8px;
+            opacity: 0.5;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
+            font-weight: 500;
         }
         
         .legend-value {
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         /* Stats Grid */
@@ -849,16 +890,19 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             margin-bottom: 2px;
         }
         
-        /* Hero Today Row */
+        /* Hero Today Row - Glass Bar */
         .hero-today-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             border-radius: 14px;
-            padding: 12px 16px;
-            margin-top: 20px;
-            gap: 8px;
+            padding: 10px 12px;
+            margin-top: 14px;
+            gap: 4px;
         }
         .hero-today-item {
             display: flex;
@@ -867,22 +911,24 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             flex: 1;
         }
         .hero-today-label {
-            font-size: 10px;
-            opacity: 0.7;
+            font-size: 8px;
+            opacity: 0.45;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            margin-bottom: 4px;
+            letter-spacing: 0.6px;
+            margin-bottom: 3px;
+            font-weight: 500;
         }
         .hero-today-value {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
+            letter-spacing: -0.2px;
         }
-        .hero-today-value.income { color: #34d399; }
-        .hero-today-value.expense { color: #fb7185; }
+        .hero-today-value.income { color: #34d399; text-shadow: 0 0 12px rgba(52,211,153,0.3); }
+        .hero-today-value.expense { color: #fb7185; text-shadow: 0 0 12px rgba(251,113,133,0.3); }
         .hero-today-divider {
             width: 1px;
-            height: 32px;
-            background: rgba(255,255,255,0.2);
+            height: 28px;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.15), transparent);
         }
 
         /* Dev Badge */
@@ -983,15 +1029,30 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         }
 
         /* Mobile Optimizations */
-        @media (max-width: 400px) {
+        @media (max-width: 380px) {
+            .pie-wrapper {
+                width: 130px;
+                height: 130px;
+            }
+            .pie-center {
+                width: 60px;
+                height: 60px;
+            }
+            .pie-center-value { font-size: 13px; }
+            .legend-item { padding: 5px 8px; }
+            .legend-value { font-size: 11px; }
+            .hero-today-value { font-size: 11px; }
+        }
+        @media (max-width: 340px) {
             .chart-container {
                 flex-direction: column;
-                gap: 16px;
+                gap: 12px;
             }
             .legend {
                 flex-direction: row;
+                flex-wrap: wrap;
                 justify-content: center;
-                gap: 20px;
+                gap: 6px;
             }
             .operational-grid {
                 grid-template-columns: 1fr;
@@ -1055,9 +1116,9 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <div class="chart-container">
                     <!-- Pie Chart -->
                     <div class="pie-wrapper">
-                        <canvas id="pieChart" width="140" height="140"></canvas>
+                        <canvas id="pieChart" width="160" height="160"></canvas>
                         <div class="pie-center">
-                            <div class="pie-center-label">NET BULAN</div>
+                            <div class="pie-center-label">NET</div>
                             <div class="pie-center-value"><?= $netProfit >= 0 ? '+' : '' ?><?= number_format($netProfit/1000000, 1) ?>M</div>
                         </div>
                     </div>
@@ -1078,7 +1139,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                             </div>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-dot" style="background:linear-gradient(135deg,#a78bfa,#818cf8)"></span>
+                            <span class="legend-dot" style="background:linear-gradient(135deg,#a78bfa,#60a5fa);box-shadow:0 0 8px rgba(167,139,250,0.5)"></span>
                             <div class="legend-text">
                                 <span class="legend-label">Profit</span>
                                 <span class="legend-value" style="color:<?= $netProfit >= 0 ? '#34d399' : '#fb7185' ?>"><?= $netProfit >= 0 ? '+' : '' ?><?= rp($netProfit) ?></span>
@@ -1101,7 +1162,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     <div class="hero-today-divider"></div>
                     <div class="hero-today-item">
                         <span class="hero-today-label">Expense Ratio</span>
-                        <span class="hero-today-value" style="color:<?= $expenseRatio < 50 ? '#34d399' : ($expenseRatio < 75 ? '#fbbf24' : '#fb7185') ?>"><?= number_format($expenseRatio, 1) ?>%</span>
+                        <span class="hero-today-value" style="color:<?= $expenseRatio < 50 ? '#34d399' : ($expenseRatio < 75 ? '#fbbf24' : '#fb7185') ?>;text-shadow:0 0 12px <?= $expenseRatio < 50 ? 'rgba(52,211,153,0.3)' : ($expenseRatio < 75 ? 'rgba(251,191,36,0.3)' : 'rgba(251,113,133,0.3)') ?>"><?= number_format($expenseRatio, 1) ?>%</span>
                     </div>
                 </div>
             </div>
@@ -1389,54 +1450,79 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         };
 
         // ============================================
-        // ORIGINAL PIE CHART - Income vs Expense
+        // MAIN PIE CHART - Income vs Expense (Digital 2027)
         // ============================================
         var canvas = document.getElementById('pieChart');
         if (!canvas) return;
         var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        var size = 160;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        canvas.style.width = size + 'px';
+        canvas.style.height = size + 'px';
+        ctx.scale(dpr, dpr);
+
         var income = <?= (float)$stats['month_income'] ?>;
         var expense = <?= (float)$stats['month_expense'] ?>;
         var total = income + expense;
         if (total === 0) { income = 1; expense = 1; total = 2; }
 
-        var cx = 70, cy = 70, r = 60, innerR = 35;
+        var cx = 80, cy = 80, r = 72, innerR = 42, gap = 0.03;
         var startAngle = -Math.PI / 2;
         var incomeAngle = (income / total) * 2 * Math.PI;
         var expenseAngle = (expense / total) * 2 * Math.PI;
 
-        // Income arc (green)
-        var gIncome = ctx.createLinearGradient(0, 0, 140, 140);
+        // Outer subtle ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 3, 0, 2 * Math.PI);
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Draw donut arc helper
+        function drawArc(start, end, gradient) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, start, end);
+            ctx.arc(cx, cy, innerR, end, start, true);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+
+        // Income arc (green neon)
+        var gIncome = ctx.createLinearGradient(0, 0, size, size);
         gIncome.addColorStop(0, '#10b981');
-        gIncome.addColorStop(1, '#34d399');
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, startAngle, startAngle + incomeAngle);
-        ctx.closePath();
-        ctx.fillStyle = gIncome;
-        ctx.fill();
+        gIncome.addColorStop(1, '#6ee7b7');
+        drawArc(startAngle + gap/2, startAngle + incomeAngle - gap/2, gIncome);
 
-        // Expense arc (red)
-        var gExpense = ctx.createLinearGradient(140, 0, 0, 140);
+        // Expense arc (red/coral)
+        var gExpense = ctx.createLinearGradient(size, 0, 0, size);
         gExpense.addColorStop(0, '#f43f5e');
-        gExpense.addColorStop(1, '#fb7185');
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, r, startAngle + incomeAngle, startAngle + incomeAngle + expenseAngle);
-        ctx.closePath();
-        ctx.fillStyle = gExpense;
-        ctx.fill();
+        gExpense.addColorStop(1, '#fda4af');
+        drawArc(startAngle + incomeAngle + gap/2, startAngle + incomeAngle + expenseAngle - gap/2, gExpense);
 
-        // Inner donut hole
+        // Inner hole - dark glass
         ctx.beginPath();
         ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(102,126,234,0.55)';
+        var holeFill = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR);
+        holeFill.addColorStop(0, 'rgba(48,43,99,0.9)');
+        holeFill.addColorStop(1, 'rgba(15,12,41,0.95)');
+        ctx.fillStyle = holeFill;
         ctx.fill();
 
-        // Thin white border ring
+        // Inner glow ring
         ctx.beginPath();
         ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(99,102,241,0.25)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Outer glow ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 0.5;
         ctx.stroke();
     });
     </script>
