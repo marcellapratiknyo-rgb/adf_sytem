@@ -168,8 +168,18 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) FROM cash_book");
     $stats['total_transactions'] = (int)$stmt->fetchColumn();
     
-    // Recent transactions - SAME AS CASHBOOK (include payment_method)
-    $stmt = $pdo->query("SELECT id, transaction_date, description, transaction_type, amount, payment_method FROM cash_book ORDER BY transaction_date DESC, id DESC LIMIT 10");
+    // Recent transactions - SAME AS SYSTEM DASHBOARD (include division_name, category_name)
+    $stmt = $pdo->query("
+        SELECT 
+            cb.id, cb.transaction_date, cb.description, cb.transaction_type, cb.amount, cb.payment_method,
+            d.division_name,
+            c.category_name
+        FROM cash_book cb
+        LEFT JOIN divisions d ON cb.division_id = d.id
+        LEFT JOIN categories c ON cb.category_id = c.id
+        ORDER BY cb.transaction_date DESC, cb.id DESC 
+        LIMIT 10
+    ");
     $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (Exception $e) {
@@ -1061,12 +1071,8 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <?php foreach ($transactions as $tx): ?>
                 <li class="tx-item">
                     <div>
-                        <div class="tx-desc"><?= htmlspecialchars($tx['description'] ?? '-') ?></div>
-                        <div class="tx-date"><?= date('d M Y', strtotime($tx['transaction_date'])) ?>
-                            <span class="tx-method <?= strtolower($tx['payment_method'] ?? 'cash') ?>">
-                                <?= strtoupper($tx['payment_method'] ?? 'CASH') ?>
-                            </span>
-                        </div>
+                        <div class="tx-desc"><?= htmlspecialchars(($tx['division_name'] ?? 'Umum') . ' - ' . ($tx['category_name'] ?? $tx['description'] ?? '-')) ?></div>
+                        <div class="tx-date"><?= date('d/m/Y', strtotime($tx['transaction_date'])) ?></div>
                     </div>
                     <div class="tx-amount <?= $tx['transaction_type'] ?>">
                         <?= $tx['transaction_type'] === 'income' ? '+' : '-' ?><?= rp($tx['amount']) ?>
