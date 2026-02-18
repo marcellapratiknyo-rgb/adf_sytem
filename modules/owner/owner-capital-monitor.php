@@ -90,7 +90,12 @@ $stmt->execute([$ownerCapitalAccount['id'], $currentMonth, $nextMonth]);
 $allTransactions = $stmt->fetchAll();
 
 // Get descriptions from cash_book using business DB connection (separate query)
-$transactionIds = array_filter(array_column($allTransactions, 'transaction_id'));
+$transactionIds = [];
+foreach ($allTransactions as $txn) {
+    if (!empty($txn['transaction_id'])) {
+        $transactionIds[] = $txn['transaction_id'];
+    }
+}
 $cashBookDescs = [];
 if (!empty($transactionIds)) {
     $placeholders = implode(',', array_fill(0, count($transactionIds), '?'));
@@ -101,7 +106,8 @@ if (!empty($transactionIds)) {
 
 // Merge descriptions into transactions
 foreach ($allTransactions as &$txn) {
-    $txn['cash_book_desc'] = $cashBookDescs[$txn['transaction_id']] ?? null;
+    $txnId = $txn['transaction_id'] ?? null;
+    $txn['cash_book_desc'] = ($txnId && isset($cashBookDescs[$txnId])) ? $cashBookDescs[$txnId] : null;
 }
 unset($txn);
 
