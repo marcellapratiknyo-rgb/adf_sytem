@@ -819,39 +819,50 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 11px 0;
             border-bottom: 1px solid var(--border);
+            gap: 10px;
         }
         
         .tx-item:last-child { border-bottom: none; }
         
         .tx-desc {
-            font-size: 13px;
+            font-size: 12.5px;
             color: var(--text-primary);
-            margin-bottom: 2px;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            line-height: 1.4;
         }
         
         .tx-date {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-muted);
         }
         
         .tx-amount {
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
+            white-space: nowrap;
+            letter-spacing: -0.2px;
         }
         
         .tx-amount.income { color: var(--success); }
         .tx-amount.expense { color: var(--danger); }
         
         .tx-method {
-            display: inline-block;
-            font-size: 8px;
-            font-weight: 600;
-            padding: 2px 5px;
-            border-radius: 3px;
+            display: inline-flex;
+            align-items: center;
+            font-size: 7.5px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
             text-transform: uppercase;
-            margin-left: 4px;
+            letter-spacing: 0.3px;
+            vertical-align: middle;
+            flex-shrink: 0;
         }
         .tx-method.cash { background: #dcfce7; color: #16a34a; }
         .tx-method.transfer, .tx-method.tf { background: #dbeafe; color: #2563eb; }
@@ -1287,10 +1298,17 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         <div class="tx-card">
             <div class="tx-title">⚡ Recent Transactions</div>
             <ul class="tx-list">
-                <?php foreach ($transactions as $tx): ?>
+                <?php foreach ($transactions as $tx): 
+                    $method = strtolower(trim($tx['payment_method'] ?? 'other'));
+                    $methodClass = in_array($method, ['cash','transfer','tf','qr','debit','edc']) ? $method : 'other';
+                    $methodLabel = strtoupper($method === 'transfer' ? 'TF' : $method);
+                ?>
                 <li class="tx-item">
-                    <div>
-                        <div class="tx-desc"><?= htmlspecialchars(($tx['division_name'] ?? 'Umum') . ' - ' . ($tx['category_name'] ?? $tx['description'] ?? '-')) ?></div>
+                    <div style="min-width:0;flex:1;">
+                        <div class="tx-desc">
+                            <?= htmlspecialchars(($tx['division_name'] ?? 'Umum') . ' - ' . ($tx['category_name'] ?? $tx['description'] ?? '-')) ?>
+                            <span class="tx-method <?= $methodClass ?>"><?= $methodLabel ?></span>
+                        </div>
                         <div class="tx-date"><?= date('d/m/Y', strtotime($tx['transaction_date'])) ?></div>
                     </div>
                     <div class="tx-amount <?= $tx['transaction_type'] ?>">
