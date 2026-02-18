@@ -397,7 +397,29 @@ try {
     ", [$today]);
     $stats['ota_revenue_today'] = $otaRevenueResult['total'] ?? 0;
 
-    // 8. Guest Data for Today
+    // 9. In-House Revenue - Total paid from currently checked-in guests (from booking_payments)
+    $inHouseRevenueResult = $db->fetchOne("
+        SELECT COALESCE(SUM(bp.amount), 0) as total
+        FROM booking_payments bp
+        JOIN bookings b ON bp.booking_id = b.id
+        WHERE b.status = 'checked_in'
+    ");
+    $stats['inhouse_revenue'] = $inHouseRevenueResult['total'] ?? 0;
+
+    // 10. Direct Booking Payments Today (alternative source if cash_book empty)
+    $directPaymentsResult = $db->fetchOne("
+        SELECT COALESCE(SUM(amount), 0) as total
+        FROM booking_payments
+        WHERE DATE(payment_date) = ?
+    ", [$today]);
+    $stats['direct_payments_today'] = $directPaymentsResult['total'] ?? 0;
+
+    // Use direct payments if cash_book revenue is 0 but booking_payments has data
+    if ($stats['revenue_today'] == 0 && $stats['direct_payments_today'] > 0) {
+        $stats['revenue_today'] = $stats['direct_payments_today'];
+    }
+
+    // 11. Guest Data for Today
     // Fix: Show ALL checked_in guests regardless of dates
     $guestsTodayResult = $db->fetchAll("
         SELECT 
@@ -448,7 +470,8 @@ try {
         'in_house' => 0, 'checkout_today' => 0, 'arrival_today' => 0,
         'predicted_tomorrow' => 0, 'total_rooms' => 0, 'occupied_rooms' => 0,
         'available_rooms' => 0, 'occupancy_rate' => 0, 'revenue_today' => 0,
-        'expected_revenue' => 0, 'guests_today' => [], 'checkout_guests' => []
+        'expected_revenue' => 0, 'inhouse_revenue' => 0, 'direct_payments_today' => 0,
+        'ota_revenue_today' => 0, 'guests_today' => [], 'checkout_guests' => []
     ];
 }
 
@@ -1696,18 +1719,18 @@ include '../../includes/header.php';
                     </div>
                     <div style="font-size: 0.6rem; color: #059669; font-weight: 500; margin-bottom: 0.2rem;">Actual Revenue</div>
                     <div style="font-size: 1rem; font-weight: 800; color: #047857;">Rp <?php echo number_format($stats['revenue_today'], 0, ',', '.'); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Sesuai Buku Kas (net)</div>
+                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Pembayaran hari ini</div>
                 </div>
                 
-                <!-- OTA Revenue -->
-                <div style="background: linear-gradient(135deg, rgba(236, 72, 153, 0.08), rgba(219, 39, 119, 0.05)); border: 1px solid rgba(236, 72, 153, 0.2); border-radius: 10px; padding: 0.6rem;">
+                <!-- In-House Revenue -->
+                <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05)); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; padding: 0.6rem;">
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem;">
-                        <span style="font-size: 1.2rem;">🌐</span>
-                        <span style="font-size: 0.55rem; background: rgba(236, 72, 153, 0.15); color: #db2777; padding: 0.15rem 0.35rem; border-radius: 8px; font-weight: 600;">OTA</span>
+                        <span style="font-size: 1.2rem;">🏨</span>
+                        <span style="font-size: 0.55rem; background: rgba(99, 102, 241, 0.15); color: #6366f1; padding: 0.15rem 0.35rem; border-radius: 8px; font-weight: 600;">IN-HOUSE</span>
                     </div>
-                    <div style="font-size: 0.6rem; color: #db2777; font-weight: 500; margin-bottom: 0.2rem;">OTA Income</div>
-                    <div style="font-size: 1rem; font-weight: 800; color: #be185d;">Rp <?php echo number_format($stats['ota_revenue_today'], 0, ',', '.'); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Net setelah fee OTA</div>
+                    <div style="font-size: 0.6rem; color: #6366f1; font-weight: 500; margin-bottom: 0.2rem;">In-House Revenue</div>
+                    <div style="font-size: 1rem; font-weight: 800; color: #4f46e5;">Rp <?php echo number_format($stats['inhouse_revenue'], 0, ',', '.'); ?></div>
+                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Tamu yang checked-in</div>
                 </div>
                 
                 <!-- Expected Revenue -->
@@ -1718,7 +1741,7 @@ include '../../includes/header.php';
                     </div>
                     <div style="font-size: 0.6rem; color: #d97706; font-weight: 500; margin-bottom: 0.2rem;">Expected Revenue</div>
                     <div style="font-size: 1rem; font-weight: 800; color: #b45309;">Rp <?php echo number_format($stats['expected_revenue'], 0, ',', '.'); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">From active bookings</div>
+                    <div style="font-size: 0.55rem; color: var(--text-secondary); margin-top: 0.2rem;">Total harga booking aktif</div>
                 </div>
             </div>
         </div>
