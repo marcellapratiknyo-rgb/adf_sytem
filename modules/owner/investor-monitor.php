@@ -5,10 +5,10 @@
  * Clean, Compact, Modern
  */
 
-session_start();
-require_once '../../config/config.php';
-require_once '../../config/database.php';
-require_once '../../includes/auth.php';
+define('APP_ACCESS', true);
+require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 $auth = new Auth();
 if (!$auth->isLoggedIn()) {
@@ -23,7 +23,8 @@ if (!in_array($currentUser['role'], ['owner', 'admin', 'developer'])) {
 }
 
 $db = Database::getInstance();
-$basePath = rtrim(BASE_URL, '/');
+$isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
+$basePath = $isProduction ? '' : '/adf_system';
 
 // Initialize variables
 $investors = [];
