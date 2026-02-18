@@ -945,23 +945,28 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         
         <!-- Operational Section - SAME DATA AS SYSTEM DASHBOARD -->
         <div class="operational-section">
-            <div class="operational-title">💰 Kas Operasional - <?= date('M Y') ?></div>
+            <div class="operational-title">💰 Daily Operational - <?= date('F Y') ?></div>
+            <div style="font-size: 9px; color: #0369a1; margin-top: -8px; margin-bottom: 10px;">📊 Kas Operasional Harian (Petty Cash + Modal Owner)</div>
             <div class="operational-grid">
                 <div class="op-card modal-owner">
                     <div class="op-label">Modal Owner</div>
-                    <div class="op-value"><?= rp($capitalStats['balance']) ?></div>
+                    <div class="op-value"><?= rp($capitalStats['received']) ?></div>
+                    <div style="font-size: 8px; color: #059669; margin-top: 2px;">Setoran owner</div>
                 </div>
                 <div class="op-card petty-cash">
                     <div class="op-label">Petty Cash</div>
                     <div class="op-value"><?= rp($pettyCashStats['balance']) ?></div>
+                    <div style="font-size: 8px; color: #d97706; margin-top: 2px;">Uang cash dari tamu</div>
                 </div>
                 <div class="op-card digunakan">
                     <div class="op-label">Digunakan</div>
                     <div class="op-value"><?= rp($totalOperationalExpense) ?></div>
+                    <div style="font-size: 8px; color: #dc2626; margin-top: 2px;">Total pengeluaran</div>
                 </div>
                 <div class="op-card total-kas">
-                    <div class="op-label">Total Saldo</div>
+                    <div class="op-label">Total Kas</div>
                     <div class="op-value"><?= rp($totalOperationalCash) ?></div>
+                    <div style="font-size: 8px; color: #4f46e5; margin-top: 2px;">Uang cash tersedia</div>
                 </div>
             </div>
         </div>
