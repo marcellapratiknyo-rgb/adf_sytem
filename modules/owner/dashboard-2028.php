@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * OWNER DASHBOARD 2028
  * Data langsung dari PHP - Same logic as System Dashboard (index.php)
@@ -756,7 +756,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         <?php else: ?>
         
         <div class="db-info">
-            âœ… Connected: <?= $dbName ?> | <?= $stats['total_transactions'] ?> transaksi
+            âœ… Connected: <?= $businessDbName ?> | <?= $stats['total_transactions'] ?> transaksi
         </div>
         
         <!-- Hero with Pie Chart -->
