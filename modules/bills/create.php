@@ -13,6 +13,7 @@ $auth = new Auth();
 $auth->requireLogin();
 $currentUser = $auth->getCurrentUser();
 $db = Database::getInstance();
+require_once __DIR__ . '/auto-migrate.php';
 
 $pageTitle = 'Tambah Tagihan';
 $pageSubtitle = 'Input tagihan baru secara manual';

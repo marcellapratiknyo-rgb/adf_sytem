@@ -13,6 +13,7 @@ $auth = new Auth();
 $auth->requireLogin();
 $currentUser = $auth->getCurrentUser();
 $db = Database::getInstance();
+require_once __DIR__ . '/auto-migrate.php';
 
 $pageTitle = 'Tagihan & Bills';
 $pageSubtitle = 'Kelola tagihan rutin & pembayaran';
