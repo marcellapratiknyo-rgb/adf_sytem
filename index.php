@@ -206,7 +206,7 @@ try {
         $capitalStats['balance'] = $result['balance'] ?? 0;
     }
     
-    // Query Petty Cash stats
+    // Query Petty Cash stats (Only cash payment method)
     if (!empty($pettyCashAccounts)) {
         $placeholders = implode(',', array_fill(0, count($pettyCashAccounts), '?'));
         
@@ -219,6 +219,7 @@ try {
             FROM cash_book 
             WHERE cash_account_id IN ($placeholders)
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
+            AND payment_method = 'cash'
         ";
         
         $params = array_merge($pettyCashAccounts, [$thisMonth]);
