@@ -1,0 +1,295 @@
+/* ============================================
+   HOMEPAGE - Additional Styles
+   ============================================ */
+
+.hero-large {
+    padding: 8rem 2rem;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-large::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 400px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    color: white;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: slideInDown 0.8s ease;
+}
+
+.hero-content p {
+    font-size: 1.3rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 2.5rem;
+    animation: slideInUp 0.8s ease 0.2s backwards;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero-search {
+    grid-template-columns: repeat(4, 1fr);
+    animation: slideInUp 0.8s ease 0.4s backwards;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.hero-search label {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.hero-search input,
+.hero-search select {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.4rem;
+    font-size: 0.95rem;
+}
+
+.hero-search button {
+    align-self: flex-end;
+    padding: 0.75rem 1.5rem;
+    white-space: nowrap;
+}
+
+/* Room Cards */
+.room-card {
+    background: white;
+    border: none;
+}
+
+.room-card:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.room-card .card-image {
+    height: 250px;
+}
+
+.room-card .card-body {
+    padding: 1.5rem;
+}
+
+.room-card .card-price {
+    color: #6366f1;
+    font-size: 1.75rem;
+}
+
+/* Amenity Cards */
+.amenity-card {
+    padding: 2rem;
+    text-align: center;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.amenity-card:hover {
+    background: white;
+    border-color: #6366f1;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+    transform: translateY(-5px);
+}
+
+.amenity-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.amenity-card h4 {
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.amenity-card p {
+    font-size: 0.9rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Contact Form */
+.contact-form {
+    background: #f8fafc;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+}
+
+.contact-form input,
+.contact-form textarea {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.4rem;
+    padding: 0.75rem;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(300px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notification-content {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    min-width: 300px;
+}
+
+.notification-success .notification-content {
+    border-left: 4px solid #10b981;
+}
+
+.notification-error .notification-content {
+    border-left: 4px solid #ef4444;
+}
+
+.notification-info .notification-content {
+    border-left: 4px solid #6366f1;
+}
+
+.notification-warning .notification-content {
+    border-left: 4px solid #f59e0b;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.notification-close:hover {
+    opacity: 1;
+}
+
+/* Loader */
+.loader {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #e2e8f0;
+    border-radius: 50%;
+    border-top-color: #6366f1;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .hero-large {
+        padding: 6rem 2rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-search {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-large {
+        padding: 4rem 1rem;
+    }
+    
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+    
+    .hero-content p {
+        font-size: 1rem;
+    }
+    
+    .hero-search {
+        grid-template-columns: 1fr;
+    }
+    
+    .notification-content {
+        min-width: calc(100vw - 40px);
+        width: 100%;
+    }
+}
