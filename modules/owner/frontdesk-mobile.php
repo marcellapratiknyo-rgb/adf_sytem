@@ -2,29 +2,41 @@
 /**
  * FRONTDESK MOBILE DASHBOARD
  * Mobile-optimized view for owner monitoring
- * Clean, Compact, Modern
+ * Clean, Compact, Modern - Light Theme
  */
 
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/auth.php';
 
-$auth = new Auth();
-if (!$auth->isLoggedIn()) {
+// Auth check
+$role = $_SESSION['role'] ?? null;
+if (!$role && isset($_SESSION['logged_in']) && $_SESSION['logged_in']) {
+    try {
+        $authDb = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+        $authDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $roleStmt = $authDb->prepare("SELECT r.role_code FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
+        $roleStmt->execute([$_SESSION['user_id'] ?? 0]);
+        $roleRow = $roleStmt->fetch(PDO::FETCH_ASSOC);
+        if ($roleRow) {
+            $role = $roleRow['role_code'];
+            $_SESSION['role'] = $role;
+        }
+    } catch (Exception $e) {}
+}
+
+if (!$role || !in_array($role, ['admin', 'owner', 'manager', 'developer'])) {
     header('Location: ../../login.php');
     exit;
 }
 
-$currentUser = $auth->getCurrentUser();
-if (!in_array($currentUser['role'], ['owner', 'admin', 'developer'])) {
-    header('Location: dashboard-2028.php');
-    exit;
-}
-
-$db = Database::getInstance();
 $isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
 $basePath = $isProduction ? '' : '/adf_system';
+
+// Database config - connect to BUSINESS database
+$dbHost = DB_HOST;
+$dbUser = DB_USER;
+$dbPass = DB_PASS;
+$businessDbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
 
 // Get today's date
 $today = date('Y-m-d');
@@ -44,120 +56,141 @@ $stats = [
 $inHouseGuests = [];
 $todayArrivals = [];
 $todayDepartures = [];
-$roomStatusMap = [];
+$roomStatusMap = [
+    'available' => 0,
+    'occupied' => 0,
+    'maintenance' => 0,
+    'cleaning' => 0
+];
 $error = null;
 
-// Check if frontdesk tables exist
-$hasFrontdeskTables = false;
 try {
-    $db->getConnection()->query("SELECT 1 FROM rooms LIMIT 1");
-    $hasFrontdeskTables = true;
-} catch (Exception $e) {
-    $hasFrontdeskTables = false;
-}
+    // Connect to business database
+    $pdo = new PDO("mysql:host=$dbHost;dbname=$businessDbName;charset=utf8mb4", $dbUser, $dbPass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Check if rooms table exists
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'rooms'");
+    $hasTables = $tableCheck->rowCount() > 0;
+    
+    if ($hasTables) {
+        // Today's check-ins
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count FROM bookings 
+            WHERE DATE(check_in_date) = ? 
+            AND status IN ('confirmed', 'checked_in')
+        ");
+        $stmt->execute([$today]);
+        $stats['checkins'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
-if ($hasFrontdeskTables) {
-try {
-    // Today's check-ins
-    $checkinsResult = $db->fetchOne("
-        SELECT COUNT(*) as count FROM bookings 
-        WHERE DATE(check_in_date) = ? 
-        AND status IN ('confirmed', 'checked_in')
-    ", [$today]);
-    $stats['checkins'] = $checkinsResult['count'] ?? 0;
+        // Today's check-outs
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count FROM bookings 
+            WHERE DATE(check_out_date) = ? 
+            AND status = 'checked_in'
+        ");
+        $stmt->execute([$today]);
+        $stats['checkouts'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
 
-    // Today's check-outs
-    $checkoutsResult = $db->fetchOne("
-        SELECT COUNT(*) as count FROM bookings 
-        WHERE DATE(check_out_date) = ? 
-        AND status = 'checked_in'
-    ", [$today]);
-    $stats['checkouts'] = $checkoutsResult['count'] ?? 0;
+        // Room counts
+        $stmt = $pdo->query("SELECT COUNT(*) FROM rooms WHERE status = 'available'");
+        $stats['available'] = (int)$stmt->fetchColumn();
+        
+        $stmt = $pdo->query("SELECT COUNT(*) FROM rooms WHERE status = 'occupied'");
+        $stats['occupied'] = (int)$stmt->fetchColumn();
+        
+        $stmt = $pdo->query("SELECT COUNT(*) FROM rooms");
+        $stats['total_rooms'] = (int)$stmt->fetchColumn();
 
-    // Available rooms
-    $availResult = $db->fetchOne("SELECT COUNT(*) as count FROM rooms WHERE status = 'available'");
-    $stats['available'] = $availResult['count'] ?? 0;
+        // Occupancy rate
+        $stats['occupancy'] = $stats['total_rooms'] > 0 ? round(($stats['occupied'] / $stats['total_rooms']) * 100) : 0;
 
-    // Occupied rooms
-    $occupiedResult = $db->fetchOne("SELECT COUNT(*) as count FROM rooms WHERE status = 'occupied'");
-    $stats['occupied'] = $occupiedResult['count'] ?? 0;
+        // Today's revenue (from booking_payments)
+        try {
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(amount), 0) as total
+                FROM booking_payments
+                WHERE DATE(payment_date) = ?
+            ");
+            $stmt->execute([$today]);
+            $stats['today_revenue'] = (float)$stmt->fetchColumn();
+        } catch (Exception $e) {
+            $stats['today_revenue'] = 0;
+        }
 
-    // Total rooms
-    $totalResult = $db->fetchOne("SELECT COUNT(*) as count FROM rooms");
-    $stats['total_rooms'] = $totalResult['count'] ?? 0;
+        // Monthly revenue
+        try {
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(amount), 0) as total
+                FROM booking_payments
+                WHERE DATE_FORMAT(payment_date, '%Y-%m') = ?
+            ");
+            $stmt->execute([$thisMonth]);
+            $stats['month_revenue'] = (float)$stmt->fetchColumn();
+        } catch (Exception $e) {
+            $stats['month_revenue'] = 0;
+        }
 
-    // Occupancy rate
-    $stats['occupancy'] = $stats['total_rooms'] > 0 ? round(($stats['occupied'] / $stats['total_rooms']) * 100) : 0;
+        // In-house guests list
+        $stmt = $pdo->query("
+            SELECT b.id, b.guest_name, b.guest_phone, b.check_in_date, b.check_out_date, 
+                   r.room_number, r.room_type, b.total_amount
+            FROM bookings b
+            LEFT JOIN rooms r ON b.room_id = r.id
+            WHERE b.status = 'checked_in'
+            ORDER BY b.check_out_date ASC
+            LIMIT 10
+        ");
+        $inHouseGuests = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Today's revenue
-    $revenueResult = $db->fetchOne("
-        SELECT COALESCE(SUM(bp.amount), 0) as total
-        FROM booking_payments bp
-        WHERE DATE(bp.payment_date) = ?
-    ", [$today]);
-    $stats['today_revenue'] = $revenueResult['total'] ?? 0;
+        // Today's arrivals
+        $stmt = $pdo->prepare("
+            SELECT b.id, b.guest_name, b.check_in_date, b.check_out_date, 
+                   r.room_number, r.room_type, b.status
+            FROM bookings b
+            LEFT JOIN rooms r ON b.room_id = r.id
+            WHERE DATE(b.check_in_date) = ? AND b.status IN ('confirmed', 'checked_in')
+            ORDER BY b.check_in_date ASC
+            LIMIT 5
+        ");
+        $stmt->execute([$today]);
+        $todayArrivals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Monthly revenue
-    $monthResult = $db->fetchOne("
-        SELECT COALESCE(SUM(bp.amount), 0) as total
-        FROM booking_payments bp
-        WHERE DATE_FORMAT(bp.payment_date, '%Y-%m') = ?
-    ", [$thisMonth]);
-    $stats['month_revenue'] = $monthResult['total'] ?? 0;
+        // Today's departures
+        $stmt = $pdo->prepare("
+            SELECT b.id, b.guest_name, b.check_out_date, 
+                   r.room_number, r.room_type, b.status
+            FROM bookings b
+            LEFT JOIN rooms r ON b.room_id = r.id
+            WHERE DATE(b.check_out_date) = ? AND b.status = 'checked_in'
+            ORDER BY b.check_out_date ASC
+            LIMIT 5
+        ");
+        $stmt->execute([$today]);
+        $todayDepartures = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // In-house guests list
-    $inHouseGuests = $db->fetchAll("
-        SELECT b.id, b.guest_name, b.guest_phone, b.check_in_date, b.check_out_date, 
-               r.room_number, r.room_type, b.total_amount
-        FROM bookings b
-        LEFT JOIN rooms r ON b.room_id = r.id
-        WHERE b.status = 'checked_in'
-        ORDER BY b.check_out_date ASC
-        LIMIT 10
-    ");
-
-    // Today's arrivals
-    $todayArrivals = $db->fetchAll("
-        SELECT b.id, b.guest_name, b.check_in_date, b.check_out_date, 
-               r.room_number, r.room_type, b.status
-        FROM bookings b
-        LEFT JOIN rooms r ON b.room_id = r.id
-        WHERE DATE(b.check_in_date) = ? AND b.status IN ('confirmed', 'checked_in')
-        ORDER BY b.check_in_date ASC
-        LIMIT 5
-    ", [$today]);
-
-    // Today's departures
-    $todayDepartures = $db->fetchAll("
-        SELECT b.id, b.guest_name, b.check_out_date, 
-               r.room_number, r.room_type, b.status
-        FROM bookings b
-        LEFT JOIN rooms r ON b.room_id = r.id
-        WHERE DATE(b.check_out_date) = ? AND b.status = 'checked_in'
-        ORDER BY b.check_out_date ASC
-        LIMIT 5
-    ", [$today]);
-
-    // Room status breakdown
-    $roomStatus = $db->fetchAll("
-        SELECT status, COUNT(*) as count FROM rooms GROUP BY status
-    ");
-    $roomStatusMap = [];
-    foreach ($roomStatus as $rs) {
-        $roomStatusMap[$rs['status']] = $rs['count'];
+        // Room status breakdown
+        $stmt = $pdo->query("SELECT status, COUNT(*) as count FROM rooms GROUP BY status");
+        $roomStatus = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($roomStatus as $rs) {
+            $roomStatusMap[$rs['status']] = (int)$rs['count'];
+        }
     }
-
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
-} // end if hasFrontdeskTables
 
+// Format currency
 function rp($num) {
-    return 'Rp ' . number_format($num, 0, ',', '.');
+    if ($num >= 1000000) {
+        return 'Rp ' . number_format($num / 1000000, 1, ',', '.') . 'M';
+    } else {
+        return 'Rp ' . number_format($num, 0, ',', '.');
+    }
 }
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -167,11 +200,12 @@ function rp($num) {
         
         :root {
             --primary: #6366f1;
+            --primary-light: #818cf8;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
             --info: #3b82f6;
-            --bg: #f8fafc;
+            --bg: #f1f5f9;
             --card: #ffffff;
             --text: #1e293b;
             --text-muted: #64748b;
@@ -183,7 +217,7 @@ function rp($num) {
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding-bottom: 70px;
+            padding-bottom: 80px;
         }
         
         .container {
@@ -194,16 +228,17 @@ function rp($num) {
         
         /* Header */
         .header {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 20px 16px;
-            border-radius: 16px;
+            border-radius: 20px;
             margin-bottom: 16px;
             text-align: center;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
         }
         
         .header-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             margin-bottom: 4px;
         }
@@ -219,19 +254,90 @@ function rp($num) {
             margin-top: 8px;
         }
         
+        /* Occupancy Section with Pie Chart */
+        .occupancy-section {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .pie-chart-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+        }
+        
+        .pie-chart-container canvas {
+            width: 100px;
+            height: 100px;
+        }
+        
+        .pie-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        .pie-percent {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        
+        .pie-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .occupancy-details {
+            flex: 1;
+        }
+        
+        .occupancy-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+        
+        .occ-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            padding: 4px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .occ-row:last-child { border-bottom: none; }
+        
+        .occ-label { color: var(--text-muted); }
+        .occ-value { font-weight: 600; color: var(--text); }
+        .occ-value.success { color: var(--success); }
+        .occ-value.danger { color: var(--danger); }
+        .occ-value.warning { color: var(--warning); }
+        
         /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 16px;
         }
         
         .stat-card {
             background: var(--card);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
             position: relative;
             overflow: hidden;
         }
@@ -261,7 +367,7 @@ function rp($num) {
         }
         
         .stat-value {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
             color: var(--text);
         }
@@ -272,71 +378,41 @@ function rp($num) {
             margin-top: 4px;
         }
         
-        /* Occupancy Card */
-        .occupancy-card {
-            background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-            color: white;
+        /* Revenue Section */
+        .revenue-section {
+            background: var(--card);
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         }
         
-        .occupancy-label {
+        .revenue-title {
             font-size: 12px;
-            font-weight: 600;
-            opacity: 0.9;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .occupancy-value {
-            font-size: 32px;
-            font-weight: 800;
-        }
-        
-        .occupancy-detail {
-            font-size: 10px;
-            opacity: 0.8;
-            margin-top: 4px;
-        }
-        
-        .occupancy-bar {
-            width: 100px;
-            height: 8px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .occupancy-fill {
-            height: 100%;
-            background: white;
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-        
-        /* Revenue Card */
         .revenue-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
         }
         
-        .revenue-card {
-            background: var(--card);
+        .revenue-item {
+            text-align: center;
+            padding: 12px;
+            background: var(--bg);
             border-radius: 12px;
-            padding: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
         
         .revenue-label {
             font-size: 10px;
-            text-transform: uppercase;
             color: var(--text-muted);
-            font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         
         .revenue-value {
@@ -350,32 +426,53 @@ function rp($num) {
             font-size: 13px;
             font-weight: 700;
             color: var(--text);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+        }
+        
+        .section-title .badge {
+            background: var(--primary);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
         }
         
         /* Guest List */
         .guest-list {
             background: var(--card);
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
         }
         
         .guest-item {
+            display: flex;
+            align-items: center;
             padding: 12px 14px;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
-        .guest-item:last-child {
-            border-bottom: none;
+        .guest-item:last-child { border-bottom: none; }
+        
+        .guest-room {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            margin-right: 12px;
         }
+        
+        .guest-info { flex: 1; }
         
         .guest-name {
             font-size: 13px;
@@ -384,69 +481,62 @@ function rp($num) {
             margin-bottom: 2px;
         }
         
-        .guest-room {
+        .guest-detail {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .guest-checkout {
+            text-align: right;
+        }
+        
+        .checkout-date {
             font-size: 11px;
             color: var(--text-muted);
         }
         
-        .guest-date {
-            font-size: 10px;
-            color: var(--text-muted);
-            text-align: right;
-        }
-        
-        .guest-status {
+        .checkout-label {
             font-size: 9px;
-            padding: 3px 8px;
-            border-radius: 4px;
+            color: var(--warning);
             font-weight: 600;
-            text-transform: uppercase;
         }
-        
-        .guest-status.in { background: #dcfce7; color: #16a34a; }
-        .guest-status.out { background: #fef3c7; color: #d97706; }
-        .guest-status.confirmed { background: #dbeafe; color: #2563eb; }
         
         /* Empty State */
         .empty-state {
             text-align: center;
-            padding: 24px;
+            padding: 30px 20px;
             color: var(--text-muted);
-            font-size: 12px;
         }
         
-        /* Room Status Grid */
-        .room-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+        .empty-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        .empty-text {
+            font-size: 13px;
+        }
+        
+        /* Error State */
+        .error-card {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 16px;
             margin-bottom: 16px;
-        }
-        
-        .room-status-card {
-            background: var(--card);
-            border-radius: 10px;
-            padding: 10px;
             text-align: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
         
-        .room-status-icon {
-            font-size: 18px;
-            margin-bottom: 4px;
-        }
-        
-        .room-status-count {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text);
-        }
-        
-        .room-status-label {
-            font-size: 8px;
-            text-transform: uppercase;
-            color: var(--text-muted);
+        .error-title {
+            color: var(--danger);
             font-weight: 600;
+            margin-bottom: 6px;
+        }
+        
+        .error-text {
+            font-size: 12px;
+            color: #991b1b;
         }
         
         /* Footer Nav */
@@ -458,9 +548,9 @@ function rp($num) {
             background: white;
             display: flex;
             justify-content: space-around;
-            padding: 10px 0;
+            padding: 10px 0 14px;
             border-top: 1px solid var(--border);
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
         }
         
         .nav-item {
@@ -468,19 +558,73 @@ function rp($num) {
             flex-direction: column;
             align-items: center;
             text-decoration: none;
-            color: var(--text-muted);
             font-size: 10px;
-            font-weight: 600;
+            color: var(--text-muted);
             transition: color 0.2s;
+            padding: 4px 12px;
         }
         
-        .nav-item.active {
-            color: var(--primary);
-        }
+        .nav-item.active { color: var(--primary); }
         
         .nav-icon {
             font-size: 20px;
             margin-bottom: 2px;
+        }
+
+        /* Arrival/Departure cards */
+        .movement-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .movement-card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+
+        .movement-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .movement-icon {
+            font-size: 16px;
+        }
+
+        .movement-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .movement-list {
+            font-size: 11px;
+        }
+
+        .movement-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .movement-item:last-child { border-bottom: none; }
+
+        .movement-name {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .movement-room {
+            color: var(--primary);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -488,35 +632,40 @@ function rp($num) {
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <div class="header-title">📋 Frontdesk Monitor</div>
-            <div class="header-subtitle">Real-time hotel status</div>
+            <div class="header-title">🏨 Frontdesk Monitor</div>
+            <div class="header-subtitle">Narayana Hotel & Ayurveda</div>
             <div class="header-date"><?= date('l, d F Y') ?></div>
         </div>
         
-        <?php if (!$hasFrontdeskTables): ?>
-        <!-- No Frontdesk Tables -->
-        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 16px; padding: 24px; margin-bottom: 16px; text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 12px;">🏨</div>
-            <div style="font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 8px;">Frontdesk Module Not Available</div>
-            <div style="font-size: 12px; color: #a16207;">Frontdesk database (rooms, bookings) is not configured for this business.</div>
-        </div>
-        <?php elseif ($error): ?>
-        <!-- Error -->
-        <div style="background: #fee2e2; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-            <div style="font-size: 12px; color: #dc2626; font-weight: 600;">Error: <?= htmlspecialchars($error) ?></div>
+        <?php if ($error): ?>
+        <div class="error-card">
+            <div class="error-title">⚠️ Connection Error</div>
+            <div class="error-text"><?= htmlspecialchars($error) ?></div>
         </div>
         <?php else: ?>
         
-        <!-- Occupancy -->
-        <div class="occupancy-card">
-            <div>
-                <div class="occupancy-label">Occupancy Rate</div>
-                <div class="occupancy-value"><?= $stats['occupancy'] ?>%</div>
-                <div class="occupancy-detail"><?= $stats['occupied'] ?> of <?= $stats['total_rooms'] ?> rooms occupied</div>
+        <!-- Occupancy with Pie Chart -->
+        <div class="occupancy-section">
+            <div class="pie-chart-container">
+                <canvas id="occupancyPie" width="100" height="100"></canvas>
+                <div class="pie-center-text">
+                    <div class="pie-percent"><?= $stats['occupancy'] ?>%</div>
+                    <div class="pie-label">Occupancy</div>
+                </div>
             </div>
-            <div>
-                <div class="occupancy-bar">
-                    <div class="occupancy-fill" style="width: <?= $stats['occupancy'] ?>%"></div>
+            <div class="occupancy-details">
+                <div class="occupancy-title">Room Status</div>
+                <div class="occ-row">
+                    <span class="occ-label">Available</span>
+                    <span class="occ-value success"><?= $stats['available'] ?> rooms</span>
+                </div>
+                <div class="occ-row">
+                    <span class="occ-label">Occupied</span>
+                    <span class="occ-value danger"><?= $stats['occupied'] ?> rooms</span>
+                </div>
+                <div class="occ-row">
+                    <span class="occ-label">Total</span>
+                    <span class="occ-value"><?= $stats['total_rooms'] ?> rooms</span>
                 </div>
             </div>
         </div>
@@ -524,124 +673,102 @@ function rp($num) {
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card checkin">
-                <div class="stat-label">📥 Today's Check-In</div>
+                <div class="stat-label">Check-In Today</div>
                 <div class="stat-value"><?= $stats['checkins'] ?></div>
-                <div class="stat-hint">Guests arriving</div>
+                <div class="stat-hint">Expected arrivals</div>
             </div>
             <div class="stat-card checkout">
-                <div class="stat-label">📤 Today's Check-Out</div>
+                <div class="stat-label">Check-Out Today</div>
                 <div class="stat-value"><?= $stats['checkouts'] ?></div>
-                <div class="stat-hint">Guests leaving</div>
-            </div>
-            <div class="stat-card available">
-                <div class="stat-label">🛏️ Available Rooms</div>
-                <div class="stat-value"><?= $stats['available'] ?></div>
-                <div class="stat-hint">Ready to sell</div>
-            </div>
-            <div class="stat-card occupied">
-                <div class="stat-label">🔒 Occupied Rooms</div>
-                <div class="stat-value"><?= $stats['occupied'] ?></div>
-                <div class="stat-hint">Guests staying</div>
+                <div class="stat-hint">Expected departures</div>
             </div>
         </div>
         
-        <!-- Revenue -->
-        <div class="revenue-grid">
-            <div class="revenue-card">
-                <div class="revenue-label">💰 Today's Revenue</div>
-                <div class="revenue-value"><?= rp($stats['today_revenue']) ?></div>
-            </div>
-            <div class="revenue-card">
-                <div class="revenue-label">📊 This Month's Revenue</div>
-                <div class="revenue-value"><?= rp($stats['month_revenue']) ?></div>
+        <!-- Revenue Section -->
+        <div class="revenue-section">
+            <div class="revenue-title">💰 Revenue</div>
+            <div class="revenue-grid">
+                <div class="revenue-item">
+                    <div class="revenue-label">Today</div>
+                    <div class="revenue-value"><?= rp($stats['today_revenue']) ?></div>
+                </div>
+                <div class="revenue-item">
+                    <div class="revenue-label">This Month</div>
+                    <div class="revenue-value"><?= rp($stats['month_revenue']) ?></div>
+                </div>
             </div>
         </div>
-        
-        <!-- Room Status -->
-        <div class="section-title">🚪 Room Status</div>
-        <div class="room-grid">
-            <div class="room-status-card">
-                <div class="room-status-icon">✅</div>
-                <div class="room-status-count"><?= $roomStatusMap['available'] ?? 0 ?></div>
-                <div class="room-status-label">Ready</div>
+
+        <!-- Arrivals & Departures -->
+        <div class="movement-grid">
+            <div class="movement-card">
+                <div class="movement-header">
+                    <span class="movement-icon">🛬</span>
+                    <span class="movement-title">Arrivals</span>
+                </div>
+                <div class="movement-list">
+                    <?php if (empty($todayArrivals)): ?>
+                        <div style="color: var(--text-muted); font-size: 11px;">No arrivals today</div>
+                    <?php else: ?>
+                        <?php foreach ($todayArrivals as $arr): ?>
+                        <div class="movement-item">
+                            <span class="movement-name"><?= htmlspecialchars(substr($arr['guest_name'] ?? '-', 0, 12)) ?></span>
+                            <span class="movement-room"><?= htmlspecialchars($arr['room_number'] ?? '-') ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="room-status-card">
-                <div class="room-status-icon">🛏️</div>
-                <div class="room-status-count"><?= $roomStatusMap['occupied'] ?? 0 ?></div>
-                <div class="room-status-label">Occupied</div>
-            </div>
-            <div class="room-status-card">
-                <div class="room-status-icon">🧹</div>
-                <div class="room-status-count"><?= $roomStatusMap['cleaning'] ?? 0 ?></div>
-                <div class="room-status-label">Cleaning</div>
-            </div>
-            <div class="room-status-card">
-                <div class="room-status-icon">🔧</div>
-                <div class="room-status-count"><?= $roomStatusMap['maintenance'] ?? 0 ?></div>
-                <div class="room-status-label">Maintain</div>
+            <div class="movement-card">
+                <div class="movement-header">
+                    <span class="movement-icon">🛫</span>
+                    <span class="movement-title">Departures</span>
+                </div>
+                <div class="movement-list">
+                    <?php if (empty($todayDepartures)): ?>
+                        <div style="color: var(--text-muted); font-size: 11px;">No departures today</div>
+                    <?php else: ?>
+                        <?php foreach ($todayDepartures as $dep): ?>
+                        <div class="movement-item">
+                            <span class="movement-name"><?= htmlspecialchars(substr($dep['guest_name'] ?? '-', 0, 12)) ?></span>
+                            <span class="movement-room"><?= htmlspecialchars($dep['room_number'] ?? '-') ?></span>
+                        </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
         
         <!-- In-House Guests -->
-        <div class="section-title">👤 In-House Guests (<?= count($inHouseGuests) ?>)</div>
+        <div class="section-title">
+            🛏️ In-House Guests
+            <span class="badge"><?= count($inHouseGuests) ?></span>
+        </div>
+        
         <div class="guest-list">
-            <?php if (!empty($inHouseGuests)): ?>
+            <?php if (empty($inHouseGuests)): ?>
+            <div class="empty-state">
+                <div class="empty-icon">🏨</div>
+                <div class="empty-text">No guests currently checked in</div>
+            </div>
+            <?php else: ?>
                 <?php foreach ($inHouseGuests as $guest): ?>
                 <div class="guest-item">
-                    <div>
-                        <div class="guest-name"><?= htmlspecialchars($guest['guest_name']) ?></div>
-                        <div class="guest-room">Room <?= $guest['room_number'] ?> • <?= $guest['room_type'] ?? 'Standard' ?></div>
+                    <div class="guest-room"><?= htmlspecialchars($guest['room_number'] ?? '-') ?></div>
+                    <div class="guest-info">
+                        <div class="guest-name"><?= htmlspecialchars($guest['guest_name'] ?? 'Guest') ?></div>
+                        <div class="guest-detail"><?= htmlspecialchars($guest['room_type'] ?? '-') ?></div>
                     </div>
-                    <div>
-                        <div class="guest-date">C/O: <?= date('d M', strtotime($guest['check_out_date'])) ?></div>
-                        <span class="guest-status in">In-House</span>
+                    <div class="guest-checkout">
+                        <div class="checkout-date"><?= date('d M', strtotime($guest['check_out_date'])) ?></div>
+                        <div class="checkout-label">Check-out</div>
                     </div>
                 </div>
                 <?php endforeach; ?>
-            <?php else: ?>
-                <div class="empty-state">No in-house guests</div>
             <?php endif; ?>
         </div>
         
-        <!-- Today's Arrivals -->
-        <?php if (!empty($todayArrivals)): ?>
-        <div class="section-title">📥 Today's Arrivals (<?= count($todayArrivals) ?>)</div>
-        <div class="guest-list">
-            <?php foreach ($todayArrivals as $arrival): ?>
-            <div class="guest-item">
-                <div>
-                    <div class="guest-name"><?= htmlspecialchars($arrival['guest_name']) ?></div>
-                    <div class="guest-room">Room <?= $arrival['room_number'] ?? '-' ?></div>
-                </div>
-                <div>
-                    <span class="guest-status <?= $arrival['status'] === 'checked_in' ? 'in' : 'confirmed' ?>">
-                        <?= $arrival['status'] === 'checked_in' ? 'Checked In' : 'Confirmed' ?>
-                    </span>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
         <?php endif; ?>
-        
-        <!-- Today's Departures -->
-        <?php if (!empty($todayDepartures)): ?>
-        <div class="section-title">📤 Today's Departures (<?= count($todayDepartures) ?>)</div>
-        <div class="guest-list">
-            <?php foreach ($todayDepartures as $departure): ?>
-            <div class="guest-item">
-                <div>
-                    <div class="guest-name"><?= htmlspecialchars($departure['guest_name']) ?></div>
-                    <div class="guest-room">Room <?= $departure['room_number'] ?? '-' ?></div>
-                </div>
-                <div>
-                    <span class="guest-status out">Check Out</span>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <?php endif; ?>
-        
-        <?php endif; // end else (no error, has tables) ?>
         
     </div>
     
@@ -664,5 +791,51 @@ function rp($num) {
             <span>Logout</span>
         </a>
     </nav>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var canvas = document.getElementById('occupancyPie');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        
+        var occupied = <?= (int)$stats['occupied'] ?>;
+        var available = <?= (int)$stats['available'] ?>;
+        var maintenance = <?= (int)($roomStatusMap['maintenance'] ?? 0) ?>;
+        var cleaning = <?= (int)($roomStatusMap['cleaning'] ?? 0) ?>;
+        var total = occupied + available + maintenance + cleaning;
+        if (total === 0) { available = 1; total = 1; }
+        
+        var cx = 50, cy = 50, r = 45, innerR = 30;
+        var startAngle = -Math.PI / 2;
+        
+        // Draw segments
+        var segments = [
+            { value: occupied, color: '#ef4444' },    // Occupied - red
+            { value: available, color: '#10b981' },   // Available - green
+            { value: maintenance, color: '#f59e0b' }, // Maintenance - yellow
+            { value: cleaning, color: '#3b82f6' }     // Cleaning - blue
+        ];
+        
+        var currentAngle = startAngle;
+        segments.forEach(function(seg) {
+            if (seg.value > 0) {
+                var angle = (seg.value / total) * 2 * Math.PI;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, r, currentAngle, currentAngle + angle);
+                ctx.closePath();
+                ctx.fillStyle = seg.color;
+                ctx.fill();
+                currentAngle += angle;
+            }
+        });
+        
+        // Inner donut hole
+        ctx.beginPath();
+        ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+    });
+    </script>
 </body>
 </html>

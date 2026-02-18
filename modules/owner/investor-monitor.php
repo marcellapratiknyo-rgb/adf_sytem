@@ -2,29 +2,41 @@
 /**
  * INVESTOR & PROJECT MONITOR
  * Mobile-optimized project monitoring for owner
- * Clean, Compact, Modern
+ * Clean, Compact, Modern - Light Theme
  */
 
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/auth.php';
 
-$auth = new Auth();
-if (!$auth->isLoggedIn()) {
+// Auth check
+$role = $_SESSION['role'] ?? null;
+if (!$role && isset($_SESSION['logged_in']) && $_SESSION['logged_in']) {
+    try {
+        $authDb = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASS);
+        $authDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $roleStmt = $authDb->prepare("SELECT r.role_code FROM users u LEFT JOIN roles r ON u.role_id = r.id WHERE u.id = ?");
+        $roleStmt->execute([$_SESSION['user_id'] ?? 0]);
+        $roleRow = $roleStmt->fetch(PDO::FETCH_ASSOC);
+        if ($roleRow) {
+            $role = $roleRow['role_code'];
+            $_SESSION['role'] = $role;
+        }
+    } catch (Exception $e) {}
+}
+
+if (!$role || !in_array($role, ['admin', 'owner', 'manager', 'developer'])) {
     header('Location: ../../login.php');
     exit;
 }
 
-$currentUser = $auth->getCurrentUser();
-if (!in_array($currentUser['role'], ['owner', 'admin', 'developer'])) {
-    header('Location: dashboard-2028.php');
-    exit;
-}
-
-$db = Database::getInstance();
 $isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
 $basePath = $isProduction ? '' : '/adf_system';
+
+// Database config - connect to BUSINESS database for investors/projects
+$dbHost = DB_HOST;
+$dbUser = DB_USER;
+$dbPass = DB_PASS;
+$businessDbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
 
 // Initialize variables
 $investors = [];
@@ -35,58 +47,70 @@ $totalExpenses = 0;
 $projectExpenses = [];
 $selectedProject = null;
 $selectedProjectId = isset($_GET['project_id']) ? (int)$_GET['project_id'] : null;
+$error = null;
 
 try {
-    // Get all investors
-    $investors = $db->fetchAll("SELECT * FROM investors ORDER BY total_capital DESC");
-    foreach ($investors as $inv) {
-        $totalCapital += $inv['total_capital'] ?? 0;
-    }
+    // Connect to business database
+    $pdo = new PDO("mysql:host=$dbHost;dbname=$businessDbName;charset=utf8mb4", $dbUser, $dbPass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Get all projects
-    $projects = $db->fetchAll("SELECT * FROM projects ORDER BY budget DESC");
-    foreach ($projects as $proj) {
-        $totalBudget += $proj['budget'] ?? 0;
-        $totalExpenses += $proj['total_expenses'] ?? 0;
-    }
+    // Check if investors table exists
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'investors'");
+    $hasInvestorTables = $tableCheck->rowCount() > 0;
     
-    // If a project is selected, get its details and expenses
-    if ($selectedProjectId) {
-        $stmt = $db->getConnection()->prepare("SELECT * FROM projects WHERE id = ?");
-        $stmt->execute([$selectedProjectId]);
-        $selectedProject = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($hasInvestorTables) {
+        // Get all investors
+        $stmt = $pdo->query("SELECT * FROM investors ORDER BY total_capital DESC");
+        $investors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($investors as $inv) {
+            $totalCapital += $inv['total_capital'] ?? 0;
+        }
         
-        if ($selectedProject) {
-            // Get project expenses
-            try {
-                $expStmt = $db->getConnection()->prepare("
-                    SELECT pe.*, pec.category_name 
-                    FROM project_expenses pe 
-                    LEFT JOIN project_expense_categories pec ON pe.expense_category_id = pec.id
-                    WHERE pe.project_id = ? 
-                    ORDER BY pe.expense_date DESC
-                    LIMIT 20
-                ");
-                $expStmt->execute([$selectedProjectId]);
-                $projectExpenses = $expStmt->fetchAll(PDO::FETCH_ASSOC);
-            } catch (Exception $e) {
-                // Fallback
-                $expStmt = $db->getConnection()->prepare("SELECT * FROM project_expenses WHERE project_id = ? ORDER BY expense_date DESC LIMIT 20");
-                $expStmt->execute([$selectedProjectId]);
-                $projectExpenses = $expStmt->fetchAll(PDO::FETCH_ASSOC);
+        // Get all projects
+        $stmt = $pdo->query("SELECT * FROM projects ORDER BY budget DESC");
+        $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($projects as $proj) {
+            $totalBudget += $proj['budget'] ?? 0;
+            $totalExpenses += $proj['total_expenses'] ?? 0;
+        }
+        
+        // If a project is selected, get its details and expenses
+        if ($selectedProjectId) {
+            $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
+            $stmt->execute([$selectedProjectId]);
+            $selectedProject = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($selectedProject) {
+                // Get project expenses
+                try {
+                    $stmt = $pdo->prepare("
+                        SELECT pe.*, pec.category_name 
+                        FROM project_expenses pe 
+                        LEFT JOIN project_expense_categories pec ON pe.expense_category_id = pec.id
+                        WHERE pe.project_id = ? 
+                        ORDER BY pe.expense_date DESC
+                        LIMIT 20
+                    ");
+                    $stmt->execute([$selectedProjectId]);
+                    $projectExpenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } catch (Exception $e) {
+                    // Fallback without category join
+                    $stmt = $pdo->prepare("SELECT * FROM project_expenses WHERE project_id = ? ORDER BY expense_date DESC LIMIT 20");
+                    $stmt->execute([$selectedProjectId]);
+                    $projectExpenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
             }
         }
     }
-    
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
 
 function rp($num) {
     if ($num >= 1000000000) {
-        return 'Rp ' . number_format($num / 1000000000, 1, ',', '.') . 'M';
+        return 'Rp ' . number_format($num / 1000000000, 1, ',', '.') . 'B';
     } elseif ($num >= 1000000) {
-        return 'Rp ' . number_format($num / 1000000, 1, ',', '.') . 'Jt';
+        return 'Rp ' . number_format($num / 1000000, 1, ',', '.') . 'M';
     } else {
         return 'Rp ' . number_format($num, 0, ',', '.');
     }
@@ -99,7 +123,7 @@ function rpFull($num) {
 $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) : 0;
 ?>
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -109,23 +133,24 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         
         :root {
             --primary: #6366f1;
+            --primary-light: #818cf8;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
             --info: #3b82f6;
-            --bg: #0f172a;
-            --card: rgba(255,255,255,0.08);
-            --card-border: rgba(255,255,255,0.1);
-            --text: #ffffff;
-            --text-muted: rgba(255,255,255,0.6);
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
         }
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding-bottom: 70px;
+            padding-bottom: 80px;
         }
         
         .container {
@@ -136,60 +161,75 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         
         /* Header */
         .header {
-            text-align: center;
-            padding: 20px 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 16px;
+            border-radius: 20px;
             margin-bottom: 16px;
+            text-align: center;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
         }
         
         .header-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             margin-bottom: 4px;
         }
         
         .header-subtitle {
-            font-size: 11px;
-            color: var(--text-muted);
+            font-size: 12px;
+            opacity: 0.9;
         }
         
         /* Overview Cards */
         .overview-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 16px;
         }
         
         .overview-card {
             background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px;
             text-align: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+            position: relative;
+            overflow: hidden;
         }
         
-        .overview-card.highlight {
-            grid-column: span 2;
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            border: none;
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
         }
         
-        .overview-label {
-            font-size: 9px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            font-weight: 600;
+        .overview-card.capital::before { background: var(--success); }
+        .overview-card.budget::before { background: var(--info); }
+        .overview-card.used::before { background: var(--warning); }
+        .overview-card.remaining::before { background: var(--primary); }
+        
+        .overview-icon {
+            font-size: 24px;
             margin-bottom: 6px;
         }
         
-        .overview-card.highlight .overview-label {
-            color: rgba(255,255,255,0.8);
+        .overview-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
         
         .overview-value {
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
         }
         
         .overview-hint {
@@ -199,207 +239,283 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         }
         
         /* Progress Bar */
-        .progress-container {
-            margin-bottom: 16px;
+        .progress-section {
             background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
         }
         
         .progress-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 10px;
         }
         
-        .progress-label {
-            font-size: 11px;
+        .progress-title {
+            font-size: 12px;
             font-weight: 600;
+            color: var(--text);
         }
         
         .progress-percent {
-            font-size: 13px;
-            font-weight: 800;
-            color: <?= $usagePercent < 70 ? 'var(--success)' : ($usagePercent < 90 ? 'var(--warning)' : 'var(--danger)') ?>;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
         }
         
         .progress-bar {
-            height: 8px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
+            height: 10px;
+            background: var(--border);
+            border-radius: 5px;
             overflow: hidden;
         }
         
         .progress-fill {
             height: 100%;
-            background: <?= $usagePercent < 70 ? 'var(--success)' : ($usagePercent < 90 ? 'var(--warning)' : 'var(--danger)') ?>;
-            border-radius: 4px;
-            transition: width 0.3s ease;
+            background: linear-gradient(90deg, var(--success), var(--warning));
+            border-radius: 5px;
+            transition: width 0.5s ease;
         }
         
-        /* Section Title */
-        .section-title {
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        /* Investor List */
-        .investor-list {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-        
-        .investor-item {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--card-border);
+        .progress-labels {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-        }
-        
-        .investor-item:last-child {
-            border-bottom: none;
-        }
-        
-        .investor-name {
-            font-size: 13px;
-            font-weight: 600;
-        }
-        
-        .investor-id {
+            margin-top: 8px;
             font-size: 10px;
             color: var(--text-muted);
         }
         
-        .investor-capital {
+        /* Section Title */
+        .section-title {
             font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title .badge {
+            background: var(--primary);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        /* List Card */
+        .list-card {
+            background: var(--card);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+        }
+        
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s;
+        }
+        
+        .list-item:last-child { border-bottom: none; }
+        .list-item:hover { background: var(--bg); }
+        
+        .list-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-right: 12px;
+        }
+        
+        .list-icon.investor {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+        
+        .list-icon.project {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+        }
+        
+        .list-info { flex: 1; }
+        
+        .list-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        
+        .list-detail {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .list-amount {
+            text-align: right;
+        }
+        
+        .list-value {
+            font-size: 12px;
             font-weight: 700;
             color: var(--success);
         }
         
-        /* Project List */
-        .project-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 16px;
+        .list-label {
+            font-size: 9px;
+            color: var(--text-muted);
         }
         
-        .project-card {
+        /* Project Detail */
+        .project-detail {
             background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 14px;
-            text-decoration: none;
-            color: var(--text);
-            display: block;
-            transition: transform 0.2s;
-        }
-        
-        .project-card:active {
-            transform: scale(0.98);
-        }
-        
-        .project-card.active {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.15);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.04);
         }
         
         .project-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
+            align-items: flex-start;
+            margin-bottom: 12px;
         }
         
         .project-name {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
+            color: var(--text);
         }
         
         .project-status {
-            font-size: 8px;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        
-        .project-status.active { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .project-status.planning { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .project-status.completed { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
-        
-        .project-stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-        }
-        
-        .project-stat-label {
-            color: var(--text-muted);
-        }
-        
-        .project-stat-value {
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
             font-weight: 600;
         }
         
-        .project-stat-value.budget { color: var(--info); }
-        .project-stat-value.expense { color: var(--danger); }
+        .project-status.active {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .project-status.completed {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .project-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .project-stat {
+            background: var(--bg);
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .project-stat-label {
+            font-size: 9px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        
+        .project-stat-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            margin-top: 2px;
+        }
         
         /* Expense List */
-        .expense-list {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-        
         .expense-item {
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--card-border);
-            border-left: 3px solid var(--danger);
-        }
-        
-        .expense-item:last-child {
-            border-bottom: none;
-        }
-        
-        .expense-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 4px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .expense-item:last-child { border-bottom: none; }
+        
+        .expense-info {
+            flex: 1;
         }
         
         .expense-desc {
             font-size: 12px;
-            font-weight: 600;
-            flex: 1;
-            margin-right: 12px;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+        
+        .expense-date {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .expense-category {
+            font-size: 9px;
+            background: var(--bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-muted);
         }
         
         .expense-amount {
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 600;
             color: var(--danger);
-            white-space: nowrap;
         }
         
-        .expense-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 30px 20px;
             color: var(--text-muted);
+        }
+        
+        .empty-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        .empty-text {
+            font-size: 13px;
+        }
+        
+        /* Error State */
+        .error-card {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        .error-title {
+            color: var(--danger);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        
+        .error-text {
+            font-size: 12px;
+            color: #991b1b;
         }
         
         /* Back Button */
@@ -407,22 +523,11 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: var(--text-muted);
+            font-size: 12px;
+            color: var(--primary);
             text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            padding: 8px 12px;
-            background: var(--card);
-            border-radius: 8px;
-        }
-        
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 30px;
-            color: var(--text-muted);
-            font-size: 12px;
+            margin-bottom: 12px;
+            font-weight: 500;
         }
         
         /* Footer Nav */
@@ -431,11 +536,12 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            background: white;
             display: flex;
             justify-content: space-around;
-            padding: 10px 0;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+            padding: 10px 0 14px;
+            border-top: 1px solid var(--border);
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
         }
         
         .nav-item {
@@ -443,15 +549,13 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
             flex-direction: column;
             align-items: center;
             text-decoration: none;
-            color: rgba(255,255,255,0.5);
             font-size: 10px;
-            font-weight: 600;
+            color: var(--text-muted);
             transition: color 0.2s;
+            padding: 4px 12px;
         }
         
-        .nav-item.active {
-            color: #a78bfa;
-        }
+        .nav-item.active { color: var(--primary); }
         
         .nav-icon {
             font-size: 20px;
@@ -461,150 +565,160 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
 </head>
 <body>
     <div class="container">
-        
-        <?php if ($selectedProject): ?>
-        <!-- Project Detail View -->
-        <a href="investor-monitor.php" class="back-btn">← Back</a>
-        
+        <!-- Header -->
         <div class="header">
-            <div class="header-title">📊 <?= htmlspecialchars($selectedProject['project_name']) ?></div>
-            <div class="header-subtitle">Project expense details</div>
+            <div class="header-title">📊 Projects & Investors</div>
+            <div class="header-subtitle">Investment Overview</div>
         </div>
         
-        <!-- Project Stats -->
-        <div class="overview-grid">
-            <div class="overview-card">
-                <div class="overview-label">💰 Budget</div>
-                <div class="overview-value" style="color: var(--info);"><?= rp($selectedProject['budget'] ?? 0) ?></div>
-            </div>
-            <div class="overview-card">
-                <div class="overview-label">💸 Spent</div>
-                <div class="overview-value" style="color: var(--danger);"><?= rp($selectedProject['total_expenses'] ?? 0) ?></div>
-            </div>
-            <div class="overview-card highlight">
-                <div class="overview-label">🏦 Remaining Budget</div>
-                <div class="overview-value"><?= rp(($selectedProject['budget'] ?? 0) - ($selectedProject['total_expenses'] ?? 0)) ?></div>
-            </div>
+        <?php if ($error): ?>
+        <div class="error-card">
+            <div class="error-title">⚠️ Connection Error</div>
+            <div class="error-text"><?= htmlspecialchars($error) ?></div>
         </div>
+        <?php elseif ($selectedProject): ?>
         
-        <!-- Progress -->
-        <?php 
-        $projectUsage = ($selectedProject['budget'] ?? 0) > 0 
-            ? round((($selectedProject['total_expenses'] ?? 0) / ($selectedProject['budget'] ?? 1)) * 100) 
-            : 0;
-        ?>
-        <div class="progress-container">
-            <div class="progress-header">
-                <span class="progress-label">Budget Usage</span>
-                <span class="progress-percent" style="color: <?= $projectUsage < 70 ? 'var(--success)' : ($projectUsage < 90 ? 'var(--warning)' : 'var(--danger)') ?>"><?= $projectUsage ?>%</span>
+        <!-- Project Detail View -->
+        <a href="<?= $basePath ?>/modules/owner/investor-monitor.php" class="back-btn">← Back to Overview</a>
+        
+        <div class="project-detail">
+            <div class="project-header">
+                <div class="project-name"><?= htmlspecialchars($selectedProject['name'] ?? 'Project') ?></div>
+                <span class="project-status <?= ($selectedProject['status'] ?? '') === 'active' ? 'active' : 'completed' ?>">
+                    <?= ucfirst($selectedProject['status'] ?? 'active') ?>
+                </span>
             </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: <?= min($projectUsage, 100) ?>%; background: <?= $projectUsage < 70 ? 'var(--success)' : ($projectUsage < 90 ? 'var(--warning)' : 'var(--danger)') ?>"></div>
+            <div class="project-stats">
+                <div class="project-stat">
+                    <div class="project-stat-label">Budget</div>
+                    <div class="project-stat-value"><?= rp($selectedProject['budget'] ?? 0) ?></div>
+                </div>
+                <div class="project-stat">
+                    <div class="project-stat-label">Used</div>
+                    <div class="project-stat-value"><?= rp($selectedProject['total_expenses'] ?? 0) ?></div>
+                </div>
             </div>
         </div>
         
-        <!-- Expenses -->
-        <div class="section-title">📋 Expense History (<?= count($projectExpenses) ?>)</div>
-        <div class="expense-list">
-            <?php if (!empty($projectExpenses)): ?>
+        <div class="section-title">
+            📋 Recent Expenses
+            <span class="badge"><?= count($projectExpenses) ?></span>
+        </div>
+        
+        <div class="list-card">
+            <?php if (empty($projectExpenses)): ?>
+            <div class="empty-state">
+                <div class="empty-icon">📝</div>
+                <div class="empty-text">No expenses recorded yet</div>
+            </div>
+            <?php else: ?>
                 <?php foreach ($projectExpenses as $exp): ?>
                 <div class="expense-item">
-                    <div class="expense-header">
+                    <div class="expense-info">
                         <div class="expense-desc"><?= htmlspecialchars($exp['description'] ?? '-') ?></div>
-                        <div class="expense-amount"><?= rpFull($exp['amount_idr'] ?? $exp['amount'] ?? 0) ?></div>
+                        <div class="expense-date">
+                            <?= date('d M Y', strtotime($exp['expense_date'] ?? 'now')) ?>
+                            <?php if (!empty($exp['category_name'])): ?>
+                                <span class="expense-category"><?= htmlspecialchars($exp['category_name']) ?></span>
+                            <?php endif; ?>
+                        </div>
                     </div>
-                    <div class="expense-meta">
-                        <span><?= $exp['category_name'] ?? 'General' ?></span>
-                        <span><?= date('d M Y', strtotime($exp['expense_date'])) ?></span>
-                    </div>
+                    <div class="expense-amount">-<?= rp($exp['amount'] ?? 0) ?></div>
                 </div>
                 <?php endforeach; ?>
-            <?php else: ?>
-                <div class="empty-state">No expenses yet</div>
             <?php endif; ?>
         </div>
         
         <?php else: ?>
-        <!-- Overview View -->
-        <div class="header">
-            <div class="header-title">📊 Projects & Investors</div>
-            <div class="header-subtitle">Project financial monitoring</div>
-        </div>
         
-        <!-- Overview Stats -->
+        <!-- Overview -->
         <div class="overview-grid">
-            <div class="overview-card">
-                <div class="overview-label">👥 Total Investor Capital</div>
-                <div class="overview-value" style="color: var(--success);"><?= rp($totalCapital) ?></div>
+            <div class="overview-card capital">
+                <div class="overview-icon">💰</div>
+                <div class="overview-label">Total Capital</div>
+                <div class="overview-value"><?= rp($totalCapital) ?></div>
                 <div class="overview-hint"><?= count($investors) ?> investors</div>
             </div>
-            <div class="overview-card">
-                <div class="overview-label">📁 Total Project Budget</div>
-                <div class="overview-value" style="color: var(--info);"><?= rp($totalBudget) ?></div>
+            <div class="overview-card budget">
+                <div class="overview-icon">📊</div>
+                <div class="overview-label">Total Budget</div>
+                <div class="overview-value"><?= rp($totalBudget) ?></div>
                 <div class="overview-hint"><?= count($projects) ?> projects</div>
-            </div>
-            <div class="overview-card highlight">
-                <div class="overview-label">💸 Total Expenses</div>
-                <div class="overview-value"><?= rp($totalExpenses) ?></div>
-                <div class="overview-hint">All projects</div>
             </div>
         </div>
         
-        <!-- Progress -->
-        <div class="progress-container">
+        <!-- Budget Usage Progress -->
+        <div class="progress-section">
             <div class="progress-header">
-                <span class="progress-label">Penggunaan Budget Total</span>
+                <span class="progress-title">Budget Usage</span>
                 <span class="progress-percent"><?= $usagePercent ?>%</span>
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" style="width: <?= min($usagePercent, 100) ?>%"></div>
             </div>
+            <div class="progress-labels">
+                <span>Used: <?= rp($totalExpenses) ?></span>
+                <span>Remaining: <?= rp($totalBudget - $totalExpenses) ?></span>
+            </div>
         </div>
         
-        <!-- Investors -->
-        <div class="section-title">👤 Daftar Investor (<?= count($investors) ?>)</div>
-        <div class="investor-list">
-            <?php if (!empty($investors)): ?>
+        <!-- Investors List -->
+        <div class="section-title">
+            👤 Investors
+            <span class="badge"><?= count($investors) ?></span>
+        </div>
+        
+        <div class="list-card">
+            <?php if (empty($investors)): ?>
+            <div class="empty-state">
+                <div class="empty-icon">👥</div>
+                <div class="empty-text">No investors found</div>
+            </div>
+            <?php else: ?>
                 <?php foreach ($investors as $inv): ?>
-                <div class="investor-item">
-                    <div>
-                        <div class="investor-name"><?= htmlspecialchars($inv['investor_name'] ?? '-') ?></div>
-                        <div class="investor-id">ID: <?= $inv['id'] ?></div>
+                <div class="list-item">
+                    <div class="list-icon investor">👤</div>
+                    <div class="list-info">
+                        <div class="list-name"><?= htmlspecialchars($inv['name'] ?? 'Investor') ?></div>
+                        <div class="list-detail"><?= htmlspecialchars($inv['contact'] ?? '-') ?></div>
                     </div>
-                    <div class="investor-capital"><?= rp($inv['total_capital'] ?? 0) ?></div>
+                    <div class="list-amount">
+                        <div class="list-value"><?= rp($inv['total_capital'] ?? 0) ?></div>
+                        <div class="list-label">Capital</div>
+                    </div>
                 </div>
                 <?php endforeach; ?>
-            <?php else: ?>
-                <div class="empty-state">Belum ada investor terdaftar</div>
             <?php endif; ?>
         </div>
         
-        <!-- Projects -->
-        <div class="section-title">📁 Daftar Proyek (<?= count($projects) ?>)</div>
-        <div class="project-list">
-            <?php if (!empty($projects)): ?>
+        <!-- Projects List -->
+        <div class="section-title">
+            📁 Projects
+            <span class="badge"><?= count($projects) ?></span>
+        </div>
+        
+        <div class="list-card">
+            <?php if (empty($projects)): ?>
+            <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <div class="empty-text">No projects found</div>
+            </div>
+            <?php else: ?>
                 <?php foreach ($projects as $proj): ?>
-                <a href="?project_id=<?= $proj['id'] ?>" class="project-card">
-                    <div class="project-header">
-                        <div class="project-name"><?= htmlspecialchars($proj['project_name'] ?? '-') ?></div>
-                        <span class="project-status <?= strtolower($proj['status'] ?? 'active') ?>">
-                            <?= ucfirst($proj['status'] ?? 'Active') ?>
-                        </span>
+                <a href="?project_id=<?= $proj['id'] ?>" class="list-item">
+                    <div class="list-icon project">📁</div>
+                    <div class="list-info">
+                        <div class="list-name"><?= htmlspecialchars($proj['name'] ?? 'Project') ?></div>
+                        <div class="list-detail">
+                            Budget: <?= rp($proj['budget'] ?? 0) ?>
+                        </div>
                     </div>
-                    <div class="project-stats">
-                        <div>
-                            <span class="project-stat-label">Budget: </span>
-                            <span class="project-stat-value budget"><?= rp($proj['budget'] ?? 0) ?></span>
-                        </div>
-                        <div>
-                            <span class="project-stat-label">Terpakai: </span>
-                            <span class="project-stat-value expense"><?= rp($proj['total_expenses'] ?? 0) ?></span>
-                        </div>
+                    <div class="list-amount">
+                        <div class="list-value" style="color: var(--warning);"><?= rp($proj['total_expenses'] ?? 0) ?></div>
+                        <div class="list-label">Used</div>
                     </div>
                 </a>
                 <?php endforeach; ?>
-            <?php else: ?>
-                <div class="empty-state">Belum ada proyek terdaftar</div>
             <?php endif; ?>
         </div>
         
@@ -624,7 +738,7 @@ $usagePercent = $totalBudget > 0 ? round(($totalExpenses / $totalBudget) * 100) 
         </a>
         <a href="<?= $basePath ?>/modules/owner/investor-monitor.php" class="nav-item active">
             <span class="nav-icon">📈</span>
-            <span>Proyek</span>
+            <span>Projects</span>
         </a>
         <a href="<?= $basePath ?>/logout.php" class="nav-item">
             <span class="nav-icon">🚪</span>
