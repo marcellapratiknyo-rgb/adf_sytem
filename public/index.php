@@ -1,14 +1,14 @@
 <?php
 /**
  * PUBLIC WEBSITE - Homepage
- * Modern Luxury Resort Website (Style: Travel Destination Page)
+ * Luxury 5-Star Resort Website
  */
 
 define('PUBLIC_ACCESS', true);
 require_once './includes/config.php';
 require_once './includes/database.php';
 
-$pageTitle = 'Luxury Resort - ' . BUSINESS_NAME;
+$pageTitle = 'Luxury Beachfront Resort - ' . BUSINESS_NAME;
 $additionalCSS = ['css/homepage.css'];
 
 // Get hotel settings and featured packages
@@ -16,10 +16,10 @@ $db = PublicDatabase::getInstance();
 try {
     // Get featured room types for packages
     $packages = $db->fetchAll("
-        SELECT id, type_name as package_name, base_price, description
+        SELECT id, type_name as package_name, base_price, description, max_occupancy
         FROM room_types
         ORDER BY base_price ASC
-        LIMIT 3
+        LIMIT 6
     ");
 } catch (Exception $e) {
     $packages = [];
@@ -28,165 +28,229 @@ try {
 ?>
 <?php include './includes/header.php'; ?>
 
-<!-- Hero Section - Large Background -->
-<section class="hero-section">
-    <div class="hero-background" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(51, 65, 85, 0.7)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 800%22><defs><linearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22><stop offset=%220%25%22 style=%22stop-color:rgb(102,126,234);stop-opacity:1%22 /><stop offset=%22100%25%22 style=%22stop-color:rgb(118,75,162);stop-opacity:1%22 /></linearGradient></defs><rect width=%221200%22 height=%22800%22 fill=%22url(%23grad)%22/><circle cx=%22600%22 cy=%22400%22 r=%22300%22 fill=%22rgba(255,255,255,0.05)%22/></svg>'); background-size: cover; background-position: center;">
-    </div>
-    
-    <div class="hero-container">
-        <!-- Left Content -->
-        <div class="hero-content">
-            <div class="hero-text">
-                <h1 class="hero-title">KARIMUNJAWA</h1>
-                <p class="hero-description">
-                    Discover a tropical paradise in the exotic Karimunjawa archipelago. 
-                    White sand beaches, crystal clear waters, and unforgettable 
-                    luxury accommodation await you.
-                </p>
-                <a href="<?php echo baseUrl('booking.php'); ?>" class="btn-explore">
-                    <span>EXPLORE</span>
-                    <i data-feather="arrow-right" style="margin-left: 0.5rem;"></i>
-                </a>
-            </div>
-        </div>
-        
-        <!-- Right Featured Packages -->
-        <div class="hero-packages">
-            <?php foreach ($packages as $package): ?>
-            <div class="package-card">
-                <div class="package-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                <div class="package-info">
-                    <h3><?php echo htmlize($package['package_name']); ?></h3>
-                    <p><?php echo htmlize(substr($package['description'] ?? '', 0, 60) . '...'); ?></p>
-                    <div class="package-price"><?php echo formatCurrency($package['base_price']); ?></div>
-                    <small>/malam</small>
-                </div>
-            </div>
-            <?php endforeach; ?>
+<!-- HERO SECTION - Full Screen with Background Image -->
+<section class="luxury-hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content-luxury">
+        <div class="destination-card">
+            <h1 class="destination-title">Karimunjawa</h1>
+            <p class="destination-subtitle">TROPICAL PARADISE IN CENTRAL JAVA, INDONESIA</p>
+            <p class="destination-description">
+                Discover the most exclusive island retreat with pristine beaches, 
+                crystal-clear waters, and world-class accommodations
+            </p>
+            <a href="<?php echo baseUrl('booking.php'); ?>" class="btn-luxury btn-primary">
+                BOOK YOUR ESCAPE
+            </a>
         </div>
     </div>
 </section>
 
-<!-- About Section -->
-<section class="section about-section">
+<!-- FEATURES SECTION - Luxury Amenities -->
+<section class="luxury-features">
     <div class="container">
-        <div class="about-grid">
-            <div class="about-content">
-                <h2>Why Choose Narayana?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="award"></i>
+                </div>
+                <h3>World-Class Service</h3>
                 <p>
-                    Narayana Karimunjawa is the ideal destination for your dream vacation. 
-                    We offer the perfect combination of luxury, comfort, and 
-                    unparalleled natural beauty.
+                    Our dedicated concierge team ensures every moment of your stay 
+                    is extraordinary and perfectly tailored to your needs.
                 </p>
-                <ul class="features-list">
-                    <li>🏖️ Private Beach with White Sand</li>
-                    <li>🌊 Water Sports & Snorkeling</li>
-                    <li>🍽️ Fine Dining Restaurant</li>
-                    <li>🧘 Spa & Wellness Center</li>
-                    <li>🎾 Complete Sports Facilities</li>
-                    <li>👥 24/7 Concierge Service</li>
-                </ul>
             </div>
-            <div class="about-image">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 400px; border-radius: 1rem; display: flex; align-items: center; justify-content: center; color: white; font-size: 4rem;">
-                    🏝️
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="star"></i>
                 </div>
+                <h3>Premium Amenities</h3>
+                <p>
+                    Experience luxury at every turn with our spa, fine dining restaurant, 
+                    private beaches, and world-class recreational facilities.
+                </p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i data-feather="heart"></i>
+                </div>
+                <h3>Perfect Destination</h3>
+                <p>
+                    Whether honeymooning, relaxing, or adventuring, Karimunjawa offers 
+                    the perfect setting for unforgettable memories.
+                </p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- All Packages/Rooms Section -->
-<section class="section packages-section dark">
+<!-- ROOM SHOWCASE - Featured Luxury Rooms -->
+<section class="luxury-rooms">
     <div class="container">
-        <h2 style="color: white; margin-bottom: 1rem; text-align: center;">Our Room Packages</h2>
-        <p style="color: rgba(255, 255, 255, 0.8); text-align: center; margin-bottom: 3rem;">
-            Choose a package that suits your budget and vacation style
-        </p>
+        <div class="section-header">
+            <h2>Our Exclusive Room Collection</h2>
+            <p>Handcrafted accommodations for the discerning traveler</p>
+        </div>
         
-        <div class="packages-grid">
-            <?php
-            // Get all room types
-            $allPackages = $db->fetchAll("
-                SELECT id, type_name, base_price, description, max_occupancy
-                FROM room_types
-                ORDER BY base_price ASC
-            ");
-            
-            foreach ($allPackages as $pkg):
-            ?>
-            <div class="package-full-card">
-                <div class="package-img" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
-                <div class="package-details">
-                    <h3><?php echo htmlize($pkg['type_name']); ?></h3>
-                    <p><?php echo htmlize($pkg['description'] ?? 'Room with luxury amenities and amazing views'); ?></p>
-                    <div class="package-meta">
-                        <span>👥 Up to <?php echo $pkg['max_occupancy']; ?> guests</span>
+        <div class="rooms-showcase-grid">
+            <?php foreach ($packages as $package): ?>
+            <div class="room-showcase-card">
+                <div class="room-image-container">
+                    <div class="room-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>
+                    <div class="room-rank"><?php echo strtoupper(substr($package['package_name'], 0, 1)); ?></div>
+                </div>
+                <div class="room-showcase-info">
+                    <h3><?php echo htmlize($package['package_name']); ?></h3>
+                    <p class="room-description"><?php echo htmlize(substr($package['description'] ?? '', 0, 80) . '...'); ?></p>
+                    <div class="room-details">
+                        <span class="room-capacity">👥 Up to <?php echo $package['max_occupancy']; ?> Guests</span>
                     </div>
-                    <div class="package-footer">
-                        <div class="price" style="color: #6366f1; font-size: 1.5rem; font-weight: 700;">
-                            <?php echo formatCurrency($pkg['base_price']); ?><br>
-                            <span style="font-size: 0.85rem; color: #94a3b8;">/night</span>
+                    <div class="room-footer">
+                        <div class="room-price">
+                            <span class="price-label">From</span>
+                            <span class="price-value"><?php echo formatCurrency($package['base_price']); ?></span>
+                            <span class="price-period">/Night</span>
                         </div>
-                        <a href="<?php echo baseUrl('booking.php'); ?>" class="btn btn-small btn-primary">
-                            Book Now
+                        <a href="<?php echo baseUrl('booking.php'); ?>" class="btn-inquiry">
+                            INQUIRE
+                            <i data-feather="arrow-right" style="width: 16px; height: 16px;"></i>
                         </a>
                     </div>
                 </div>
             </div>
             <?php endforeach; ?>
         </div>
+        
+        <div class="view-all-container">
+            <a href="<?php echo baseUrl('booking.php'); ?>" class="btn-luxury btn-secondary">
+                VIEW ALL ROOMS
+            </a>
+        </div>
     </div>
 </section>
 
-<!-- Testimonials Section -->
-<section class="section testimonials-section">
+<!-- LUXURY EXPERIENCES SECTION -->
+<section class="luxury-experiences">
     <div class="container">
-        <h2 style="text-align: center; margin-bottom: 3rem;">What Our Guests Say</h2>
+        <div class="section-header">
+            <h2>Curated Experiences</h2>
+            <p>Create unforgettable memories with our premium services</p>
+        </div>
         
-        <div class="testimonials-grid">
-            <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p>"The most perfect vacation we've ever experienced. Friendly staff, complete facilities, and amazing views!"</p>
+        <div class="experiences-grid">
+            <div class="experience-card">
+                <div class="exp-icon">🏖️</div>
+                <h3>Private Beach Access</h3>
+                <p>Exclusive access to pristine private beaches with water sports and beach activities</p>
+            </div>
+            
+            <div class="experience-card">
+                <div class="exp-icon">🍽️</div>
+                <h3>Fine Dining</h3>
+                <p>Award-winning cuisine prepared by renowned chefs using the finest local ingredients</p>
+            </div>
+            
+            <div class="experience-card">
+                <div class="exp-icon">🧘</div>
+                <h3>Wellness & Spa</h3>
+                <p>Traditional and modern spa treatments in our exclusive wellness sanctuary</p>
+            </div>
+            
+            <div class="experience-card">
+                <div class="exp-icon">⛵</div>
+                <h3>Water Adventures</h3>
+                <p>Snorkeling, diving, sailing, and island-hopping in crystal-clear tropical waters</p>
+            </div>
+            
+            <div class="experience-card">
+                <div class="exp-icon">🎭</div>
+                <h3>Cultural Tours</h3>
+                <p>Immerse yourself in local culture with guided tours and authentic experiences</p>
+            </div>
+            
+            <div class="experience-card">
+                <div class="exp-icon">🌅</div>
+                <h3>Sunset Magic</h3>
+                <p>Romantic sunset cruises and beachfront dinners you'll remember forever</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- TESTIMONIALS - Guest Reviews Section -->
+<section class="luxury-testimonials">
+    <div class="container">
+        <div class="section-header">
+            <h2>What Our Guests Say</h2>
+            <p>Real experiences from our valued visitors</p>
+        </div>
+        
+        <div class="testimonials-carousel">
+            <div class="testimonial-luxury-card">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">
+                    "An absolutely magnificent escape. The attention to detail is impeccable, 
+                    and every staff member treated us like royalty. This is luxury done right."
+                </p>
                 <div class="testimonial-author">
-                    <strong>Michael Johnson</strong>
-                    <small>New York</small>
+                    <div class="author-avatar">JD</div>
+                    <div>
+                        <p class="author-name">James Davidson</p>
+                        <p class="author-location">New York, USA</p>
+                    </div>
                 </div>
             </div>
             
-            <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p>"Price matches quality. Comfortable rooms, delicious food, and friendly service. Will definitely come back!"</p>
+            <div class="testimonial-luxury-card">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">
+                    "The most romantic honeymoon destination imaginable. Perfect beaches, 
+                    incredible food, and service that exceeded our expectations at every turn."
+                </p>
                 <div class="testimonial-author">
-                    <strong>Sarah Williams</strong>
-                    <small>Los Angeles</small>
+                    <div class="author-avatar">EC</div>
+                    <div>
+                        <p class="author-name">Emma & Christopher</p>
+                        <p class="author-location">London, UK</p>
+                    </div>
                 </div>
             </div>
             
-            <div class="testimonial-card">
-                <div class="stars">⭐⭐⭐⭐⭐</div>
-                <p>"Must-visit destination for honeymoon. Romantic atmosphere, private beach, and beautiful sunset. Highly recommended!"</p>
+            <div class="testimonial-luxury-card">
+                <div class="stars">★★★★★</div>
+                <p class="testimonial-text">
+                    "From the moment we arrived until we left, everything was flawless. 
+                    A true 5-star experience in paradise. Already booking our return visit!"
+                </p>
                 <div class="testimonial-author">
-                    <strong>David Smith</strong>
-                    <small>London</small>
+                    <div class="author-avatar">SC</div>
+                    <div>
+                        <p class="author-name">Sophie Chen</p>
+                        <p class="author-location">Singapore</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- CTA Section -->
-<section class="section cta-section dark">
-    <div class="container" style="text-align: center;">
-        <h2 style="color: white; margin-bottom: 1rem;">Ready for Your Next Adventure?</h2>
-        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 2rem; font-size: 1.1rem;">
-            Don't wait, book your room now and enjoy early bird discount up to 20%
-        </p>
-        <a href="<?php echo baseUrl('booking.php'); ?>" class="btn-explore" style="display: inline-flex; align-items: center; gap: 0.5rem;">
-            BOOK NOW
-            <i data-feather="arrow-right"></i>
-        </a>
+<!-- CTA SECTION - Final Call to Action -->
+<section class="luxury-cta">
+    <div class="cta-content">
+        <h2>Ready to Experience Paradise?</h2>
+        <p>Begin your journey to the most exclusive island retreat</p>
+        <div class="cta-buttons">
+            <a href="<?php echo baseUrl('booking.php'); ?>" class="btn-luxury btn-primary btn-large">
+                BOOK NOW
+            </a>
+            <a href="#contact" class="btn-luxury btn-secondary btn-large">
+                CONTACT US
+            </a>
+        </div>
     </div>
 </section>
 
 <?php include './includes/footer.php'; ?>
+
