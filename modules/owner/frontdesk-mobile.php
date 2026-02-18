@@ -29,6 +29,33 @@ $basePath = rtrim(BASE_URL, '/');
 $today = date('Y-m-d');
 $thisMonth = date('Y-m');
 
+// Initialize default values
+$stats = [
+    'checkins' => 0,
+    'checkouts' => 0,
+    'available' => 0,
+    'occupied' => 0,
+    'total_rooms' => 0,
+    'occupancy' => 0,
+    'today_revenue' => 0,
+    'month_revenue' => 0
+];
+$inHouseGuests = [];
+$todayArrivals = [];
+$todayDepartures = [];
+$roomStatusMap = [];
+$error = null;
+
+// Check if frontdesk tables exist
+$hasFrontdeskTables = false;
+try {
+    $db->getConnection()->query("SELECT 1 FROM rooms LIMIT 1");
+    $hasFrontdeskTables = true;
+} catch (Exception $e) {
+    $hasFrontdeskTables = false;
+}
+
+if ($hasFrontdeskTables) {
 try {
     // Today's check-ins
     $checkinsResult = $db->fetchOne("
@@ -122,6 +149,7 @@ try {
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
+} // end if hasFrontdeskTables
 
 function rp($num) {
     return 'Rp ' . number_format($num, 0, ',', '.');
@@ -464,6 +492,20 @@ function rp($num) {
             <div class="header-date"><?= date('l, d F Y') ?></div>
         </div>
         
+        <?php if (!$hasFrontdeskTables): ?>
+        <!-- No Frontdesk Tables -->
+        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 16px; padding: 24px; margin-bottom: 16px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 12px;">🏨</div>
+            <div style="font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 8px;">Modul Frontdesk Tidak Tersedia</div>
+            <div style="font-size: 12px; color: #a16207;">Database frontdesk (rooms, bookings) belum dikonfigurasi untuk bisnis ini.</div>
+        </div>
+        <?php elseif ($error): ?>
+        <!-- Error -->
+        <div style="background: #fee2e2; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-size: 12px; color: #dc2626; font-weight: 600;">Error: <?= htmlspecialchars($error) ?></div>
+        </div>
+        <?php else: ?>
+        
         <!-- Occupancy -->
         <div class="occupancy-card">
             <div>
@@ -597,6 +639,8 @@ function rp($num) {
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
+        
+        <?php endif; // end else (no error, has tables) ?>
         
     </div>
     
