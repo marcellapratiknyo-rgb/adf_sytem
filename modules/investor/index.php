@@ -1533,7 +1533,54 @@ include $base_path . '/includes/header.php';
                     <div class="text">Create First Project</div>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Manage project budget and expenses with ledger</p>
                 </div>
-            <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
+            <?php else: ?>
+                <?php foreach ($projects as $project): ?>
+                <div class="project-card" onclick="goToProjectLedger(<?= $project['id'] ?>)">
+                    <div>
+                        <div class="project-name"><?= htmlspecialchars($project['project_name'] ?? 'N/A') ?></div>
+                        <div class="project-code">
+                            <?php
+                            $code = $project['project_code'] ?? 'PROJ-' . str_pad($project['id'], 4, '0', STR_PAD_LEFT);
+                            echo htmlspecialchars($code);
+                            ?>
+                        </div>
+                    </div>
+                    <div class="project-amount">
+                        Rp <?= number_format($project['budget_idr'] ?? 0, 0, ',', '.') ?>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-item">
+                            <span>Pengeluaran</span>
+                            <div class="meta-value" style="color:#d97706">Rp <?= number_format($project['grand_expenses'] ?? $project['total_expenses'] ?? 0, 0, ',', '.') ?></div>
+                        </div>
+                        <div class="meta-item">
+                            <span>Sisa</span>
+                            <?php $sisa = ($project['budget_idr'] ?? 0) - ($project['grand_expenses'] ?? 0); ?>
+                            <div class="meta-value" style="color:<?= $sisa >= 0 ? '#059669' : '#dc2626' ?>">Rp <?= number_format($sisa, 0, ',', '.') ?></div>
+                        </div>
+                    </div>
+                    <div class="project-actions">
+                        <button class="btn btn-sm btn-kas" onclick="event.stopPropagation(); goToProjectLedger(<?= $project['id'] ?>)">
+                            📊 Ledger
+                        </button>
+                        <button class="btn btn-sm btn-edit" onclick="event.stopPropagation(); editProject(<?= $project['id'] ?>)">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-sm btn-hapus" onclick="event.stopPropagation(); deleteProject(<?= $project['id'] ?>, '<?= htmlspecialchars($project['project_name'], ENT_QUOTES) ?>')">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+
+                <div class="add-project-card" onclick="openAddProjectModal()">
+                    <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <div class="text">Add New Project</div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -1846,23 +1893,24 @@ include $base_path . '/includes/header.php';
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="deposits-script.js"></script>
 <script>
+// ====== GLOBAL FUNCTIONS ======
+// Currency Formatter for IDR
+function formatCurrency(value) {
+    if (!value) return '';
+    const numericValue = parseInt(value.toString().replace(/\D/g, '')) || 0;
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(numericValue).replace('IDR', '').trim();
+}
+
 // ====== CHART RENDERING ======
 document.addEventListener('DOMContentLoaded', function() {
     const darkMode = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark-mode');
     const textColor = darkMode ? '#ccc' : '#666';
     const gridColor = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-
-    // Currency Formatter for IDR
-    function formatCurrency(value) {
-        if (!value) return '';
-        const numericValue = parseInt(value.replace(/\D/g, '')) || 0;
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        }).format(numericValue).replace('IDR', '').trim();
-    }
 
     // Add currency formatting to deposit amount input
     const depositAmountInput = document.getElementById('depositAmount');
