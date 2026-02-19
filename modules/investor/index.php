@@ -1,7 +1,7 @@
 <?php
 /**
- * MODUL INVESTOR - Pencatatan Dana Investor
- * Terpisah dari projek, hanya mencatat setoran dari investor
+ * INVESTOR MODULE - Investor Fund Recording
+ * Separate from projects, only records investor deposits
  */
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -1087,14 +1087,14 @@ include $base_path . '/includes/header.php';
                     <path d="M9 11l3 3L22 4"/>
                     <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                Manajemen Projek
+                Project Management
             </h2>
             <button class="btn btn-primary" onclick="openAddProjectModal()">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <line x1="12" y1="5" x2="12" y2="19"/>
                     <line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
-                Tambah Projek
+                Add Project
             </button>
         </div>
 
@@ -1106,8 +1106,8 @@ include $base_path . '/includes/header.php';
                         <line x1="9" y1="9" x2="15" y2="9"/>
                         <line x1="9" y1="15" x2="15" y2="15"/>
                     </svg>
-                    <div class="text">Buat Projek Pertama</div>
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Kelola budget dan pengeluaran projek dengan buku kas</p>
+                    <div class="text">Create First Project</div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Manage project budget and expenses with ledger</p>
                 </div>
             <?php else: ?>
                 <?php foreach ($projects as $project): ?>
@@ -1154,7 +1154,7 @@ include $base_path . '/includes/header.php';
                         <line x1="12" y1="5" x2="12" y2="19"/>
                         <line x1="5" y1="12" x2="19" y2="12"/>
                     </svg>
-                    <div class="text">Tambah Projek Baru</div>
+                    <div class="text">Add New Project</div>
                 </div>
             <?php endif; ?>
         </div>
@@ -1169,7 +1169,7 @@ include $base_path . '/includes/header.php';
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
-            Daftar Investor
+            Investor List
         </h2>
     </div>
     
@@ -1259,7 +1259,7 @@ include $base_path . '/includes/header.php';
 <div class="modal-overlay" id="resetDataModal">
     <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-            <h3 style="color: white;">⚠️ Reset Data Investor</h3>
+            <h3 style="color: white;">⚠️ Reset Investor Data</h3>
             <button class="modal-close" onclick="closeModal('resetDataModal')" style="color: white;">&times;</button>
         </div>
         <div class="modal-body">
@@ -1267,32 +1267,32 @@ include $base_path . '/includes/header.php';
                 <svg width="64" height="64" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24" style="margin-bottom: 1rem;">
                     <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
-                <h4 style="color: #dc2626; margin-bottom: 1rem;">Peringatan!</h4>
+                <h4 style="color: #dc2626; margin-bottom: 1rem;">Warning!</h4>
                 <p style="color: var(--text-secondary); margin-bottom: 1rem;">
-                    Tindakan ini akan <strong>menghapus SEMUA data investor</strong> termasuk:
+                    This action will <strong>DELETE ALL investor data</strong> including:
                 </p>
                 <ul style="text-align: left; color: var(--text-secondary); padding-left: 2rem; margin-bottom: 1.5rem;">
-                    <li>Semua data investor</li>
-                    <li>Semua riwayat setoran</li>
-                    <li>Semua transaksi investor</li>
+                    <li>All investor records</li>
+                    <li>All deposit history</li>
+                    <li>All investor transactions</li>
                 </ul>
                 <p style="color: #dc2626; font-weight: 600;">
-                    Data yang sudah dihapus TIDAK DAPAT dikembalikan!
+                    Deleted data CANNOT be recovered!
                 </p>
             </div>
             <div class="form-group" style="margin-top: 1rem;">
-                <label>Ketik <strong style="color: #dc2626;">RESET</strong> untuk konfirmasi:</label>
-                <input type="text" id="resetConfirmInput" placeholder="Ketik RESET" style="text-transform: uppercase;">
+                <label>Type <strong style="color: #dc2626;">RESET</strong> to confirm:</label>
+                <input type="text" id="resetConfirmInput" placeholder="Type RESET" style="text-transform: uppercase;">
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="closeModal('resetDataModal')">Batal</button>
+            <button type="button" class="btn btn-secondary" onclick="closeModal('resetDataModal')">Cancel</button>
             <button type="button" class="btn btn-danger" onclick="executeResetData()" id="resetExecuteBtn" disabled>
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M3 6h18"/>
                     <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
                 </svg>
-                Reset Semua Data
+                Reset All Data
             </button>
         </div>
     </div>
@@ -1302,31 +1302,31 @@ include $base_path . '/includes/header.php';
 <div class="modal-overlay" id="addInvestorModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Tambah Investor Baru</h3>
+            <h3>Add New Investor</h3>
             <button class="modal-close" onclick="closeModal('addInvestorModal')">&times;</button>
         </div>
         <form id="addInvestorForm" onsubmit="saveInvestor(event)">
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nama Investor *</label>
-                    <input type="text" name="name" required placeholder="Nama lengkap investor">
+                    <label>Investor Name *</label>
+                    <input type="text" name="name" required placeholder="Full investor name">
                 </div>
                 <div class="form-group">
-                    <label>No. Telepon</label>
-                    <input type="text" name="phone" placeholder="08xxxx">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" placeholder="+62xxxxx">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email" placeholder="email@example.com">
                 </div>
                 <div class="form-group">
-                    <label>Catatan</label>
-                    <textarea name="notes" rows="2" placeholder="Catatan tambahan..."></textarea>
+                    <label>Notes</label>
+                    <textarea name="notes" rows="2" placeholder="Additional notes..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addInvestorModal')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addInvestorModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save</button>
             </div>
         </form>
     </div>
@@ -1343,25 +1343,25 @@ include $base_path . '/includes/header.php';
             <input type="hidden" name="investor_id" id="editInvestorId">
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nama Investor *</label>
-                    <input type="text" name="name" id="editInvestorName" required placeholder="Nama lengkap investor">
+                    <label>Investor Name *</label>
+                    <input type="text" name="name" id="editInvestorName" required placeholder="Full investor name">
                 </div>
                 <div class="form-group">
-                    <label>No. Telepon</label>
-                    <input type="text" name="phone" id="editInvestorPhone" placeholder="08xxxx">
+                    <label>Phone Number</label>
+                    <input type="text" name="phone" id="editInvestorPhone" placeholder="+62xxxxx">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email" id="editInvestorEmail" placeholder="email@example.com">
                 </div>
                 <div class="form-group">
-                    <label>Catatan</label>
-                    <textarea name="notes" id="editInvestorNotes" rows="2" placeholder="Catatan tambahan..."></textarea>
+                    <label>Notes</label>
+                    <textarea name="notes" id="editInvestorNotes" rows="2" placeholder="Additional notes..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('editInvestorModal')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editInvestorModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
     </div>
@@ -1371,40 +1371,40 @@ include $base_path . '/includes/header.php';
 <div class="modal-overlay" id="addProjectModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Tambah Projek Baru</h3>
+            <h3>Add New Project</h3>
             <button class="modal-close" onclick="closeModal('addProjectModal')">&times;</button>
         </div>
         <form id="addProjectForm" onsubmit="saveProject(event)">
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Nama Projek *</label>
-                    <input type="text" name="project_name" required placeholder="Nama projek">
+                    <label>Project Name *</label>
+                    <input type="text" name="project_name" required placeholder="Project name">
                 </div>
                 <div class="form-group">
-                    <label>Kode Projek</label>
+                    <label>Project Code</label>
                     <input type="text" name="project_code" placeholder="PROJ-001">
                 </div>
                 <div class="form-group">
-                    <label>Budget (Rp) *</label>
+                    <label>Budget (IDR) *</label>
                     <input type="number" name="budget_idr" required placeholder="0" min="1">
                 </div>
                 <div class="form-group">
-                    <label>Deskripsi</label>
-                    <textarea name="description" rows="2" placeholder="Deskripsi projek..."></textarea>
+                    <label>Description</label>
+                    <textarea name="description" rows="2" placeholder="Project description..."></textarea>
                 </div>
                 <div class="form-group">
                     <label>Status</label>
                     <select name="status" required>
-                        <option value="planning">Perencanaan</option>
-                        <option value="ongoing" selected>Berjalan</option>
-                        <option value="on_hold">Tunda</option>
-                        <option value="completed">Selesai</option>
+                        <option value="planning">Planning</option>
+                        <option value="ongoing" selected>Ongoing</option>
+                        <option value="on_hold">On Hold</option>
+                        <option value="completed">Completed</option>
                     </select>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('addProjectModal')">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan Projek</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addProjectModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Project</button>
             </div>
         </form>
     </div>
@@ -1414,36 +1414,36 @@ include $base_path . '/includes/header.php';
 <div class="modal-overlay" id="depositModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Catat Setoran Investor</h3>
+            <h3>Record Investor Deposit</h3>
             <button class="modal-close" onclick="closeModal('depositModal')">&times;</button>
         </div>
         <form id="depositForm" onsubmit="saveDeposit(event)">
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Pilih Investor *</label>
+                    <label>Select Investor *</label>
                     <select name="investor_id" id="depositInvestorSelect" required>
-                        <option value="">-- Pilih Investor --</option>
+                        <option value="">-- Select Investor --</option>
                         <?php foreach ($investors as $inv): ?>
                         <option value="<?= $inv['id'] ?>"><?= htmlspecialchars($inv['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Jumlah Setoran (Rp) *</label>
-                    <input type="number" name="amount" required placeholder="0" min="1">
+                    <label>Deposit Amount (IDR) *</label>
+                    <input type="text" id="depositAmount" name="amount" required placeholder="0" data-currency>
                 </div>
                 <div class="form-group">
-                    <label>Tanggal Setoran</label>
+                    <label>Deposit Date</label>
                     <input type="date" name="deposit_date" value="<?= date('Y-m-d') ?>">
                 </div>
                 <div class="form-group">
-                    <label>Keterangan</label>
-                    <textarea name="description" rows="2" placeholder="Keterangan setoran..."></textarea>
+                    <label>Description</label>
+                    <textarea name="description" rows="2" placeholder="Deposit description..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal('depositModal')">Batal</button>
-                <button type="submit" class="btn btn-success">Simpan Setoran</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('depositModal')">Cancel</button>
+                <button type="submit" class="btn btn-success">Save Deposit</button>
             </div>
         </form>
     </div>
@@ -1456,6 +1456,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const darkMode = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark-mode');
     const textColor = darkMode ? '#ccc' : '#666';
     const gridColor = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+    // Currency Formatter for IDR
+    function formatCurrency(value) {
+        if (!value) return '';
+        const numericValue = parseInt(value.replace(/\D/g, '')) || 0;
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(numericValue).replace('IDR', '').trim();
+    }
+
+    // Add currency formatting to deposit amount input
+    const depositAmountInput = document.getElementById('depositAmount');
+    if (depositAmountInput) {
+        depositAmountInput.addEventListener('input', function(e) {
+            const value = e.target.value;
+            const numericValue = value.replace(/\D/g, '');
+            if (numericValue) {
+                e.target.value = 'IDR ' + formatCurrency(numericValue);
+            }
+        });
+    }
 
     // Pie Chart - Pengeluaran per Kontraktor
     <?php if (!empty($chart_contractor_pie)): ?>
@@ -1599,10 +1623,10 @@ async function saveInvestor(e) {
         const result = await response.json();
         
         if (result.success) {
-            alert('Investor berhasil ditambahkan');
+            alert('✅ Investor saved successfully');
             location.reload();
         } else {
-            alert('Error: ' + (result.message || 'Gagal menyimpan'));
+            alert('❌ Error: ' + (result.message || 'Failed to save'));
         }
     } catch (error) {
         alert('Error: ' + error.message);
@@ -1614,6 +1638,11 @@ async function saveDeposit(e) {
     const form = e.target;
     const formData = new FormData(form);
     
+    // Extract numeric value from currency-formatted input
+    const amountInput = document.getElementById('depositAmount')?.value || formData.get('amount');
+    const numericAmount = parseInt(amountInput.replace(/\D/g, '')) || 0;
+    formData.set('amount', numericAmount);
+    
     try {
         const response = await fetch('<?= BASE_URL ?>/api/investor-deposit.php', {
             method: 'POST',
@@ -1622,19 +1651,19 @@ async function saveDeposit(e) {
         const result = await response.json();
         
         if (result.success) {
-            alert('Setoran berhasil dicatat');
+            alert('✅ Deposit recorded successfully');
             location.reload();
         } else {
-            alert('Error: ' + (result.message || 'Gagal menyimpan'));
+            alert('❌ Error: ' + (result.message || 'Failed to save'));
         }
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('❌ Error: ' + error.message);
     }
 }
 
 function viewHistory(investorId) {
     // TODO: Implement history view
-    alert('Fitur history akan segera tersedia');
+    alert('History feature coming soon');
 }
 
 async function editInvestor(investorId) {
@@ -1656,7 +1685,7 @@ async function editInvestor(investorId) {
             // Open modal
             document.getElementById('editInvestorModal').classList.add('active');
         } else {
-            alert('Gagal memuat data investor: ' + (result.message || 'Unknown error'));
+            alert('❌ Failed to load investor data: ' + (result.message || 'Unknown error'));
         }
     } catch (error) {
         alert('Error: ' + error.message);
@@ -1695,7 +1724,7 @@ async function saveInvestorEdit(event) {
 }
 
 async function deleteInvestor(investorId, investorName) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus investor "${investorName}"?\n\nSemua dana setoran dan transaksi investor akan IKUT TERHAPUS!\n\nAksi ini TIDAK DAPAT dibatalkan.`)) {
+    if (!confirm(`Are you sure you want to delete investor "${investorName}"?\n\nAll deposit funds and investor transactions will be DELETED!\n\nThis action CANNOT be undone.`)) {
         return;
     }
     
@@ -1711,7 +1740,7 @@ async function deleteInvestor(investorId, investorName) {
         const result = await response.json();
         
         if (result.success) {
-            alert('✅ ' + (result.message || 'Investor berhasil dihapus'));
+            alert('✅ ' + (result.message || 'Investor deleted successfully'));
             location.reload();
         } else {
             alert('❌ Error: ' + (result.message || 'Gagal menghapus investor'));
@@ -1739,13 +1768,13 @@ async function saveProject(e) {
         const result = await response.json();
         
         if (result.success) {
-            alert('Projek berhasil ditambahkan');
+            alert('✅ Project saved successfully');
             location.reload();
         } else {
-            alert('Error: ' + (result.message || 'Gagal menyimpan'));
+            alert('❌ Error: ' + (result.message || 'Failed to save'));
         }
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('❌ Error: ' + error.message);
     }
 }
 
@@ -1756,11 +1785,11 @@ function goToProjectLedger(projectId) {
 
 function editProject(projectId) {
     // TODO: Implement edit project modal
-    alert('Fitur edit proyek akan segera tersedia');
+    alert('Edit project feature coming soon');
 }
 
 async function deleteProject(projectId, projectName) {
-    if (!confirm(`Apakah Anda yakin ingin menghapus projek "${projectName}"?\n\nSemua data pengeluaran projek ini akan ikut terhapus!`)) {
+    if (!confirm(`Are you sure you want to delete the project "${projectName}"?\n\nAll project expense data will be deleted!`)) {
         return;
     }
     
@@ -1776,13 +1805,13 @@ async function deleteProject(projectId, projectName) {
         const result = await response.json();
         
         if (result.success) {
-            alert(result.message || 'Projek berhasil dihapus');
+            alert('✅ ' + (result.message || 'Project deleted successfully'));
             location.reload(); // Refresh page to update project list
         } else {
-            alert('Error: ' + result.message);
+            alert('❌ Error: ' + result.message);
         }
     } catch (error) {
-        alert('Error: ' + error.message);
+        alert('❌ Error: ' + error.message);
     }
 }
 
@@ -1794,21 +1823,23 @@ function openResetModal() {
 }
 
 // Enable/disable reset button based on confirmation input
-document.getElementById('resetConfirmInput').addEventListener('input', function() {
-    const btn = document.getElementById('resetExecuteBtn');
-    btn.disabled = this.value.toUpperCase() !== 'RESET';
-});
+if (document.getElementById('resetConfirmInput')) {
+    document.getElementById('resetConfirmInput').addEventListener('input', function() {
+        const btn = document.getElementById('resetExecuteBtn');
+        btn.disabled = this.value.toUpperCase() !== 'RESET';
+    });
+}
 
 async function executeResetData() {
     const confirmInput = document.getElementById('resetConfirmInput');
     if (confirmInput.value.toUpperCase() !== 'RESET') {
-        alert('Harap ketik RESET untuk konfirmasi');
+        alert('Please type RESET to confirm');
         return;
     }
     
     const btn = document.getElementById('resetExecuteBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Menghapus...';
+    btn.innerHTML = '<span class="spinner"></span> Deleting...';
     
     try {
         const response = await fetch('<?= BASE_URL ?>/api/investor-reset.php', {
@@ -1827,12 +1858,12 @@ async function executeResetData() {
         } else {
             alert('❌ Error: ' + result.message);
             btn.disabled = false;
-            btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg> Reset Semua Data';
+            btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg> Reset All Data';
         }
     } catch (error) {
         alert('❌ Error: ' + error.message);
         btn.disabled = false;
-        btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg> Reset Semua Data';
+        btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg> Reset All Data';
     }
 }
 

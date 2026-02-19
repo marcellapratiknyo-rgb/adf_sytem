@@ -42,12 +42,12 @@ try {
 
     // Validate
     if (!$investor_id) {
-        echo json_encode(['success' => false, 'message' => 'Pilih investor terlebih dahulu']);
+        echo json_encode(['success' => false, 'message' => 'Please select an investor first']);
         exit;
     }
     
     if ($amount <= 0) {
-        echo json_encode(['success' => false, 'message' => 'Jumlah setoran harus lebih dari 0']);
+        echo json_encode(['success' => false, 'message' => 'Deposit amount must be greater than 0']);
         exit;
     }
 
@@ -57,7 +57,7 @@ try {
     $investor = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$investor) {
-        echo json_encode(['success' => false, 'message' => 'Investor tidak ditemukan']);
+        echo json_encode(['success' => false, 'message' => 'Investor not found']);
         exit;
     }
 
@@ -78,10 +78,10 @@ try {
     // transaction_type or type
     if (in_array('transaction_type', $columns)) {
         $sql_cols[] = 'transaction_type';
-        $params[] = 'deposit';
+        $params[] = 'D'; // D for deposit
     } elseif (in_array('type', $columns)) {
         $sql_cols[] = 'type';
-        $params[] = 'deposit';
+        $params[] = 'D'; // D for deposit (shorter value to avoid truncation)
     }
 
     // amount
@@ -105,10 +105,10 @@ try {
     // description
     if (in_array('description', $columns)) {
         $sql_cols[] = 'description';
-        $params[] = $description ?: 'Setoran modal';
+        $params[] = $description ?: 'Investor deposit';
     } elseif (in_array('note', $columns)) {
         $sql_cols[] = 'note';
-        $params[] = $description ?: 'Setoran modal';
+        $params[] = $description ?: 'Investor deposit';
     }
 
     // payment_method
@@ -152,7 +152,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => 'Setoran berhasil dicatat',
+        'message' => 'Deposit recorded successfully',
         'transaction_id' => $transaction_id
     ]);
 
