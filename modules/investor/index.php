@@ -1329,6 +1329,41 @@ include $base_path . '/includes/header.php';
     </div>
 </div>
 
+<!-- Modal: Edit Investor -->
+<div class="modal-overlay" id="editInvestorModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Investor</h3>
+            <button class="modal-close" onclick="closeModal('editInvestorModal')">&times;</button>
+        </div>
+        <form id="editInvestorForm" onsubmit="saveInvestorEdit(event)">
+            <input type="hidden" name="investor_id" id="editInvestorId">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Investor *</label>
+                    <input type="text" name="name" id="editInvestorName" required placeholder="Nama lengkap investor">
+                </div>
+                <div class="form-group">
+                    <label>No. Telepon</label>
+                    <input type="text" name="phone" id="editInvestorPhone" placeholder="08xxxx">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" id="editInvestorEmail" placeholder="email@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Catatan</label>
+                    <textarea name="notes" id="editInvestorNotes" rows="2" placeholder="Catatan tambahan..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editInvestorModal')">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal: Add Project -->
 <div class="modal-overlay" id="addProjectModal">
     <div class="modal-content">
@@ -1599,9 +1634,61 @@ function viewHistory(investorId) {
     alert('Fitur history akan segera tersedia');
 }
 
-function editInvestor(investorId) {
-    // TODO: Implement edit
-    alert('Fitur edit akan segera tersedia');
+async function editInvestor(investorId) {
+    try {
+        // Fetch investor data
+        const response = await fetch('<?= BASE_URL ?>/api/investor-get.php?id=' + encodeURIComponent(investorId));
+        const result = await response.json();
+        
+        if (result.success && result.investor) {
+            const investor = result.investor;
+            
+            // Populate form fields
+            document.getElementById('editInvestorId').value = investor.id;
+            document.getElementById('editInvestorName').value = investor.name || investor.investor_name || '';
+            document.getElementById('editInvestorPhone').value = investor.phone || investor.contact_phone || '';
+            document.getElementById('editInvestorEmail').value = investor.email || '';
+            document.getElementById('editInvestorNotes').value = investor.notes || '';
+            
+            // Open modal
+            document.getElementById('editInvestorModal').classList.add('active');
+        } else {
+            alert('Gagal memuat data investor: ' + (result.message || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function saveInvestorEdit(event) {
+    event.preventDefault();
+    
+    const investorId = document.getElementById('editInvestorId').value;
+    if (!investorId) {
+        alert('ID investor tidak ditemukan');
+        return;
+    }
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('<?= BASE_URL ?>/api/investor-update.php', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Investor berhasil diperbarui');
+            closeModal('editInvestorModal');
+            location.reload();
+        } else {
+            alert('❌ Error: ' + (result.message || 'Gagal menyimpan'));
+        }
+    } catch (error) {
+        alert('❌ Error: ' + error.message);
+    }
 }
 
 function openAddProjectModal() {

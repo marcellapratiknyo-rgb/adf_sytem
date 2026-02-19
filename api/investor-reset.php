@@ -31,22 +31,31 @@ if ($confirm !== 'RESET') {
     exit;
 }
 
+$db = null;
+$inTransaction = false;
+
 try {
     $db = Database::getInstance()->getConnection();
     
-    // Start transaction
-    $db->beginTransaction();
-    
     // Count data before deletion for reporting
-    $investorCount = $db->query("SELECT COUNT(*) FROM investors")->fetchColumn();
+    $investorCount = 0;
     $transactionCount = 0;
     
-    // Try to count transactions
+    try {
+        $investorCount = $db->query("SELECT COUNT(*) FROM investors")->fetchColumn();
+    } catch (Exception $e) {
+        error_log("Reset: Count investors failed - " . $e->getMessage());
+    }
+    
     try {
         $transactionCount = $db->query("SELECT COUNT(*) FROM investor_transactions")->fetchColumn();
     } catch (Exception $e) {
         // Table might not exist
     }
+    
+    // Start transaction
+    $db->beginTransaction();
+    $inTransaction = true;
     
     // Delete investor transactions first (foreign key dependency)
     try {
@@ -64,16 +73,19 @@ try {
         $db->exec("ALTER TABLE investors AUTO_INCREMENT = 1");
     } catch (Exception $e) {
         // Ignore if fails
+        error_log("Reset: ALTER TABLE investors failed - " . $e->getMessage());
     }
     
     try {
         $db->exec("ALTER TABLE investor_transactions AUTO_INCREMENT = 1");
     } catch (Exception $e) {
         // Ignore if fails
+        error_log("Reset: ALTER TABLE investor_transactions failed - " . $e->getMessage());
     }
     
     // Commit transaction
     $db->commit();
+    $inTransaction = false;
     
     // Log the action
     $currentUser = $auth->getCurrentUser();
@@ -98,9 +110,13 @@ try {
     ]);
     
 } catch (Exception $e) {
-    // Rollback on error
-    if (isset($db) && $db->inTransaction()) {
-        $db->rollBack();
+    // Rollback on error only if transaction is active
+    if ($inTransaction && isset($db)) {
+        try {
+            $db->rollBack();
+        } catch (Exception $rollbackError) {
+            error_log("INVESTOR RESET: Rollback failed - " . $rollbackError->getMessage());
+        }
     }
     
     error_log("INVESTOR RESET ERROR: " . $e->getMessage());
