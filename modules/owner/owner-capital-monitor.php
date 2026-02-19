@@ -749,11 +749,11 @@ if ($pettyCashAccount) {
             <div class="card stat-card card-use">
                 <div class="stat-label">
                     <i data-feather="arrow-up-circle" style="width: 16px; height: 16px;"></i>
-                    Modal Digunakan Operasional
+                    Operating Capital Used
                 </div>
                 <div class="stat-value">Rp <?php echo number_format($totalCapitalUsed, 0, ',', '.'); ?></div>
                 <div class="stat-change negative">
-                    📤 Pengeluaran dari kas modal
+                    📤 Capital Fund Expenses
                 </div>
             </div>
             
@@ -761,11 +761,11 @@ if ($pettyCashAccount) {
             <div class="card stat-card card-balance">
                 <div class="stat-label">
                     <i data-feather="credit-card" style="width: 16px; height: 16px;"></i>
-                    Saldo Kas Modal Saat Ini
+                    Current Capital Balance
                 </div>
                 <div class="stat-value">Rp <?php echo number_format($remainingCapital, 0, ',', '.'); ?></div>
                 <div class="stat-change neutral">
-                    💳 Saldo aktual real-time
+                    💳 Real-time Current Balance
                 </div>
             </div>
             
@@ -875,10 +875,10 @@ if ($pettyCashAccount) {
                                     
                                     if (in_array($txn['transaction_type'], ['capital_injection', 'income'])) {
                                         $badgeClass = 'badge badge-injection';
-                                        $badgeText = ($txn['transaction_type'] == 'capital_injection') ? 'Setoran Modal' : 'Pemasukan';
+                                        $badgeText = ($txn['transaction_type'] == 'capital_injection') ? 'Capital Injection' : 'Income';
                                     } elseif ($txn['transaction_type'] == 'expense') {
                                         $badgeClass = 'badge badge-expense';
-                                        $badgeText = 'Pengeluaran';
+                                        $badgeText = 'Expense';
                                     } elseif ($txn['transaction_type'] == 'transfer') {
                                         $badgeClass = 'badge badge-transfer';
                                         $badgeText = 'Transfer';
@@ -947,11 +947,11 @@ if ($pettyCashAccount) {
             <div class="card stat-card card-use">
                 <div class="stat-label">
                     <i data-feather="arrow-up-circle" style="width: 16px; height: 16px;"></i>
-                    Petty Cash Digunakan
+                    Petty Cash Used
                 </div>
                 <div class="stat-value">Rp <?php echo number_format($totalPettyCashUsed, 0, ',', '.'); ?></div>
                 <div class="stat-change negative">
-                    📤 Pengeluaran cash
+                    📤 Cash Expenses
                 </div>
             </div>
             
@@ -959,7 +959,7 @@ if ($pettyCashAccount) {
             <div class="card stat-card card-balance">
                 <div class="stat-label">
                     <i data-feather="credit-card" style="width: 16px; height: 16px;"></i>
-                    Saldo Petty Cash Saat Ini
+                    Current Petty Cash Balance
                 </div>
                 <div class="stat-value">Rp <?php echo number_format($pettyCashBalance, 0, ',', '.'); ?></div>
                 <div class="stat-change neutral">

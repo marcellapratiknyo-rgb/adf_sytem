@@ -1346,7 +1346,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <div class="expense-division-header">
                     <div class="expense-division-title">
                         <span class="icon-circle">🥧</span>
-                        Pengeluaran per Divisi
+                        Expenses by Division
                     </div>
                     <input type="month" id="expenseDivisionMonth" class="expense-month-input" value="<?= $thisMonth ?>" onchange="updateExpenseDivisionChart(this.value)">
                 </div>
@@ -1354,7 +1354,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     <?php if (empty($expenseDivisionData)): ?>
                         <div class="expense-division-empty">
                             <span style="font-size:28px;margin-bottom:6px;">📭</span>
-                            Belum ada data pengeluaran
+                            No expense data available
                         </div>
                     <?php else: ?>
                         <canvas id="expenseDivisionChart"></canvas>
@@ -1596,7 +1596,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     } else {
                         // Show empty state
                         var body = document.querySelector('.expense-division-body');
-                        body.innerHTML = '<div class="expense-division-empty"><span style="font-size:28px;margin-bottom:6px;">📭</span>Belum ada data pengeluaran</div>';
+                        body.innerHTML = '<div class="expense-division-empty"><span style="font-size:28px;margin-bottom:6px;">📭</span>No expense data available</div>';
                         var legendEl = document.getElementById('expenseDivisionLegend');
                         if (legendEl) legendEl.style.display = 'none';
                     }

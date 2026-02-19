@@ -252,7 +252,7 @@ function formatMoney($amount) {
         <!-- VIEW 1: PROJECT SELECTION (Front Display) -->
         <div class="header">
             <h1> Project Manager</h1>
-            <p>Pilih project untuk melihat detail pengeluaran</p>
+            <p>Select a project to view expense details</p>
         </div>
 
         <div class="container">
@@ -287,7 +287,7 @@ function formatMoney($amount) {
                 <?php if (empty($projects)): ?>
                 <div style="text-align: center; padding: 3rem; opacity: 0.5;">
                     <i data-feather="folder" style="width: 48px; height: 48px; margin-bottom: 1rem;"></i>
-                    <p>Belum ada project yang tersedia.</p>
+                    <p>No projects available.</p>
                 </div>
                 <?php endif; ?>
             </div>
@@ -312,7 +312,7 @@ function formatMoney($amount) {
                 <a href="investor-dashboard.php" style="position: absolute; left: 0; color: white; padding: 0.5rem;"><i data-feather="arrow-left"></i></a>
                 <div>
                     <h1><?= htmlspecialchars($selectedProject['name']) ?></h1>
-                    <p>Detail Pengeluaran Project</p>
+                    <p>Project Expense Details</p>
                 </div>
             </div>
         </div>
@@ -322,14 +322,14 @@ function formatMoney($amount) {
             <!-- Financial Overview -->
             <div class="stats-summary">
                 <div class="stat-box full">
-                    <div class="stat-label">Sisa Anggaran (Balance)</div>
+                    <div class="stat-label">Remaining Budget</div>
                     <div class="stat-value"><?= formatMoney($projectStats['remaining']) ?></div>
                     <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 5px;">
-                        dari Budget <?= formatMoney($projectStats['budget']) ?>
+                        of Budget <?= formatMoney($projectStats['budget']) ?>
                     </div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-label">Terpakai</div>
+                    <div class="stat-label">Spent</div>
                     <div class="stat-value" style="color: #f87171;"><?= formatMoney($projectStats['expenses']) ?></div>
                 </div>
                 <div class="stat-box">
@@ -340,14 +340,14 @@ function formatMoney($amount) {
             
             <!-- Expense List -->
             <h3 style="margin-bottom: 1rem; font-size: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <i data-feather="list" style="width: 16px;"></i> Riwayat Pengeluaran
+                <i data-feather="list" style="width: 16px;"></i> Expense History
             </h3>
 
             <div class="expenses-list">
                 <?php foreach ($projectExpenses as $exp): ?>
                 <div class="expense-item">
                     <div class="expense-info">
-                        <h4><?= htmlspecialchars($exp['description'] ?: 'Pengeluaran') ?></h4>
+                        <h4><?= htmlspecialchars($exp['description'] ?: 'Expense') ?></h4>
                         <?php if (!empty($exp['category_name'])): ?>
                         <span style="font-size: 0.6rem; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">
                             <?= htmlspecialchars($exp['category_name']) ?>
@@ -364,7 +364,7 @@ function formatMoney($amount) {
 
                 <?php if (empty($projectExpenses)): ?>
                 <div style="text-align: center; padding: 2rem; background: rgba(255,255,255,0.05); border-radius: 12px;">
-                    <p style="opacity: 0.6;">Belum ada data pengeluaran untuk project ini.</p>
+                    <p style="opacity: 0.6;">No expense data available for this project.</p>
                 </div>
                 <?php endif; ?>
             </div>

@@ -1522,7 +1522,7 @@ foreach ($projects as $proj) {
                                 afterLabel: function(ctx) {
                                     const division = divisionLabels[ctx.dataIndex];
                                     const items = divisionDetailsData[division] || [];
-                                    return '\\n👆 ' + items.length + ' transaksi\\n🔍 Klik untuk detail';
+                                    return '\\n👆 ' + items.length + ' transactions\\n🔍 Click for details';
                                 }
                             }
                         }
@@ -1574,7 +1574,7 @@ foreach ($projects as $proj) {
                 bodyEl.innerHTML = `
                     <div class="division-detail-empty">
                         <div class="division-detail-empty-icon">📋</div>
-                        <div>Tidak ada data transaksi</div>
+                        <div>No transaction data</div>
                     </div>
                 `;
                 totalEl.textContent = 'Rp 0';
