@@ -421,7 +421,7 @@ if ($pettyCashAccount) {
         
         @media (max-width: 768px) {
             body {
-                padding: 1rem;
+                padding: 0.5rem;
                 background: #f8fafc;
             }
             
@@ -433,118 +433,138 @@ if ($pettyCashAccount) {
             /* Header - Mobile Optimized */
             .page-header {
                 flex-direction: column;
-                gap: 1rem;
-                padding: 1.25rem;
-                margin-bottom: 1.25rem;
+                gap: 0.75rem;
+                padding: 0.9rem;
+                margin-bottom: 0.9rem;
             }
             
             .page-title {
-                font-size: 1.35rem;
+                font-size: 1.05rem;
                 line-height: 1.3;
             }
             
             .page-subtitle {
-                font-size: 0.85rem;
+                font-size: 0.75rem;
             }
             
             .page-header > div:last-child {
                 width: 100%;
                 flex-direction: column;
-                gap: 0.75rem;
+                gap: 0.6rem;
             }
             
             #periodSelector,
             .page-header button {
                 width: 100%;
-                padding: 0.85rem 1rem;
-                font-size: 0.9rem;
+                padding: 0.7rem 0.85rem;
+                font-size: 0.82rem;
             }
             
             /* Grid - Stack on Mobile */
             .grid-2 {
                 grid-template-columns: 1fr;
-                gap: 1rem;
-                margin-bottom: 1.5rem;
+                gap: 0.8rem;
+                margin-bottom: 1rem;
             }
             
-            /* Cards - Compact Mobile */
+            /* Cards - Ultra Compact Mobile */
             .card {
-                padding: 1.15rem;
-                border-radius: 10px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                padding: 0.9rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
             }
             
             .stat-card::before {
-                width: 70px;
-                height: 70px;
+                width: 60px;
+                height: 60px;
             }
             
             .stat-label {
-                font-size: 0.75rem;
-                margin-bottom: 0.6rem;
+                font-size: 0.68rem;
+                margin-bottom: 0.4rem;
             }
             
             .stat-label i {
-                width: 14px !important;
-                height: 14px !important;
+                width: 12px !important;
+                height: 12px !important;
             }
             
             .stat-value {
-                font-size: 1.5rem;
-                margin-bottom: 0.5rem;
+                font-size: 1.2rem;
+                margin-bottom: 0.4rem;
             }
             
             .stat-change {
-                font-size: 0.72rem;
-                padding: 0.35rem 0.6rem;
+                font-size: 0.65rem;
+                padding: 0.3rem 0.5rem;
             }
             
             /* Section Headings */
             h2 {
-                font-size: 1.15rem !important;
-                margin-bottom: 1rem !important;
-                gap: 0.5rem !important;
+                font-size: 0.95rem !important;
+                margin-bottom: 0.8rem !important;
+                gap: 0.4rem !important;
+            }
+            
+            /* Inline Stats Summary */
+            .card > div[style*="display: grid"] {
+                gap: 0.6rem !important;
+                font-size: 0.8rem !important;
+            }
+            
+            .card > div[style*="display: grid"] small {
+                font-size: 0.7rem !important;
+            }
+            
+            .card > div[style*="display: grid"] div[style*="font-size: 1.25rem"] {
+                font-size: 1rem !important;
             }
             
             /* Tables - Horizontal Scroll */
             .transaction-table-wrapper {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
-                margin: 0 -1rem;
-                padding: 0 1rem;
+                margin: 0 -0.9rem;
+                padding: 0 0.9rem;
             }
             
             .transaction-table {
-                min-width: 600px;
-                font-size: 0.82rem;
+                min-width: 550px;
+                font-size: 0.75rem;
             }
             
             .transaction-table th,
             .transaction-table td {
-                padding: 0.7rem 0.5rem;
+                padding: 0.55rem 0.4rem;
             }
             
             .transaction-table th {
-                font-size: 0.7rem;
+                font-size: 0.65rem;
             }
             
             .transaction-table .transaction-date {
-                font-size: 0.7rem;
+                font-size: 0.65rem;
             }
             
             .transaction-table .transaction-description {
-                font-size: 0.82rem;
+                font-size: 0.75rem;
             }
             
             .transaction-table .transaction-amount {
-                font-size: 0.85rem;
+                font-size: 0.78rem;
                 white-space: nowrap;
+            }
+            
+            /* Badges in Table */
+            .badge {
+                font-size: 0.6rem !important;
+                padding: 0.2rem 0.4rem !important;
             }
             
             /* Charts - Mobile Height */
             .chart-container {
-                height: 220px;
-                margin-top: 0.75rem;
+                height: 180px;
+                margin-top: 0.6rem;
             }
             
             /* Back Link */
@@ -573,31 +593,82 @@ if ($pettyCashAccount) {
         /* Extra Small Devices (< 480px) */
         @media (max-width: 480px) {
             body {
-                padding: 0.75rem;
+                padding: 0.4rem;
             }
             
             .page-header {
-                padding: 1rem;
+                padding: 0.8rem;
             }
             
             .page-title {
-                font-size: 1.2rem;
+                font-size: 0.95rem;
             }
             
             .page-subtitle {
-                font-size: 0.8rem;
+                font-size: 0.7rem;
             }
             
             .card {
-                padding: 1rem;
+                padding: 0.75rem;
+                border-radius: 6px;
+            }
+            
+            .stat-card::before {
+                width: 50px;
+                height: 50px;
+                opacity: 0.5;
+            }
+            
+            .stat-label {
+                font-size: 0.65rem;
             }
             
             .stat-value {
-                font-size: 1.35rem;
+                font-size: 1.05rem;
+            }
+            
+            .stat-change {
+                font-size: 0.6rem;
+                padding: 0.25rem 0.4rem;
             }
             
             h2 {
-                font-size: 1.05rem !important;
+                font-size: 0.85rem !important;
+                margin-bottom: 0.7rem !important;
+            }
+            
+            .transaction-table {
+                min-width: 500px;
+                font-size: 0.7rem;
+            }
+            
+            .transaction-table th,
+            .transaction-table td {
+                padding: 0.5rem 0.35rem;
+            }
+            
+            .transaction-table th {
+                font-size: 0.6rem;
+            }
+            
+            .chart-container {
+                height: 160px;
+            }
+            
+            .badge {
+                font-size: 0.55rem !important;
+                padding: 0.15rem 0.35rem !important;
+            }
+            
+            .back-link {
+                font-size: 0.8rem;
+            }
+            
+            .back-link i {
+                width: 12px !important;
+                height: 12px !important;
+            }
+        }
             }
             
             .transaction-table {
