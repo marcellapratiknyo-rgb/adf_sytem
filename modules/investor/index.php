@@ -408,20 +408,20 @@ include $base_path . '/includes/header.php';
 /* Investor List */
 .investor-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.2rem;
     margin-bottom: 3rem;
 }
 
 .investor-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 1rem;
+    border-radius: 8px;
+    padding: 0.8rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.6rem;
     position: relative;
     overflow: hidden;
 }
@@ -432,58 +432,81 @@ include $base_path . '/includes/header.php';
     top: 0;
     left: 0;
     right: 0;
-    height: 3px;
+    height: 2px;
     background: linear-gradient(90deg, #6366f1, #8b5cf6);
 }
 
 .investor-card:hover {
     border-color: rgba(99, 102, 241, 0.4);
-    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.15);
-    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.12);
+    transform: translateY(-3px);
 }
 
-.investor-card .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1rem;
+.investor-card .investor-info {
+    padding: 0.2rem 0;
 }
 
-.investor-card .name {
-    font-size: 0.95rem;
+.investor-card .investor-name {
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--text-primary);
+    margin: 0 0 0.3rem 0;
 }
 
-.investor-card .contact {
-    font-size: 0.75rem;
+.investor-card .investor-meta {
+    font-size: 0.7rem;
     color: var(--text-muted);
-    margin-top: 0.2rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
     word-break: break-word;
 }
 
-.investor-card .amount {
-    text-align: right;
-    font-size: 1.1rem;
+.investor-card .investor-details {
+    padding: 0.6rem 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.investor-card .detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.investor-card .detail-item .label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.investor-card .detail-item .value {
+    font-size: 0.85rem;
     font-weight: 700;
     color: #10b981;
-    background: rgba(16, 185, 129, 0.1);
-    padding: 0.6rem 0.8rem;
-    border-radius: 6px;
+}
+
+.investor-card .investor-card-divider {
+    display: none;
+}
+
+.investor-card .investor-card-content {
+    display: none;
 }
 
 .investor-card .actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
 }
 
 .investor-card .btn-sm {
-    padding: 0.45rem 0.8rem;
-    font-size: 0.7rem;
-    border-radius: 6px;
-    flex: 1;
-    min-width: 70px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.65rem;
+    border-radius: 5px;
     text-align: center;
     justify-content: center;
 }
@@ -1595,6 +1618,37 @@ include $base_path . '/includes/header.php';
     </div>
 </div>
 
+<!-- Modal: Investor Transaction History -->
+<div class="modal-overlay" id="investorHistoryModal" onclick="if(event.target===this) closeModal('investorHistoryModal')">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+            <div>
+                <h3 style="color: white; margin: 0 0 0.3rem 0;">📊 Transaction History</h3>
+                <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 0.85rem;" id="historyInvestorName">-</p>
+                <p style="color: rgba(255,255,255,0.7); margin: 0.2rem 0 0 0; font-size: 0.75rem;" id="historyInvestorPhone">-</p>
+            </div>
+            <button class="modal-close" onclick="closeModal('investorHistoryModal')" style="color: white;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 0;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+                            <th style="text-align: left; padding: 0.8rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Date & Time</th>
+                            <th style="text-align: right; padding: 0.8rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Amount</th>
+                            <th style="text-align: center; padding: 0.8rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Type</th>
+                            <th style="text-align: left; padding: 0.8rem; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTransactionTable">
+                        <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--text-muted);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: Reset Data Investor -->
 <div class="modal-overlay" id="resetDataModal">
     <div class="modal-content" style="max-width: 500px;">
@@ -2002,9 +2056,63 @@ async function saveDeposit(e) {
     }
 }
 
-function viewHistory(investorId) {
-    // TODO: Implement history view
-    alert('History feature coming soon');
+async function viewHistory(investorId) {
+    try {
+        // Fetch investor details
+        const investorRes = await fetch('<?= BASE_URL ?>/api/investor-get.php?id=' + encodeURIComponent(investorId));
+        const investorData = await investorRes.json();
+        
+        if (!investorData.success || !investorData.investor) {
+            alert('Failed to load investor data');
+            return;
+        }
+        
+        const investor = investorData.investor;
+        const investorName = investor.name || investor.investor_name || 'Unknown Investor';
+        
+        // Fetch investor transactions
+        const transRes = await fetch('<?= BASE_URL ?>/api/investor-transactions.php?investor_id=' + encodeURIComponent(investorId));
+        const transData = await transRes.json();
+        const transactions = transData.transactions || [];
+        
+        // Populate modal
+        document.getElementById('historyInvestorName').textContent = investorName;
+        document.getElementById('historyInvestorPhone').textContent = investor.contact || investor.contact_phone || '-';
+        
+        const historyTable = document.getElementById('historyTransactionTable');
+        historyTable.innerHTML = '';
+        
+        if (transactions.length === 0) {
+            historyTable.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 1.5rem; color: var(--text-muted);">No transactions found</td></tr>';
+        } else {
+            transactions.forEach(trans => {
+                const row = document.createElement('tr');
+                const date = new Date(trans.created_at);
+                const dateStr = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                
+                const type = trans.type || trans.transaction_type || 'capital';
+                const typeDisplay = type === 'capital' ? 'Capital' : type === 'expense' ? 'Expense' : 'Return';
+                const typeColor = type === 'capital' ? '#10b981' : type === 'expense' ? '#ef4444' : '#f59e0b';
+                
+                const amount = trans.amount || 0;
+                
+                row.innerHTML = `
+                    <td style="font-size: 0.75rem; padding: 0.6rem;">${dateStr} ${timeStr}</td>
+                    <td style="font-size: 0.75rem; padding: 0.6rem;">${formatCurrency(amount)}</td>
+                    <td style="font-size: 0.75rem; padding: 0.6rem;"><span style="background: ${typeColor}15; color: ${typeColor}; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600;">${typeDisplay}</span></td>
+                    <td style="font-size: 0.75rem; padding: 0.6rem; color: var(--text-muted);">${trans.description || 'No description'}</td>
+                `;
+                historyTable.appendChild(row);
+            });
+        }
+        
+        // Show modal
+        document.getElementById('investorHistoryModal').classList.add('active');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error loading history: ' + error.message);
+    }
 }
 
 async function editInvestor(investorId) {
