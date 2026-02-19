@@ -1428,14 +1428,18 @@ include $base_path . '/includes/header.php';
                 <div class="chart-sub">Cost distribution by contractor / division</div>
                 <?php if (empty($chart_contractor_pie)): ?>
                     <div class="chart-empty">No contractor expense data yet.<br>Select contractor when recording expenses in Ledger.</div>
-                <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
+                <?php else: ?>
+                    <canvas id="pieChart"></canvas>
+                <?php endif; ?>
             </div>
             <div class="chart-card chart-bar">
                 <h3>📊 Budget vs Expenses</h3>
                 <div class="chart-sub">Comparison of budget and actual expenses per project</div>
                 <?php if (empty($chart_budget_vs_expense)): ?>
                     <div class="chart-empty">No project data available.</div>
-                <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
+                <?php else: ?>
+                    <canvas id="barChart"></canvas>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -2108,10 +2112,18 @@ async function viewHistory(investorId) {
     try {
         // Fetch investor details
         const investorRes = await fetch('<?= BASE_URL ?>/api/investor-get.php?id=' + encodeURIComponent(investorId));
+        
+        if (!investorRes.ok) {
+            console.error('Investor fetch failed:', investorRes.status, investorRes.statusText);
+            alert('Failed to load investor data (HTTP ' + investorRes.status + ')');
+            return;
+        }
+        
         const investorData = await investorRes.json();
         
         if (!investorData.success || !investorData.investor) {
-            alert('Failed to load investor data');
+            console.error('Investor data error:', investorData);
+            alert('Failed to load investor data: ' + (investorData.message || 'Unknown error'));
             return;
         }
         
@@ -2119,9 +2131,26 @@ async function viewHistory(investorId) {
         const investorName = investor.name || investor.investor_name || 'Unknown Investor';
         
         // Fetch investor transactions
+        console.log('Fetching transactions for investor:', investorId);
         const transRes = await fetch('<?= BASE_URL ?>/api/investor-transactions.php?investor_id=' + encodeURIComponent(investorId));
+        
+        if (!transRes.ok) {
+            console.error('Transaction fetch failed:', transRes.status, transRes.statusText);
+            alert('Failed to load transactions (HTTP ' + transRes.status + ')');
+            return;
+        }
+        
         const transData = await transRes.json();
+        console.log('Transaction data received:', transData);
+        
+        if (!transData.success) {
+            console.error('Transaction API error:', transData);
+            alert('Failed to load transactions: ' + (transData.message || 'Unknown error'));
+            return;
+        }
+        
         const transactions = transData.transactions || [];
+        console.log('Number of transactions:', transactions.length);
         
         // Populate modal
         document.getElementById('historyInvestorName').textContent = investorName;
@@ -2158,7 +2187,7 @@ async function viewHistory(investorId) {
         // Show modal
         document.getElementById('investorHistoryModal').classList.add('active');
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error in viewHistory:', error);
         alert('Error loading history: ' + error.message);
     }
 }

@@ -41,23 +41,58 @@ try {
         exit;
     }
     
-    // Fetch investor transactions
-    $stmt = $db->prepare("
-        SELECT 
-            id,
-            investor_id,
-            amount,
-            type,
-            transaction_type,
-            description,
-            created_at,
-            updated_at
-        FROM investor_transactions
-        WHERE investor_id = :investor_id
-        ORDER BY created_at DESC
-        LIMIT 100
-    ");
+    // Check what columns exist
+    $stmt = $db->query("DESCRIBE investor_transactions");
+    $columnsInfo = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $available_columns = array_column($columnsInfo, 'Field');
     
+    // Build SELECT clause based on available columns
+    $select_parts = ['id', 'investor_id'];
+    
+    // Amount
+    if (in_array('amount', $available_columns)) {
+        $select_parts[] = 'amount';
+    } elseif (in_array('amount_idr', $available_columns)) {
+        $select_parts[] = 'amount_idr as amount';
+    } else {
+        $select_parts[] = '0 as amount';
+    }
+    
+    // Type
+    if (in_array('type', $available_columns)) {
+        $select_parts[] = 'type';
+    } elseif (in_array('transaction_type', $available_columns)) {
+        $select_parts[] = 'transaction_type as type';
+    } else {
+        $select_parts[] = "'capital' as type";
+    }
+    
+    // Description
+    if (in_array('description', $available_columns)) {
+        $select_parts[] = 'description';
+    } elseif (in_array('note', $available_columns)) {
+        $select_parts[] = 'note as description';
+    } else {
+        $select_parts[] = "'Investor capital deposit' as description";
+    }
+    
+    // Created date
+    if (in_array('created_at', $available_columns)) {
+        $select_parts[] = 'created_at';
+    } elseif (in_array('transaction_date', $available_columns)) {
+        $select_parts[] = 'transaction_date as created_at';
+    } elseif (in_array('date', $available_columns)) {
+        $select_parts[] = 'date as created_at';
+    } else {
+        $select_parts[] = 'NOW() as created_at';
+    }
+    
+    $select_clause = implode(', ', $select_parts);
+    
+    // Fetch investor transactions
+    $sql = "SELECT {$select_clause} FROM investor_transactions WHERE investor_id = :investor_id ORDER BY created_at DESC LIMIT 100";
+    
+    $stmt = $db->prepare($sql);
     $stmt->execute([':investor_id' => $investor_id]);
     $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
