@@ -146,30 +146,59 @@ try {
                     $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
                     
                     if (in_array('division_name', $columns)) {
-                        $stmt = $pdo->prepare("
-                            SELECT division_name, description, amount, expense_date, category_name
-                            FROM project_expenses pe
-                            LEFT JOIN project_expense_categories pec ON pe.expense_category_id = pec.id
-                            WHERE project_id = ? 
-                              AND division_name IS NOT NULL 
-                              AND division_name != '' 
-                            ORDER BY expense_date DESC
-                        ");
-                        $stmt->execute([$selectedProjectId]);
-                        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                            $dn = $row['division_name'];
-                            if (!isset($divisionBreakdown[$dn])) {
-                                $divisionBreakdown[$dn] = 0;
-                                $divisionDetails[$dn] = [];
+                        // Try with category join first
+                        try {
+                            $stmt = $pdo->prepare("
+                                SELECT pe.division_name, pe.description, pe.amount, pe.expense_date, pec.category_name
+                                FROM project_expenses pe
+                                LEFT JOIN project_expense_categories pec ON pe.expense_category_id = pec.id
+                                WHERE pe.project_id = ? 
+                                  AND pe.division_name IS NOT NULL 
+                                  AND pe.division_name != '' 
+                                ORDER BY pe.expense_date DESC
+                            ");
+                            $stmt->execute([$selectedProjectId]);
+                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                $dn = $row['division_name'];
+                                if (!isset($divisionBreakdown[$dn])) {
+                                    $divisionBreakdown[$dn] = 0;
+                                    $divisionDetails[$dn] = [];
+                                }
+                                $divisionBreakdown[$dn] += floatval($row['amount']);
+                                $divisionDetails[$dn][] = [
+                                    'description' => $row['description'] ?? 'No description',
+                                    'amount' => floatval($row['amount']),
+                                    'date' => $row['expense_date'] ?? date('Y-m-d'),
+                                    'category' => $row['category_name'] ?? 'Uncategorized',
+                                    'type' => 'expense'
+                                ];
                             }
-                            $divisionBreakdown[$dn] += floatval($row['amount']);
-                            $divisionDetails[$dn][] = [
-                                'description' => $row['description'],
-                                'amount' => floatval($row['amount']),
-                                'date' => $row['expense_date'],
-                                'category' => $row['category_name'] ?? '-',
-                                'type' => 'expense'
-                            ];
+                        } catch (Exception $e) {
+                            // Fallback without category join
+                            $stmt = $pdo->prepare("
+                                SELECT division_name, description, amount, expense_date
+                                FROM project_expenses
+                                WHERE project_id = ? 
+                                  AND division_name IS NOT NULL 
+                                  AND division_name != '' 
+                                ORDER BY expense_date DESC
+                            ");
+                            $stmt->execute([$selectedProjectId]);
+                            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                                $dn = $row['division_name'];
+                                if (!isset($divisionBreakdown[$dn])) {
+                                    $divisionBreakdown[$dn] = 0;
+                                    $divisionDetails[$dn] = [];
+                                }
+                                $divisionBreakdown[$dn] += floatval($row['amount']);
+                                $divisionDetails[$dn][] = [
+                                    'description' => $row['description'] ?? 'No description',
+                                    'amount' => floatval($row['amount']),
+                                    'date' => $row['expense_date'] ?? date('Y-m-d'),
+                                    'category' => 'Expense',
+                                    'type' => 'expense'
+                                ];
+                            }
                         }
                     }
                 } catch (Exception $e) {}
@@ -180,6 +209,8 @@ try {
                         SELECT division_name, description, amount, expense_date
                         FROM project_division_expenses 
                         WHERE project_id = ? 
+                          AND division_name IS NOT NULL
+                          AND division_name != ''
                         ORDER BY expense_date DESC
                     ");
                     $stmt->execute([$selectedProjectId]);
@@ -191,9 +222,9 @@ try {
                         }
                         $divisionBreakdown[$dn] += floatval($row['amount']);
                         $divisionDetails[$dn][] = [
-                            'description' => $row['description'],
+                            'description' => $row['description'] ?? 'Division expense',
                             'amount' => floatval($row['amount']),
-                            'date' => $row['expense_date'],
+                            'date' => $row['expense_date'] ?? date('Y-m-d'),
                             'category' => 'Division Cost',
                             'type' => 'division'
                         ];
@@ -1347,36 +1378,33 @@ foreach ($projects as $proj) {
         // Division Breakdown Pie Chart (for selected project) - 2028 Elegant Style
         <?php if (!empty($divisionBreakdown)): ?>
         // Store division details data
-        const divisionDetailsData = <?= json_encode($divisionDetails ?? []) ?>;
+        const divisionDetailsData = <?= json_encode($divisionDetails ?? [], JSON_UNESCAPED_UNICODE) ?>;
         
         const divisionCtx = document.getElementById('divisionBreakdownChart');
         if (divisionCtx) {
+            console.log('Division chart canvas found');
             const divisionColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#14b8a6', '#f97316', '#6366f1'];
-            const divisionLabels = <?= json_encode(array_keys($divisionBreakdown)) ?>;
+            const divisionLabels = <?= json_encode(array_keys($divisionBreakdown), JSON_UNESCAPED_UNICODE) ?>;
             const divisionData = <?= json_encode(array_values($divisionBreakdown)) ?>;
             
-            // Create gradient colors for modern look
-            const gradientColors = divisionColors.map(color => {
-                const gradient = divisionCtx.getContext('2d').createLinearGradient(0, 0, 0, 400);
-                gradient.addColorStop(0, color);
-                gradient.addColorStop(1, color + 'dd'); // Add transparency
-                return color;
-            });
+            console.log('Division labels:', divisionLabels);
+            console.log('Division data:', divisionData);
             
-            new Chart(divisionCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: divisionLabels,
-                    datasets: [{
-                        data: divisionData,
-                        backgroundColor: divisionColors.slice(0, divisionLabels.length),
-                        borderWidth: 4,
-                        borderColor: '#ffffff',
-                        hoverOffset: 10,
-                        hoverBorderWidth: 5,
-                        hoverBorderColor: '#667eea',
-                    }]
-                },
+            try {
+                new Chart(divisionCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: divisionLabels,
+                        datasets: [{
+                            data: divisionData,
+                            backgroundColor: divisionColors.slice(0, divisionLabels.length),
+                            borderWidth: 4,
+                            borderColor: '#ffffff',
+                            hoverOffset: 10,
+                            hoverBorderWidth: 5,
+                            hoverBorderColor: '#667eea',
+                        }]
+                    },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
@@ -1439,6 +1467,12 @@ foreach ($projects as $proj) {
                     }
                 }
             });
+            console.log('Division chart created successfully');
+            } catch (error) {
+                console.error('Error creating division chart:', error);
+            }
+        } else {
+            console.error('Division chart canvas not found');
         }
         
         // Division Detail Functions
