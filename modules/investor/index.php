@@ -56,19 +56,36 @@ try {
     }
 }
 
-// Get recent deposits
+// Get recent deposits grouped by investor
 try {
     $recentDeposits = $db->query("
         SELECT it.*, 
-               COALESCE(i.name, i.investor_name) as investor_name
+               COALESCE(i.name, i.investor_name) as investor_name,
+               COALESCE(i.contact, i.contact_phone) as investor_contact,
+               i.id as investor_id
         FROM investor_transactions it
         JOIN investors i ON it.investor_id = i.id
         WHERE it.type = 'capital' OR it.transaction_type = 'capital'
-        ORDER BY it.created_at DESC
-        LIMIT 10
+        ORDER BY i.id, it.created_at DESC
+        LIMIT 50
     ")->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Group by investor
+    $depositsByInvestor = [];
+    foreach ($recentDeposits as $deposit) {
+        $investorId = $deposit['investor_id'];
+        if (!isset($depositsByInvestor[$investorId])) {
+            $depositsByInvestor[$investorId] = [
+                'name' => $deposit['investor_name'],
+                'contact' => $deposit['investor_contact'],
+                'deposits' => []
+            ];
+        }
+        $depositsByInvestor[$investorId]['deposits'][] = $deposit;
+    }
 } catch (Exception $e) {
     $recentDeposits = [];
+    $depositsByInvestor = [];
 }
 
 // Get all projects for project management section
@@ -1173,6 +1190,142 @@ include $base_path . '/includes/header.php';
         grid-template-columns: 1fr;
     }
 }
+
+/* Deposits Grouped by Investor */
+.deposits-grouped {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.investor-deposit-group {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.group-header {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.08));
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.group-header:hover {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12));
+}
+
+.toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.2s ease;
+    color: #6366f1;
+    font-size: 0.7rem;
+}
+
+.investor-deposit-group.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.investor-badge {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #6366f1;
+    min-width: 100px;
+}
+
+.deposit-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: rgba(99, 102, 241, 0.1);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.total-amount {
+    margin-left: auto;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #10b981;
+}
+
+.deposit-items {
+    padding: 1rem;
+    background: var(--bg-primary);
+    display: none;
+}
+
+.investor-deposit-group.expanded .deposit-items {
+    display: block;
+}
+
+.investor-contact {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+.deposit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.deposit-table thead {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.deposit-table th {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.deposit-table td {
+    padding: 0.65rem 0.8rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.deposit-table tbody tr:hover {
+    background: rgba(99, 102, 241, 0.02);
+}
+
+.deposit-date {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.deposit-desc {
+    color: var(--text-primary);
+}
+
+.deposit-amount {
+    text-align: right;
+    font-weight: 700;
+    color: #10b981;
+}
 </style>
 
 <div class="investor-page">
@@ -1252,18 +1405,14 @@ include $base_path . '/includes/header.php';
                 <div class="chart-sub">Cost distribution by contractor / division</div>
                 <?php if (empty($chart_contractor_pie)): ?>
                     <div class="chart-empty">No contractor expense data yet.<br>Select contractor when recording expenses in Ledger.</div>
-                <?php else: ?>
-                    <canvas id="pieChart"></canvas>
-                <?php endif; ?>
+                <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
             </div>
             <div class="chart-card chart-bar">
                 <h3>📊 Budget vs Expenses</h3>
                 <div class="chart-sub">Comparison of budget and actual expenses per project</div>
                 <?php if (empty($chart_budget_vs_expense)): ?>
                     <div class="chart-empty">No project data available.</div>
-                <?php else: ?>
-                    <canvas id="barChart"></canvas>
-                <?php endif; ?>
+                <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
             </div>
         </div>
     </div>
@@ -1361,54 +1510,7 @@ include $base_path . '/includes/header.php';
                     <div class="text">Create First Project</div>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Manage project budget and expenses with ledger</p>
                 </div>
-            <?php else: ?>
-                <?php foreach ($projects as $project): ?>
-                <div class="project-card" onclick="goToProjectLedger(<?= $project['id'] ?>)">
-                    <div>
-                        <div class="project-name"><?= htmlspecialchars($project['project_name'] ?? 'N/A') ?></div>
-                        <div class="project-code">
-                            <?php 
-                            $code = $project['project_code'] ?? 'PROJ-' . str_pad($project['id'], 4, '0', STR_PAD_LEFT);
-                            echo htmlspecialchars($code);
-                            ?>
-                        </div>
-                    </div>
-                    <div class="project-amount">
-                        Rp <?= number_format($project['budget_idr'] ?? 0, 0, ',', '.') ?>
-                    </div>
-                    <div class="project-meta">
-                        <div class="meta-item">
-                            <span>Pengeluaran</span>
-                            <div class="meta-value" style="color:#d97706">Rp <?= number_format($project['grand_expenses'] ?? $project['total_expenses'] ?? 0, 0, ',', '.') ?></div>
-                        </div>
-                        <div class="meta-item">
-                            <span>Sisa</span>
-                            <?php $sisa = ($project['budget_idr'] ?? 0) - ($project['grand_expenses'] ?? 0); ?>
-                            <div class="meta-value" style="color:<?= $sisa >= 0 ? '#059669' : '#dc2626' ?>">Rp <?= number_format($sisa, 0, ',', '.') ?></div>
-                        </div>
-                    </div>
-                    <div class="project-actions">
-                        <button class="btn btn-sm btn-kas" onclick="event.stopPropagation(); goToProjectLedger(<?= $project['id'] ?>)">
-                            📒 Ledger
-                        </button>
-                        <button class="btn btn-sm btn-edit" onclick="event.stopPropagation(); editProject(<?= $project['id'] ?>)">
-                            ✏️ Edit
-                        </button>
-                        <button class="btn btn-sm btn-hapus" onclick="event.stopPropagation(); deleteProject(<?= $project['id'] ?>, '<?= htmlspecialchars($project['project_name'], ENT_QUOTES) ?>')">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-                
-                <div class="add-project-card" onclick="openAddProjectModal()">
-                    <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    <div class="text">Add New Project</div>
-                </div>
-            <?php endif; ?>
+            <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
         </div>
     </div>
 
@@ -1434,17 +1536,7 @@ include $base_path . '/includes/header.php';
                 </svg>
                 <p>No investor data yet</p>
             </div>
-        <?php else: ?>
-            <?php foreach ($investors as $investor): ?>
-            <div class="investor-card">
-                <div class="header">
-                    <div>
-                        <div class="name"><?= htmlspecialchars($investor['name'] ?? $investor['investor_name'] ?? '-') ?></div>
-                        <div class="contact">
-                            <?= htmlspecialchars($investor['contact'] ?? $investor['contact_phone'] ?? '-') ?>
-                            <?php if (!empty($investor['email'])): ?>
-                                • <?= htmlspecialchars($investor['email']) ?>
-                            <?php endif; ?>
+        <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
                         </div>
                     </div>
                     <div class="amount">Rp <?= number_format($investor['total_capital'] ?? $investor['balance'] ?? 0, 0, ',', '.') ?></div>
@@ -1482,28 +1574,7 @@ include $base_path . '/includes/header.php';
             <div class="empty-state">
                 <p>No deposit history yet</p>
             </div>
-        <?php else: ?>
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Investor</th>
-                        <th>Description</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($recentDeposits as $deposit): ?>
-                    <tr>
-                        <td class="date-cell"><?= date('d M Y', strtotime($deposit['created_at'])) ?></td>
-                        <td><?= htmlspecialchars($deposit['investor_name']) ?></td>
-                        <td><?= htmlspecialchars($deposit['description'] ?? '-') ?></td>
-                        <td class="amount-cell">Rp <?= number_format($deposit['amount'] ?? 0, 0, ',', '.') ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+        <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
     </div>
 </div>
 
@@ -1702,6 +1773,7 @@ include $base_path . '/includes/header.php';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="deposits-script.js"></script>
 <script>
 // ====== CHART RENDERING ======
 document.addEventListener('DOMContentLoaded', function() {
@@ -2130,3 +2202,4 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
 </script>
 
 <?php include $base_path . '/includes/footer.php'; ?>
+
