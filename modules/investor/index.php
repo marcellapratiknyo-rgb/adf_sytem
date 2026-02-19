@@ -1536,11 +1536,32 @@ include $base_path . '/includes/header.php';
                 </svg>
                 <p>No investor data yet</p>
             </div>
-        <?php else: ?><?php include "deposits-history.php"; ?><?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="amount">Rp <?= number_format($investor['total_capital'] ?? $investor['balance'] ?? 0, 0, ',', '.') ?></div>
+        <?php else: ?>
+            <?php foreach ($investors as $investor): ?>
+            <div class="investor-card">
+                <div class="investor-info">
+                    <h3 class="investor-name"><?= htmlspecialchars($investor['name'] ?? $investor['investor_name'] ?? '') ?></h3>
+                    <p class="investor-meta">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <?= htmlspecialchars($investor['contact'] ?? $investor['contact_phone'] ?? '-') ?>
+                    </p>
                 </div>
+                <div class="investor-details">
+                    <div class="detail-item">
+                        <span class="label">Total Capital</span>
+                        <span class="value">Rp <?= number_format($investor['total_capital'] ?? $investor['balance'] ?? 0, 0, ',', '.') ?></span>
+                    </div>
+                </div>
+                <div class="investor-card-divider"></div>
+                <div class="investor-card-content">
+                    <div class="investor-info-box">
+                        <span class="info-label">Added</span>
+                        <span class="info-value"><?= date('d M Y', strtotime($investor['created_at'] ?? now())) ?></span>
+                    </div>
+                </div>
+
                 <div class="actions">
                     <button class="btn btn-sm btn-setoran" onclick="openDepositModal(<?= $investor['id'] ?>, '<?= htmlspecialchars($investor['name'] ?? $investor['investor_name'] ?? '') ?>')">
                         ➕ Deposit
