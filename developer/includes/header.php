@@ -519,6 +519,9 @@
             <a href="developer-settings.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'developer-settings.php' ? 'active' : ''; ?>">
                 <i class="bi bi-sliders"></i>Developer Settings
             </a>
+            <a href="web-settings.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'web-settings.php' ? 'active' : ''; ?>">
+                <i class="bi bi-globe"></i>Web Settings
+            </a>
             
             <div class="menu-section">Account</div>
             <a href="logout.php">
