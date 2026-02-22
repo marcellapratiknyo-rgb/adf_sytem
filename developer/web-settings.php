@@ -77,10 +77,15 @@ $webSettings = [
 
 // Connect to hotel database for website settings
 $webDb = null;
+$isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false && 
+                strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') === false);
+$webDbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
+$webDbUser = $isProduction ? 'adfb2574_adfsystem' : 'root';
+$webDbPass = $isProduction ? '@Nnoc2025' : '';
 try {
     $webDb = new PDO(
-        'mysql:host=localhost;dbname=adf_narayana_hotel;charset=utf8mb4',
-        'root', '',
+        'mysql:host=localhost;dbname=' . $webDbName . ';charset=utf8mb4',
+        $webDbUser, $webDbPass,
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 } catch (Exception $e) {
