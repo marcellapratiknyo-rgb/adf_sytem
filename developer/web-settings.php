@@ -28,6 +28,8 @@ $webSettings = [
     'web_tagline'           => 'Island Paradise Resort',
     'web_description'       => 'Luxury beachfront resort in the heart of Karimunjawa Islands. Premium accommodations with stunning ocean views.',
     
+    'web_favicon'            => '', // Path to favicon icon
+
     // Hero Section
     'web_hero_accent'       => 'Welcome to Paradise',
     'web_hero_title'        => 'Experience Karimunjawa<br>Like Never Before',
@@ -151,6 +153,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             $webSettings['web_enabled'] = '0';
         }
+        // Handle favicon upload
+        if (isset($_FILES['web_favicon']) && $_FILES['web_favicon']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = dirname(dirname(__FILE__)) . '/uploads/favicon/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+            $fileInfo = pathinfo($_FILES['web_favicon']['name']);
+            $allowedExts = ['ico', 'png', 'svg', 'jpg', 'jpeg', 'webp'];
+
+            if (in_array(strtolower($fileInfo['extension']), $allowedExts)) {
+                $newFileName = 'favicon-' . time() . '.' . $fileInfo['extension'];
+                $uploadPath = $uploadDir . $newFileName;
+
+                if (move_uploaded_file($_FILES['web_favicon']['tmp_name'], $uploadPath)) {
+                    $relativePath = 'uploads/favicon/' . $newFileName;
+                    $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description)
+                                VALUES ('web_favicon', ?, 'text', 'Website Favicon Icon')
+                                ON DUPLICATE KEY UPDATE setting_value = ?");
+                    $stmt->execute([$relativePath, $relativePath]);
+
+                    // Auto-sync to website public dir
+                    $websiteFaviconDir = $websitePublicDir . '/uploads/favicon/';
+                    if (!is_dir($websiteFaviconDir)) @mkdir($websiteFaviconDir, 0755, true);
+                    @copy($uploadPath, $websiteFaviconDir . $newFileName);
+
+                    // Delete old favicon
+                    $oldFav = $webSettings['web_favicon'] ?? '';
+                    if ($oldFav) {
+                        $old1 = dirname(dirname(__FILE__)) . '/' . $oldFav;
+                        $old2 = $websitePublicDir . '/' . $oldFav;
+                        if (file_exists($old1)) @unlink($old1);
+                        if (file_exists($old2)) @unlink($old2);
+                    }
+                    $webSettings['web_favicon'] = $relativePath;
+                }
+            }
+        }
+
+        // Handle remove favicon
+        if (isset($_POST['remove_favicon']) && $_POST['remove_favicon'] === '1') {
+            $oldFav = $webSettings['web_favicon'] ?? '';
+            if ($oldFav) {
+                $f1 = dirname(dirname(__FILE__)) . '/' . $oldFav;
+                $f2 = $websitePublicDir . '/' . $oldFav;
+                if (file_exists($f1)) @unlink($f1);
+                if (file_exists($f2)) @unlink($f2);
+            }
+            $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('web_favicon', '') ON DUPLICATE KEY UPDATE setting_value = ''");
+            $stmt->execute();
+            $webSettings['web_favicon'] = '';
+        }
+
         $success = 'General settings saved successfully!';
     }
     
@@ -840,7 +893,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
             </div>
             <div class="settings-card-body">
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="save_general">
                     
                     <div class="mb-3">
@@ -874,6 +927,28 @@ require_once __DIR__ . '/includes/header.php';
                         <label class="form-label">Site Description</label>
                         <textarea name="web_description" class="form-control" rows="3"><?= htmlspecialchars($webSettings['web_description']) ?></textarea>
                         <div class="form-text">Used in about sections and meta tags</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-globe2 me-1"></i>Favicon (Browser Tab Icon)</label>
+                        <?php if (!empty($webSettings['web_favicon'])): ?>
+                        <div class="mb-2 p-3 rounded" style="background: #f8f9fa; display: flex; align-items: center; gap: 16px;">
+                            <div style="width: 48px; height: 48px; border: 2px solid #dee2e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #fff;">
+                                <img src="../<?= htmlspecialchars($webSettings['web_favicon']) ?>" style="max-width: 32px; max-height: 32px;" alt="Favicon">
+                            </div>
+                            <div>
+                                <div style="font-size: 13px; color: #333; font-weight: 500;">Current Favicon</div>
+                                <div style="font-size: 11px; color: #888;"><?= htmlspecialchars($webSettings['web_favicon']) ?></div>
+                            </div>
+                            <label style="margin-left: auto; font-size: 12px; color: #dc3545; cursor: pointer;">
+                                <input type="checkbox" name="remove_favicon" value="1" style="margin-right: 4px;">Remove
+                            </label>
+                        </div>
+                        <?php endif; ?>
+                        <input type="file" name="web_favicon" class="form-control" accept="image/x-icon,image/png,image/svg+xml,image/jpeg,image/webp">
+                        <div class="form-text">Upload an icon for the browser tab. Recommended: 32×32px or 64×64px PNG/ICO file.</div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100">
