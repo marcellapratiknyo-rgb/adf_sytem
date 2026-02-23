@@ -78,10 +78,34 @@ $webSettings = [
     'web_room_primary_queen' => '',
     'web_room_primary_twin'  => '',
     
-    // SEO
+    // SEO — Basic
     'web_meta_title'        => 'Narayana Karimunjawa | Luxury Island Resort',
     'web_meta_description'  => 'Book your tropical paradise getaway at Narayana Karimunjawa. Premium beachfront resort with King, Queen & Twin rooms on Karimunjawa Island.',
     'web_meta_keywords'     => 'karimunjawa hotel, karimunjawa resort, narayana karimunjawa, island resort jepara, karimunjawa accommodation',
+    
+    // SEO — Open Graph / Social Media
+    'web_og_image'          => '', // Image for social media sharing (1200x630 recommended)
+    'web_og_type'           => 'website',
+    'web_og_locale'         => 'id_ID',
+    
+    // SEO — Google Analytics & Tracking
+    'web_ga_id'             => '', // Google Analytics 4 Measurement ID (G-XXXXXXXXXX)
+    'web_gtm_id'            => '', // Google Tag Manager ID (GTM-XXXXXXX)
+    'web_google_verification' => '', // Google Search Console verification meta tag
+    'web_bing_verification' => '', // Bing Webmaster verification
+    
+    // SEO — Structured Data (JSON-LD)
+    'web_schema_star_rating' => '5', // Hotel star rating
+    'web_schema_price_range' => 'Rp 800.000 - Rp 2.500.000',
+    'web_schema_latitude'   => '-5.8167',
+    'web_schema_longitude'  => '110.4500',
+    'web_schema_checkin'    => '14:00',
+    'web_schema_checkout'   => '12:00',
+    
+    // SEO — Sitemap & Robots
+    'web_robots_index'      => '1', // Allow indexing
+    'web_robots_follow'     => '1', // Allow following links
+    'web_canonical_url'     => 'https://narayanakarimunjawa.com',
     
     // Appearance
     'web_primary_color'     => '#0c2340',
@@ -410,17 +434,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     elseif ($action === 'save_seo') {
         $redirectTab = 'seo';
-        $fields = ['web_meta_title', 'web_meta_description', 'web_meta_keywords'];
+        $fields = [
+            'web_meta_title', 'web_meta_description', 'web_meta_keywords',
+            'web_og_type', 'web_og_locale',
+            'web_ga_id', 'web_gtm_id', 'web_google_verification', 'web_bing_verification',
+            'web_schema_star_rating', 'web_schema_price_range', 'web_schema_latitude', 'web_schema_longitude',
+            'web_schema_checkin', 'web_schema_checkout',
+            'web_robots_index', 'web_robots_follow', 'web_canonical_url',
+        ];
+        // Handle checkbox fields (not sent if unchecked)
+        foreach (['web_robots_index', 'web_robots_follow'] as $cb) {
+            if (!isset($_POST[$cb])) $_POST[$cb] = '0';
+        }
         foreach ($fields as $key) {
             if (isset($_POST[$key])) {
                 $val = trim($_POST[$key]);
                 $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) 
                             VALUES (?, ?, 'text', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
-                $stmt->execute([$key, $val, 'Website SEO: ' . str_replace('web_meta_', '', $key), $val]);
+                $stmt->execute([$key, $val, 'SEO: ' . str_replace('web_', '', $key), $val]);
                 $webSettings[$key] = $val;
             }
         }
-        $success = 'SEO settings saved!';
+        
+        // Handle OG image upload
+        if (isset($_FILES['web_og_image']) && $_FILES['web_og_image']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = dirname(dirname(__FILE__)) . '/uploads/seo/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            $ext = strtolower(pathinfo($_FILES['web_og_image']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                $newName = 'og-image-' . time() . '.' . $ext;
+                if (move_uploaded_file($_FILES['web_og_image']['tmp_name'], $uploadDir . $newName)) {
+                    $relPath = 'uploads/seo/' . $newName;
+                    $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) VALUES ('web_og_image', ?, 'text', 'OG Share Image') ON DUPLICATE KEY UPDATE setting_value = ?");
+                    $stmt->execute([$relPath, $relPath]);
+                    // Sync to website
+                    $webOgDir = $websitePublicDir . '/uploads/seo/';
+                    if (!is_dir($webOgDir)) @mkdir($webOgDir, 0755, true);
+                    @copy($uploadDir . $newName, $webOgDir . $newName);
+                    $webSettings['web_og_image'] = $relPath;
+                }
+            }
+        }
+        
+        // Generate robots.txt on hosting
+        $robotsContent = "User-agent: *\n";
+        if (($webSettings['web_robots_index'] ?? '1') === '0') {
+            $robotsContent .= "Disallow: /\n";
+        } else {
+            $robotsContent .= "Disallow: /config/\n";
+            $robotsContent .= "Disallow: /logs/\n";
+            $robotsContent .= "Disallow: /api/\n";
+            $robotsContent .= "Disallow: /patch.php\n\n";
+            $robotsContent .= "Sitemap: " . rtrim($webSettings['web_canonical_url'] ?? 'https://narayanakarimunjawa.com', '/') . "/sitemap.xml\n";
+        }
+        $robotsPath = $websitePublicDir . '/robots.txt';
+        @file_put_contents($robotsPath, $robotsContent);
+        
+        // Generate sitemap.xml
+        $baseUrl = rtrim($webSettings['web_canonical_url'] ?? 'https://narayanakarimunjawa.com', '/');
+        $today = date('Y-m-d');
+        $sitemapXml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $sitemapXml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        $pages = [
+            ['/', '1.0', 'daily'],
+            ['/rooms.php', '0.9', 'daily'],
+            ['/booking.php', '0.8', 'daily'],
+            ['/destinations.php', '0.7', 'weekly'],
+            ['/contact.php', '0.5', 'monthly'],
+        ];
+        foreach ($pages as $p) {
+            $sitemapXml .= "  <url>\n";
+            $sitemapXml .= "    <loc>{$baseUrl}{$p[0]}</loc>\n";
+            $sitemapXml .= "    <lastmod>{$today}</lastmod>\n";
+            $sitemapXml .= "    <changefreq>{$p[2]}</changefreq>\n";
+            $sitemapXml .= "    <priority>{$p[1]}</priority>\n";
+            $sitemapXml .= "  </url>\n";
+        }
+        $sitemapXml .= "</urlset>\n";
+        $sitemapPath = $websitePublicDir . '/sitemap.xml';
+        @file_put_contents($sitemapPath, $sitemapXml);
+        
+        $success = 'SEO settings saved! Sitemap & robots.txt generated.';
     }
     
     elseif ($action === 'save_appearance') {
@@ -1543,60 +1637,357 @@ require_once __DIR__ . '/includes/header.php';
     
     <!-- ============== SEO TAB ============== -->
     <div class="tab-content <?= $activeTab === 'seo' ? 'active' : '' ?>" id="tab-seo">
+        
+        <!-- SEO Score Card -->
+        <?php
+        $seoScore = 0;
+        $seoChecks = [];
+        // Title
+        $titleLen = mb_strlen($webSettings['web_meta_title']);
+        if ($titleLen >= 50 && $titleLen <= 60) { $seoScore += 20; $seoChecks[] = ['pass', 'Meta title length optimal (' . $titleLen . ' chars)']; }
+        elseif ($titleLen >= 30 && $titleLen <= 70) { $seoScore += 10; $seoChecks[] = ['warn', 'Meta title length acceptable (' . $titleLen . ' chars) — ideal: 50-60']; }
+        else { $seoChecks[] = ['fail', 'Meta title too ' . ($titleLen < 30 ? 'short' : 'long') . ' (' . $titleLen . ' chars)']; }
+        // Description
+        $descLen = mb_strlen($webSettings['web_meta_description']);
+        if ($descLen >= 120 && $descLen <= 155) { $seoScore += 20; $seoChecks[] = ['pass', 'Meta description length optimal (' . $descLen . ' chars)']; }
+        elseif ($descLen >= 80 && $descLen <= 160) { $seoScore += 10; $seoChecks[] = ['warn', 'Meta description acceptable (' . $descLen . ' chars) — ideal: 120-155']; }
+        else { $seoChecks[] = ['fail', 'Meta description too ' . ($descLen < 80 ? 'short' : 'long') . ' (' . $descLen . ' chars)']; }
+        // Keywords
+        if (!empty($webSettings['web_meta_keywords'])) { $seoScore += 10; $seoChecks[] = ['pass', 'Keywords defined']; }
+        else { $seoChecks[] = ['warn', 'No keywords set']; }
+        // OG Image
+        if (!empty($webSettings['web_og_image'])) { $seoScore += 15; $seoChecks[] = ['pass', 'Social sharing image set']; }
+        else { $seoChecks[] = ['fail', 'No OG image — social shares have no preview']; }
+        // Analytics
+        if (!empty($webSettings['web_ga_id']) || !empty($webSettings['web_gtm_id'])) { $seoScore += 10; $seoChecks[] = ['pass', 'Analytics tracking active']; }
+        else { $seoChecks[] = ['warn', 'No analytics tracking — can\'t measure visitors']; }
+        // Search Console
+        if (!empty($webSettings['web_google_verification'])) { $seoScore += 10; $seoChecks[] = ['pass', 'Google Search Console verified']; }
+        else { $seoChecks[] = ['fail', 'Google Search Console not verified']; }
+        // Canonical
+        if (!empty($webSettings['web_canonical_url'])) { $seoScore += 5; $seoChecks[] = ['pass', 'Canonical URL set']; }
+        else { $seoChecks[] = ['warn', 'No canonical URL']; }
+        // Structured data
+        if (!empty($webSettings['web_schema_latitude']) && !empty($webSettings['web_schema_longitude'])) { $seoScore += 10; $seoChecks[] = ['pass', 'Location coordinates set for Google Maps']; }
+        else { $seoChecks[] = ['fail', 'No location coordinates — won\'t appear on Google Maps']; }
+        
+        $scoreColor = $seoScore >= 80 ? '#28a745' : ($seoScore >= 50 ? '#ffc107' : '#dc3545');
+        $scoreLabel = $seoScore >= 80 ? 'Excellent' : ($seoScore >= 50 ? 'Good' : 'Needs Work');
+        ?>
+        
+        <div class="settings-card" style="border-left: 4px solid <?= $scoreColor ?>;">
+            <div class="settings-card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div style="width:80px;height:80px;border-radius:50%;border:4px solid <?= $scoreColor ?>;display:flex;align-items:center;justify-content:center;flex-direction:column;margin-right:20px;">
+                        <span style="font-size:24px;font-weight:700;color:<?= $scoreColor ?>;line-height:1;"><?= $seoScore ?></span>
+                        <span style="font-size:10px;color:#888;">/ 100</span>
+                    </div>
+                    <div>
+                        <h5 style="margin:0;">SEO Score: <span style="color:<?= $scoreColor ?>"><?= $scoreLabel ?></span></h5>
+                        <small class="text-muted">Optimise each section below to improve your search ranking</small>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <?php foreach ($seoChecks as $check): ?>
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2" style="padding:6px 10px;background:<?= $check[0]==='pass'?'rgba(40,167,69,0.08)':($check[0]==='warn'?'rgba(255,193,7,0.08)':'rgba(220,53,69,0.08)') ?>;border-radius:6px;">
+                            <i class="bi <?= $check[0]==='pass'?'bi-check-circle-fill text-success':($check[0]==='warn'?'bi-exclamation-triangle-fill text-warning':'bi-x-circle-fill text-danger') ?>"></i>
+                            <span style="font-size:13px;"><?= $check[1] ?></span>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="save_seo">
+        
+        <!-- Meta Tags Section -->
         <div class="settings-card">
             <div class="settings-card-header">
                 <div class="icon" style="background: rgba(255,87,51,0.15); color: #ff5733;">
-                    <i class="bi bi-search"></i>
+                    <i class="bi bi-code-slash"></i>
                 </div>
                 <div>
-                    <h5>SEO Settings</h5>
-                    <small>Search engine optimization for better visibility</small>
+                    <h5>Meta Tags</h5>
+                    <small>Control how your site appears in Google search results</small>
                 </div>
             </div>
             <div class="settings-card-body">
-                <form method="POST">
-                    <input type="hidden" name="action" value="save_seo">
-                    
                     <div class="mb-3">
-                        <label class="form-label">Meta Title</label>
-                        <input type="text" name="web_meta_title" class="form-control" value="<?= htmlspecialchars($webSettings['web_meta_title']) ?>" maxlength="70">
-                        <div class="form-text">
-                            <span id="titleCharCount"><?= strlen($webSettings['web_meta_title']) ?></span>/70 characters — 
-                            Recommended: 50-60 characters
+                        <label class="form-label fw-semibold">Meta Title</label>
+                        <input type="text" name="web_meta_title" class="form-control" id="seoMetaTitle" value="<?= htmlspecialchars($webSettings['web_meta_title']) ?>" maxlength="70">
+                        <div class="form-text d-flex justify-content-between">
+                            <span><span id="titleCharCount"><?= mb_strlen($webSettings['web_meta_title']) ?></span>/70 chars</span>
+                            <span id="titleStatus" class="<?= ($titleLen >= 50 && $titleLen <= 60) ? 'text-success' : 'text-warning' ?>"><?= ($titleLen >= 50 && $titleLen <= 60) ? '✓ Optimal' : '⚠ Ideal: 50-60' ?></span>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Meta Description</label>
-                        <textarea name="web_meta_description" class="form-control" rows="3" maxlength="160"><?= htmlspecialchars($webSettings['web_meta_description']) ?></textarea>
-                        <div class="form-text">
-                            <span id="descCharCount"><?= strlen($webSettings['web_meta_description']) ?></span>/160 characters — 
-                            Recommended: 120-155 characters
+                        <label class="form-label fw-semibold">Meta Description</label>
+                        <textarea name="web_meta_description" class="form-control" id="seoMetaDesc" rows="3" maxlength="160"><?= htmlspecialchars($webSettings['web_meta_description']) ?></textarea>
+                        <div class="form-text d-flex justify-content-between">
+                            <span><span id="descCharCount"><?= mb_strlen($webSettings['web_meta_description']) ?></span>/160 chars</span>
+                            <span id="descStatus" class="<?= ($descLen >= 120 && $descLen <= 155) ? 'text-success' : 'text-warning' ?>"><?= ($descLen >= 120 && $descLen <= 155) ? '✓ Optimal' : '⚠ Ideal: 120-155' ?></span>
                         </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Keywords</label>
-                        <textarea name="web_meta_keywords" class="form-control" rows="2"><?= htmlspecialchars($webSettings['web_meta_keywords']) ?></textarea>
-                        <div class="form-text">Comma-separated keywords. Less important for modern SEO but still useful.</div>
+                        <label class="form-label fw-semibold">Focus Keywords</label>
+                        <textarea name="web_meta_keywords" class="form-control" rows="2" placeholder="karimunjawa hotel, island resort, luxury accommodation"><?= htmlspecialchars($webSettings['web_meta_keywords']) ?></textarea>
+                        <div class="form-text">Comma-separated. Top keywords: <strong>karimunjawa hotel</strong>, <strong>karimunjawa resort</strong>, <strong>penginapan karimunjawa</strong></div>
                     </div>
-                    
-                    <!-- Google Preview -->
-                    <div class="card bg-light p-3 mb-3">
-                        <small class="text-muted mb-1">Google Search Preview:</small>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Canonical URL</label>
+                        <input type="url" name="web_canonical_url" class="form-control" value="<?= htmlspecialchars($webSettings['web_canonical_url']) ?>" placeholder="https://narayanakarimunjawa.com">
+                        <div class="form-text">Primary domain URL — prevents duplicate content issues</div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="web_robots_index" value="1" id="robotsIndex" <?= ($webSettings['web_robots_index'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="robotsIndex">Allow Google to index site</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="web_robots_follow" value="1" id="robotsFollow" <?= ($webSettings['web_robots_follow'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                <label class="form-check-label" for="robotsFollow">Allow Google to follow links</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Google Preview -->
+                    <div class="p-3 rounded mb-3" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <img src="https://www.google.com/favicon.ico" width="16" alt="">
+                            <small class="fw-bold text-muted">Google Search Preview</small>
+                        </div>
                         <div style="font-family: Arial, sans-serif;">
-                            <div style="color: #1a0dab; font-size: 18px;"><?= htmlspecialchars($webSettings['web_meta_title']) ?></div>
-                            <div style="color: #006621; font-size: 14px;">narayanakarimunjawa.com</div>
-                            <div style="color: #545454; font-size: 13px;"><?= htmlspecialchars($webSettings['web_meta_description']) ?></div>
+                            <div id="previewTitle" style="color: #1a0dab; font-size: 18px; line-height: 1.3; margin-bottom: 2px; cursor:pointer;" class="text-truncate"><?= htmlspecialchars($webSettings['web_meta_title']) ?></div>
+                            <div style="color: #006621; font-size: 14px; margin-bottom: 2px;">narayanakarimunjawa.com</div>
+                            <div id="previewDesc" style="color: #545454; font-size: 13px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"><?= htmlspecialchars($webSettings['web_meta_description']) ?></div>
                         </div>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-check-lg me-1"></i>Save SEO Settings
-                    </button>
-                </form>
             </div>
         </div>
+
+        <!-- Social Media / Open Graph -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="icon" style="background: rgba(24,119,242,0.12); color: #1877f2;">
+                    <i class="bi bi-share-fill"></i>
+                </div>
+                <div>
+                    <h5>Social Media Sharing</h5>
+                    <small>Control how your site looks when shared on Facebook, WhatsApp, Twitter</small>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Share Image (OG Image)</label>
+                        <?php if (!empty($webSettings['web_og_image'])): ?>
+                        <div class="mb-2">
+                            <img src="../<?= htmlspecialchars($webSettings['web_og_image']) ?>" style="max-width:100%;max-height:200px;border-radius:8px;border:1px solid #dee2e6;">
+                        </div>
+                        <?php endif; ?>
+                        <input type="file" name="web_og_image" class="form-control" accept="image/jpeg,image/png,image/webp">
+                        <div class="form-text">Recommended: <strong>1200 x 630 px</strong> (JPG/PNG). This image appears when people share your link.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">OG Type</label>
+                            <select name="web_og_type" class="form-select">
+                                <option value="website" <?= $webSettings['web_og_type'] === 'website' ? 'selected' : '' ?>>Website</option>
+                                <option value="hotel" <?= $webSettings['web_og_type'] === 'hotel' ? 'selected' : '' ?>>Hotel</option>
+                                <option value="business.business" <?= $webSettings['web_og_type'] === 'business.business' ? 'selected' : '' ?>>Business</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Locale</label>
+                            <select name="web_og_locale" class="form-select">
+                                <option value="id_ID" <?= $webSettings['web_og_locale'] === 'id_ID' ? 'selected' : '' ?>>Indonesia (id_ID)</option>
+                                <option value="en_US" <?= $webSettings['web_og_locale'] === 'en_US' ? 'selected' : '' ?>>English (en_US)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Social Preview -->
+                    <div class="p-3 rounded" style="background:#f0f2f5;border:1px solid #dddfe2;">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-facebook" style="color:#1877f2;font-size:18px;"></i>
+                            <small class="fw-bold text-muted">Facebook / WhatsApp Preview</small>
+                        </div>
+                        <div style="background:#fff;border:1px solid #dddfe2;border-radius:8px;overflow:hidden;max-width:500px;">
+                            <?php if (!empty($webSettings['web_og_image'])): ?>
+                            <img src="../<?= htmlspecialchars($webSettings['web_og_image']) ?>" style="width:100%;height:260px;object-fit:cover;">
+                            <?php else: ?>
+                            <div style="width:100%;height:160px;background:linear-gradient(135deg,#0c2340,#1a3a5c);display:flex;align-items:center;justify-content:center;color:#c8a45e;font-size:24px;font-weight:600;">Narayana Karimunjawa</div>
+                            <?php endif; ?>
+                            <div style="padding:10px 12px;">
+                                <div style="color:#65676b;font-size:12px;text-transform:uppercase;">narayanakarimunjawa.com</div>
+                                <div style="color:#1c1e21;font-size:16px;font-weight:600;line-height:1.3;"><?= htmlspecialchars($webSettings['web_meta_title']) ?></div>
+                                <div style="color:#65676b;font-size:14px;margin-top:2px;"><?= htmlspecialchars(mb_substr($webSettings['web_meta_description'], 0, 100)) ?>...</div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+
+        <!-- Google Analytics & Tracking -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="icon" style="background: rgba(251,188,4,0.15); color: #f9ab00;">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div>
+                    <h5>Analytics & Verification</h5>
+                    <small>Track visitors and verify ownership with search engines</small>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-google me-1"></i>Google Analytics 4 ID</label>
+                            <input type="text" name="web_ga_id" class="form-control" value="<?= htmlspecialchars($webSettings['web_ga_id']) ?>" placeholder="G-XXXXXXXXXX">
+                            <div class="form-text">From <a href="https://analytics.google.com/" target="_blank">analytics.google.com</a> → Admin → Data Streams</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-box me-1"></i>Google Tag Manager ID</label>
+                            <input type="text" name="web_gtm_id" class="form-control" value="<?= htmlspecialchars($webSettings['web_gtm_id']) ?>" placeholder="GTM-XXXXXXX">
+                            <div class="form-text">Optional — advanced tracking container</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-shield-check me-1"></i>Google Search Console</label>
+                            <input type="text" name="web_google_verification" class="form-control" value="<?= htmlspecialchars($webSettings['web_google_verification']) ?>" placeholder="verification code (content value only)">
+                            <div class="form-text"><a href="https://search.google.com/search-console" target="_blank">Search Console</a> → Settings → Ownership verification → HTML tag → copy the <code>content</code> value</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-bing me-1"></i>Bing Webmaster</label>
+                            <input type="text" name="web_bing_verification" class="form-control" value="<?= htmlspecialchars($webSettings['web_bing_verification']) ?>" placeholder="verification code">
+                            <div class="form-text">Optional — Bing Webmaster Tools verification</div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-0" style="font-size:13px;">
+                        <i class="bi bi-lightbulb me-1"></i>
+                        <strong>Quick Setup:</strong> 
+                        1) Create <a href="https://analytics.google.com/" target="_blank">Google Analytics</a> account → get GA4 ID. 
+                        2) Add site to <a href="https://search.google.com/search-console" target="_blank">Search Console</a> → verify → submit sitemap URL: <code><?= rtrim($webSettings['web_canonical_url'] ?: 'https://narayanakarimunjawa.com', '/') ?>/sitemap.xml</code>
+                    </div>
+            </div>
+        </div>
+
+        <!-- Structured Data / Schema.org -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="icon" style="background: rgba(102,16,242,0.12); color: #6610f2;">
+                    <i class="bi bi-braces"></i>
+                </div>
+                <div>
+                    <h5>Structured Data (Rich Results)</h5>
+                    <small>Help Google show your hotel with star ratings, prices & map location in search results</small>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Star Rating</label>
+                            <select name="web_schema_star_rating" class="form-select">
+                                <?php for ($i = 1; $i <= 5; $i++): ?>
+                                <option value="<?= $i ?>" <?= $webSettings['web_schema_star_rating'] == $i ? 'selected' : '' ?>><?= str_repeat('⭐', $i) ?> <?= $i ?> Star</option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Check-in Time</label>
+                            <input type="time" name="web_schema_checkin" class="form-control" value="<?= htmlspecialchars($webSettings['web_schema_checkin']) ?>">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Check-out Time</label>
+                            <input type="time" name="web_schema_checkout" class="form-control" value="<?= htmlspecialchars($webSettings['web_schema_checkout']) ?>">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Price Range</label>
+                        <input type="text" name="web_schema_price_range" class="form-control" value="<?= htmlspecialchars($webSettings['web_schema_price_range']) ?>" placeholder="Rp 800.000 - Rp 2.500.000">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-geo me-1"></i>Latitude</label>
+                            <input type="text" name="web_schema_latitude" class="form-control" value="<?= htmlspecialchars($webSettings['web_schema_latitude']) ?>" placeholder="-5.8167">
+                            <div class="form-text">Find on <a href="https://www.google.com/maps/place/Narayana+Karimunjawa" target="_blank">Google Maps</a> → right-click → "What's here?"</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-geo me-1"></i>Longitude</label>
+                            <input type="text" name="web_schema_longitude" class="form-control" value="<?= htmlspecialchars($webSettings['web_schema_longitude']) ?>" placeholder="110.4500">
+                        </div>
+                    </div>
+                    
+                    <!-- JSON-LD Preview -->
+                    <div class="p-3 rounded" style="background:#1e1e1e;color:#d4d4d4;font-family:'Fira Code',monospace,Consolas;font-size:12px;border-radius:8px;max-height:250px;overflow-y:auto;">
+                        <div style="color:#888;margin-bottom:5px;">// This JSON-LD will be injected in your website &lt;head&gt;</div>
+                        <div><span style="color:#ce9178;">"@type"</span>: <span style="color:#6a9955;">"Hotel"</span>,</div>
+                        <div><span style="color:#ce9178;">"name"</span>: <span style="color:#6a9955;">"<?= htmlspecialchars($webSettings['web_site_name'] ?: 'Narayana Karimunjawa') ?>"</span>,</div>
+                        <div><span style="color:#ce9178;">"starRating"</span>: <span style="color:#b5cea8;"><?= $webSettings['web_schema_star_rating'] ?></span>,</div>
+                        <div><span style="color:#ce9178;">"priceRange"</span>: <span style="color:#6a9955;">"<?= htmlspecialchars($webSettings['web_schema_price_range']) ?>"</span>,</div>
+                        <div><span style="color:#ce9178;">"geo"</span>: { <span style="color:#ce9178;">"lat"</span>: <span style="color:#b5cea8;"><?= $webSettings['web_schema_latitude'] ?: '...' ?></span>, <span style="color:#ce9178;">"lng"</span>: <span style="color:#b5cea8;"><?= $webSettings['web_schema_longitude'] ?: '...' ?></span> },</div>
+                        <div><span style="color:#ce9178;">"checkinTime"</span>: <span style="color:#6a9955;">"<?= $webSettings['web_schema_checkin'] ?>"</span>,</div>
+                        <div><span style="color:#ce9178;">"checkoutTime"</span>: <span style="color:#6a9955;">"<?= $webSettings['web_schema_checkout'] ?>"</span></div>
+                    </div>
+            </div>
+        </div>
+
+        <!-- Sitemap & Robots -->
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="icon" style="background: rgba(40,167,69,0.12); color: #28a745;">
+                    <i class="bi bi-diagram-3-fill"></i>
+                </div>
+                <div>
+                    <h5>Sitemap & Robots.txt</h5>
+                    <small>Auto-generated when you save — tells search engines which pages to crawl</small>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="bi bi-file-earmark-code text-success"></i>
+                                    <strong>sitemap.xml</strong>
+                                </div>
+                                <p style="font-size:13px;color:#555;margin:0;">Automatically lists: Home, Rooms, Booking, Destinations, Contact with priorities & last modified dates.</p>
+                                <a href="<?= rtrim($webSettings['web_canonical_url'] ?: 'https://narayanakarimunjawa.com', '/') ?>/sitemap.xml" target="_blank" class="btn btn-sm btn-outline-success mt-2"><i class="bi bi-box-arrow-up-right me-1"></i>View Sitemap</a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:#eff6ff;border:1px solid #bfdbfe;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="bi bi-file-earmark-text text-primary"></i>
+                                    <strong>robots.txt</strong>
+                                </div>
+                                <p style="font-size:13px;color:#555;margin:0;">Blocks /config/, /logs/, /api/ from crawlers. Points to sitemap URL automatically.</p>
+                                <a href="<?= rtrim($webSettings['web_canonical_url'] ?: 'https://narayanakarimunjawa.com', '/') ?>/robots.txt" target="_blank" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-box-arrow-up-right me-1"></i>View Robots.txt</a>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg w-100" style="padding:14px;font-size:16px;">
+            <i class="bi bi-rocket-takeoff me-2"></i>Save SEO & Generate Sitemap
+        </button>
+        </form>
     </div>
     
     <!-- ============== APPEARANCE TAB ============== -->
@@ -2004,13 +2395,36 @@ function updateColorPreview() {
 
 syncColors();
 
-// SEO character counters
-document.querySelector('[name="web_meta_title"]')?.addEventListener('input', function() {
-    document.getElementById('titleCharCount').textContent = this.value.length;
-});
-document.querySelector('[name="web_meta_description"]')?.addEventListener('input', function() {
-    document.getElementById('descCharCount').textContent = this.value.length;
-});
+// SEO character counters & live preview
+const seoTitle = document.getElementById('seoMetaTitle');
+const seoDesc = document.getElementById('seoMetaDesc');
+const titleCount = document.getElementById('titleCharCount');
+const descCount = document.getElementById('descCharCount');
+const titleStatus = document.getElementById('titleStatus');
+const descStatus = document.getElementById('descStatus');
+const previewTitle = document.getElementById('previewTitle');
+const previewDesc = document.getElementById('previewDesc');
+
+if (seoTitle) {
+    seoTitle.addEventListener('input', function() {
+        const len = this.value.length;
+        titleCount.textContent = len;
+        previewTitle && (previewTitle.textContent = this.value || 'Untitled');
+        if (len >= 50 && len <= 60) { titleStatus.className = 'text-success'; titleStatus.textContent = '✓ Optimal'; }
+        else if (len >= 30 && len <= 70) { titleStatus.className = 'text-warning'; titleStatus.textContent = '⚠ Acceptable'; }
+        else { titleStatus.className = 'text-danger'; titleStatus.textContent = '✗ ' + (len < 30 ? 'Too short' : 'Too long'); }
+    });
+}
+if (seoDesc) {
+    seoDesc.addEventListener('input', function() {
+        const len = this.value.length;
+        descCount.textContent = len;
+        previewDesc && (previewDesc.textContent = this.value || 'No description');
+        if (len >= 120 && len <= 155) { descStatus.className = 'text-success'; descStatus.textContent = '✓ Optimal'; }
+        else if (len >= 80 && len <= 160) { descStatus.className = 'text-warning'; descStatus.textContent = '⚠ Acceptable'; }
+        else { descStatus.className = 'text-danger'; descStatus.textContent = '✗ ' + (len < 80 ? 'Too short' : 'Too long'); }
+    });
+}
 
 // Remove background image handler
 function removeBackground() {
