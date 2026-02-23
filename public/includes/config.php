@@ -58,14 +58,32 @@ define('BUSINESS_ID', $businessId);
 // ============================================
 // LOAD BUSINESS CONFIGURATION
 // ============================================
-$businessConfigPath = ROOT_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'businesses' . DIRECTORY_SEPARATOR . BUSINESS_ID . '.php';
-if (!file_exists($businessConfigPath)) {
-    die("ERROR: Business config not found at: " . $businessConfigPath);
+$businessConfigLoaded = false;
+$possiblePaths = [
+    ROOT_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'businesses' . DIRECTORY_SEPARATOR . BUSINESS_ID . '.php',
+    ROOT_PATH . DIRECTORY_SEPARATOR . 'adf_system' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'businesses' . DIRECTORY_SEPARATOR . BUSINESS_ID . '.php',
+    ROOT_PATH . DIRECTORY_SEPARATOR . 'adf_sytem' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'businesses' . DIRECTORY_SEPARATOR . BUSINESS_ID . '.php',
+    PUBLIC_PATH . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'businesses' . DIRECTORY_SEPARATOR . BUSINESS_ID . '.php',
+];
+
+foreach ($possiblePaths as $configPath) {
+    if (file_exists($configPath)) {
+        $businessConfig = require $configPath;
+        $businessConfigLoaded = true;
+        break;
+    }
 }
-$businessConfig = require $businessConfigPath;
-define('BUSINESS_NAME', $businessConfig['name']);
-define('BUSINESS_TYPE', $businessConfig['business_type']);
-define('DB_NAME', $businessConfig['database']);
+
+if ($businessConfigLoaded) {
+    define('BUSINESS_NAME', $businessConfig['name']);
+    define('BUSINESS_TYPE', $businessConfig['business_type']);
+    define('DB_NAME', $businessConfig['database']);
+} else {
+    // Fallback defaults when business config file is not found
+    define('BUSINESS_NAME', 'Narayana Karimunjawa');
+    define('BUSINESS_TYPE', 'hotel');
+    define('DB_NAME', 'narayana_hotel');
+}
 
 // Get appropriate database name
 if ($isLocalhost) {
