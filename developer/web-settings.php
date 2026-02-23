@@ -40,6 +40,12 @@ $webSettings = [
     // Destinations (JSON array of destination objects)
     'web_destinations'       => '[]',
 
+    // Footer Settings
+    'web_footer_logo'        => '', // Path to footer logo (separate from main logo)
+    'web_footer_text'        => '', // Custom footer about text
+    'web_footer_show_logo'   => '1', // Show logo in footer (1=yes, 0=no)
+    'web_footer_copyright'   => '', // Custom copyright text
+
     // Hero Section
     'web_hero_accent'       => 'Welcome to Paradise',
     'web_hero_title'        => 'Experience Karimunjawa<br>Like Never Before',
@@ -652,6 +658,74 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$destJson, $destJson]);
         $webSettings['web_destinations'] = $destJson;
     }
+    
+    elseif ($action === 'save_footer') {
+        $redirectTab = 'footer';
+        $fields = ['web_footer_text', 'web_footer_show_logo', 'web_footer_copyright'];
+        
+        // Handle footer logo upload
+        if (isset($_FILES['web_footer_logo']) && $_FILES['web_footer_logo']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = dirname(dirname(__FILE__)) . '/uploads/logo/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            $fileInfo = pathinfo($_FILES['web_footer_logo']['name']);
+            $allowedExts = ['png', 'svg', 'jpg', 'jpeg', 'webp', 'gif'];
+            if (in_array(strtolower($fileInfo['extension']), $allowedExts)) {
+                $newFileName = 'footer-logo-' . time() . '.' . $fileInfo['extension'];
+                $uploadPath = $uploadDir . $newFileName;
+                if (move_uploaded_file($_FILES['web_footer_logo']['tmp_name'], $uploadPath)) {
+                    $relativePath = 'uploads/logo/' . $newFileName;
+                    $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) VALUES ('web_footer_logo', ?, 'text', 'Footer Logo') ON DUPLICATE KEY UPDATE setting_value = ?");
+                    $stmt->execute([$relativePath, $relativePath]);
+                    // Auto-sync to website public dir
+                    $websiteLogoDir = $websitePublicDir . '/uploads/logo/';
+                    if (!is_dir($websiteLogoDir)) @mkdir($websiteLogoDir, 0755, true);
+                    @copy($uploadPath, $websiteLogoDir . $newFileName);
+                    // Delete old footer logo
+                    $oldFooterLogo = $webSettings['web_footer_logo'] ?? '';
+                    if ($oldFooterLogo) {
+                        $old1 = dirname(dirname(__FILE__)) . '/' . $oldFooterLogo;
+                        $old2 = $websitePublicDir . '/' . $oldFooterLogo;
+                        if (file_exists($old1)) @unlink($old1);
+                        if (file_exists($old2)) @unlink($old2);
+                    }
+                    $webSettings['web_footer_logo'] = $relativePath;
+                }
+            }
+        }
+        
+        // Handle remove footer logo
+        if (isset($_POST['remove_footer_logo']) && $_POST['remove_footer_logo'] === '1') {
+            $oldFooterLogo = $webSettings['web_footer_logo'] ?? '';
+            if ($oldFooterLogo) {
+                $f1 = dirname(dirname(__FILE__)) . '/' . $oldFooterLogo;
+                $f2 = $websitePublicDir . '/' . $oldFooterLogo;
+                if (file_exists($f1)) @unlink($f1);
+                if (file_exists($f2)) @unlink($f2);
+            }
+            $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('web_footer_logo', '') ON DUPLICATE KEY UPDATE setting_value = ''");
+            $stmt->execute();
+            $webSettings['web_footer_logo'] = '';
+        }
+        
+        // Handle checkbox (unchecked = not sent)
+        if (!isset($_POST['web_footer_show_logo'])) {
+            $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('web_footer_show_logo', '0') ON DUPLICATE KEY UPDATE setting_value = '0'");
+            $stmt->execute();
+            $webSettings['web_footer_show_logo'] = '0';
+        }
+        
+        foreach ($fields as $key) {
+            if (isset($_POST[$key])) {
+                $val = trim($_POST[$key]);
+                $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) 
+                            VALUES (?, ?, 'text', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+                $stmt->execute([$key, $val, 'Footer: ' . str_replace('web_footer_', '', $key), $val]);
+                $webSettings[$key] = $val;
+            }
+        }
+        
+        $success = 'Footer settings saved successfully!';
+    }
 
     // For AJAX requests: return JSON response
     if ($isAjax) {
@@ -1076,6 +1150,7 @@ require_once __DIR__ . '/includes/header.php';
         <button class="settings-tab <?= $activeTab === 'appearance' ? 'active' : '' ?>" data-tab="appearance"><i class="bi bi-palette me-1"></i>Appearance</button>
         <button class="settings-tab <?= $activeTab === 'booking' ? 'active' : '' ?>" data-tab="booking"><i class="bi bi-calendar-check me-1"></i>Booking</button>
         <button class="settings-tab <?= $activeTab === 'destinations' ? 'active' : '' ?>" data-tab="destinations"><i class="bi bi-geo-alt me-1"></i>Destinations</button>
+        <button class="settings-tab <?= $activeTab === 'footer' ? 'active' : '' ?>" data-tab="footer"><i class="bi bi-layout-three-columns me-1"></i>Footer</button>
     </div>
     
     <!-- ============== GENERAL TAB ============== -->
@@ -1725,6 +1800,130 @@ require_once __DIR__ . '/includes/header.php';
                     </button>
                 </form>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ============== FOOTER TAB ============== -->
+    <div class="tab-content <?= $activeTab === 'footer' ? 'active' : '' ?>" id="tab-footer">
+        <div class="settings-card">
+            <div class="settings-card-header">
+                <div class="icon" style="background: rgba(13,110,253,0.15); color: #0d6efd;">
+                    <i class="bi bi-layout-three-columns"></i>
+                </div>
+                <div>
+                    <h5>Footer Settings</h5>
+                    <small>Configure the website footer — logo, text, and copyright</small>
+                </div>
+            </div>
+            <div class="settings-card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="save_footer">
+                    
+                    <!-- Show Logo Toggle -->
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <label class="form-label mb-0">Show Logo in Footer</label>
+                                <div class="form-text">Display logo image instead of text name in footer</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="web_footer_show_logo" value="1" <?= ($webSettings['web_footer_show_logo'] ?? '1') === '1' ? 'checked' : '' ?>>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Footer Logo Upload -->
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-image me-1"></i>Footer Logo</label>
+                        <div class="form-text mb-2">Upload a separate logo for the footer. If empty, the main website logo will be used. Recommended: white/light logo on transparent background (PNG/SVG).</div>
+                        
+                        <?php 
+                        $currentFooterLogo = $webSettings['web_footer_logo'] ?? '';
+                        $displayLogo = $currentFooterLogo ?: ($webSettings['web_logo'] ?? '');
+                        ?>
+                        
+                        <?php if ($displayLogo): ?>
+                        <div class="mb-3 p-3 rounded" style="background: #1a2a4a; text-align: center;">
+                            <img src="../<?= htmlspecialchars($displayLogo) ?>" alt="Footer Logo" style="max-width: 200px; max-height: 80px; object-fit: contain;">
+                            <div class="mt-2">
+                                <small style="color: rgba(255,255,255,0.6);">
+                                    <?= $currentFooterLogo ? 'Custom footer logo' : 'Using main website logo (no custom footer logo set)' ?>
+                                </small>
+                            </div>
+                            <?php if ($currentFooterLogo): ?>
+                            <div class="mt-2">
+                                <label style="color: #ff6b6b; cursor: pointer; font-size: 13px;">
+                                    <input type="checkbox" name="remove_footer_logo" value="1" style="margin-right: 4px;">
+                                    <i class="bi bi-trash"></i> Remove custom footer logo
+                                </label>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php else: ?>
+                        <div class="mb-3 p-3 rounded text-center" style="background: #f8f9fa; border: 2px dashed #dee2e6;">
+                            <i class="bi bi-image" style="font-size: 32px; color: #ccc;"></i>
+                            <p class="mb-0 mt-1" style="color: #999; font-size: 13px;">No logo uploaded yet</p>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <input type="file" name="web_footer_logo" class="form-control" accept="image/png,image/svg+xml,image/jpeg,image/webp,image/gif">
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Footer About Text -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-text-paragraph me-1"></i>Footer About Text</label>
+                        <textarea name="web_footer_text" class="form-control" rows="3" placeholder="Short description about your business shown in footer..."><?= htmlspecialchars($webSettings['web_footer_text'] ?? '') ?></textarea>
+                        <div class="form-text">Leave empty to use the default hotel description</div>
+                    </div>
+                    
+                    <!-- Custom Copyright Text -->
+                    <div class="mb-3">
+                        <label class="form-label"><i class="bi bi-c-circle me-1"></i>Custom Copyright Text</label>
+                        <input type="text" name="web_footer_copyright" class="form-control" value="<?= htmlspecialchars($webSettings['web_footer_copyright'] ?? '') ?>" placeholder="e.g. 2025 Narayana Karimunjawa. All Rights Reserved.">
+                        <div class="form-text">Leave empty for default: © [Year] [Business Name]. All Rights Reserved.</div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Live Preview -->
+                    <div class="mb-4">
+                        <label class="form-label"><i class="bi bi-eye me-1"></i>Footer Preview</label>
+                        <div class="p-4 rounded" style="background: #0c2340; color: white;">
+                            <div class="d-flex align-items-start gap-4 flex-wrap">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <?php if ($displayLogo && ($webSettings['web_footer_show_logo'] ?? '1') === '1'): ?>
+                                    <img src="../<?= htmlspecialchars($displayLogo) ?>" alt="Logo" style="max-width: 150px; max-height: 50px; object-fit: contain; margin-bottom: 10px; filter: brightness(0) invert(1);">
+                                    <?php else: ?>
+                                    <h5 style="color: white; margin-bottom: 10px;"><?= htmlspecialchars($webSettings['web_site_name'] ?? 'Narayana Karimunjawa') ?></h5>
+                                    <?php endif; ?>
+                                    <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0;">
+                                        <?= htmlspecialchars($webSettings['web_footer_text'] ?? 'Your hotel description here...') ?>
+                                    </p>
+                                </div>
+                                <div style="min-width: 150px;">
+                                    <h6 style="color: white; margin-bottom: 8px;">Contact</h6>
+                                    <p style="color: rgba(255,255,255,0.6); font-size: 12px; margin: 0;"><?= htmlspecialchars($webSettings['web_phone'] ?? '') ?></p>
+                                    <p style="color: rgba(255,255,255,0.6); font-size: 12px; margin: 0;"><?= htmlspecialchars($webSettings['web_email'] ?? '') ?></p>
+                                </div>
+                            </div>
+                            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 16px; padding-top: 12px; text-align: center;">
+                                <small style="color: rgba(255,255,255,0.5);">
+                                    &copy; <?= date('Y') ?> <?= htmlspecialchars($webSettings['web_footer_copyright'] ?? ($webSettings['web_site_name'] ?? 'Narayana Karimunjawa') . '. All Rights Reserved.') ?>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-1"></i>Save Footer Settings
+                    </button>
+                </form>
             </div>
         </div>
     </div>

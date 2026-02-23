@@ -25,6 +25,24 @@ try {
     $packages = [];
 }
 
+// Load web settings from database (destinations, footer logo, etc.)
+$webSettingsData = [];
+try {
+    $settingsRows = $db->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('web_destinations', 'web_footer_logo', 'web_footer_text', 'web_footer_show_logo', 'web_logo', 'web_site_name', 'web_instagram', 'web_whatsapp')");
+    foreach ($settingsRows as $sr) {
+        $webSettingsData[$sr['setting_key']] = $sr['setting_value'];
+    }
+} catch (Exception $e) {
+    $webSettingsData = [];
+}
+
+// Parse destinations
+$destinations = json_decode($webSettingsData['web_destinations'] ?? '[]', true) ?: [];
+// Filter only active destinations
+$destinations = array_filter($destinations, function($d) { return !empty($d['active']); });
+// Sort by order
+usort($destinations, function($a, $b) { return ($a['order'] ?? 0) - ($b['order'] ?? 0); });
+
 ?>
 <?php include './includes/header.php'; ?>
 
@@ -130,6 +148,46 @@ try {
         </div>
     </div>
 </section>
+
+<!-- DESTINATIONS SECTION -->
+<?php if (!empty($destinations)): ?>
+<section class="luxury-destinations" id="destinations">
+    <div class="container">
+        <div class="section-header">
+            <h2>Explore Karimunjawa</h2>
+            <p>Discover the most beautiful destinations around our paradise island</p>
+        </div>
+        
+        <div class="destinations-grid">
+            <?php foreach ($destinations as $dest): ?>
+            <div class="destination-card-item">
+                <div class="dest-image-container">
+                    <?php if (!empty($dest['image'])): ?>
+                    <img src="<?php echo baseUrl($dest['image']); ?>" alt="<?php echo htmlize($dest['title']); ?>" class="dest-image" loading="lazy">
+                    <?php else: ?>
+                    <div class="dest-image-placeholder">
+                        <i data-feather="map-pin"></i>
+                    </div>
+                    <?php endif; ?>
+                    <div class="dest-overlay">
+                        <span class="dest-badge">Destination</span>
+                    </div>
+                </div>
+                <div class="dest-info">
+                    <h3><?php echo htmlize($dest['title']); ?></h3>
+                    <?php if (!empty($dest['subtitle'])): ?>
+                    <p class="dest-subtitle"><?php echo htmlize($dest['subtitle']); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($dest['content'])): ?>
+                    <p class="dest-content"><?php echo htmlize(mb_substr(strip_tags($dest['content']), 0, 120)) . (mb_strlen(strip_tags($dest['content'])) > 120 ? '...' : ''); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
 
 <!-- LUXURY EXPERIENCES SECTION -->
 <section class="luxury-experiences">
