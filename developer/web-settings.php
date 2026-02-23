@@ -1416,11 +1416,12 @@ require_once __DIR__ . '/includes/header.php';
                     
                     <div class="mb-3">
                         <label class="form-label"><i class="bi bi-upload me-1"></i>Upload New Images</label>
-                        <input type="file" name="room_images[]" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp" multiple>
-                        <div class="form-text">Select multiple images (JPG, PNG, WEBP). Recommended: 800x600px or larger. Max 10 images per upload.</div>
+                        <input type="file" name="room_images[]" class="form-control gallery-file-input" accept="image/jpeg,image/jpg,image/png,image/webp" multiple>
+                        <div class="form-text">Pilih beberapa gambar sekaligus (JPG, PNG, WEBP). Recommended: 800x600px. Max 10MB per file.</div>
+                        <div class="gallery-preview" style="display:none; margin-top:10px;"></div>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary w-100">
+                    <button type="submit" class="btn btn-primary w-100 gallery-submit-btn">
                         <i class="bi bi-check-lg me-1"></i>Save <?= $roomNames[$roomType] ?> Gallery
                     </button>
                 </form>
@@ -1784,6 +1785,73 @@ function removeBackground() {
         document.querySelector('input[name="action"][value="save_hero"]').closest('form').submit();
     }
 }
+
+// ============ GALLERY UPLOAD LOADING & PREVIEW ============
+
+// Loading overlay
+const overlay = document.createElement('div');
+overlay.id = 'uploadOverlay';
+overlay.innerHTML = `
+    <div style="background:rgba(0,0,0,0.7);position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+        <div style="width:50px;height:50px;border:4px solid rgba(255,255,255,0.3);border-top:4px solid #c8a45e;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <div style="color:#fff;font-size:16px;font-weight:500;" id="uploadText">Uploading images...</div>
+        <div style="color:rgba(255,255,255,0.6);font-size:13px;">Please wait, do not close this page</div>
+    </div>
+`;
+overlay.style.display = 'none';
+document.body.appendChild(overlay);
+
+// Spinner CSS
+const spinStyle = document.createElement('style');
+spinStyle.textContent = `@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}} .gallery-preview{display:flex;flex-wrap:wrap;gap:8px;} .gallery-preview img{width:80px;height:60px;object-fit:cover;border-radius:6px;border:2px solid #e0e0e0;}`;
+document.head.appendChild(spinStyle);
+
+// File preview on select
+document.querySelectorAll('.gallery-file-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const preview = this.closest('.mb-3').querySelector('.gallery-preview');
+        preview.innerHTML = '';
+        if (this.files.length > 0) {
+            preview.style.display = 'flex';
+            const label = document.createElement('div');
+            label.style.cssText = 'width:100%;font-size:13px;color:#666;margin-bottom:4px;';
+            label.innerHTML = '<i class="bi bi-images"></i> <strong>' + this.files.length + ' file</strong> dipilih:';
+            preview.appendChild(label);
+            
+            Array.from(this.files).forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.title = file.name + ' (' + (file.size/1024/1024).toFixed(1) + 'MB)';
+                    preview.appendChild(img);
+                }
+            });
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+});
+
+// Show loading on gallery form submit
+document.querySelectorAll('.gallery-submit-btn').forEach(btn => {
+    btn.closest('form').addEventListener('submit', function(e) {
+        const fileInput = this.querySelector('.gallery-file-input');
+        const hasFiles = fileInput && fileInput.files.length > 0;
+        const hasDelete = this.querySelectorAll('input[name="delete_images[]"]:checked').length > 0;
+        
+        if (hasFiles || hasDelete) {
+            overlay.style.display = 'block';
+            const text = document.getElementById('uploadText');
+            if (hasFiles) {
+                text.textContent = 'Uploading ' + fileInput.files.length + ' image(s)...';
+            } else {
+                text.textContent = 'Processing changes...';
+            }
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Uploading...';
+        }
+    });
+});
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
