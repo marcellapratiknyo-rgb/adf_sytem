@@ -12,17 +12,23 @@
                 $footerWhatsapp = '';
                 try {
                     $footerDb = PublicDatabase::getInstance();
-                    $footerSettings = $footerDb->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('web_footer_logo', 'web_footer_text', 'web_footer_show_logo', 'web_logo', 'web_site_name', 'web_instagram', 'web_whatsapp')");
-                    foreach ($footerSettings as $fs) {
-                        if ($fs['setting_key'] === 'web_footer_logo' && !empty($fs['setting_value'])) $footerLogo = $fs['setting_value'];
-                        if ($fs['setting_key'] === 'web_footer_text') $footerText = $fs['setting_value'];
-                        if ($fs['setting_key'] === 'web_footer_show_logo') $footerShowLogo = $fs['setting_value'];
-                        if ($fs['setting_key'] === 'web_logo' && empty($footerLogo)) $footerLogo = $fs['setting_value']; // fallback to main logo
-                        if ($fs['setting_key'] === 'web_site_name' && !empty($fs['setting_value'])) $footerSiteName = $fs['setting_value'];
-                        if ($fs['setting_key'] === 'web_instagram') $footerInstagram = $fs['setting_value'];
-                        if ($fs['setting_key'] === 'web_whatsapp') $footerWhatsapp = $fs['setting_value'];
+                    // Check if settings table exists first
+                    $ftTableCheck = $footerDb->fetchOne("SHOW TABLES LIKE 'settings'");
+                    if ($ftTableCheck) {
+                        $footerSettings = $footerDb->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('web_footer_logo', 'web_footer_text', 'web_footer_show_logo', 'web_logo', 'web_site_name', 'web_instagram', 'web_whatsapp')");
+                        foreach ($footerSettings as $fs) {
+                            if ($fs['setting_key'] === 'web_footer_logo' && !empty($fs['setting_value'])) $footerLogo = $fs['setting_value'];
+                            if ($fs['setting_key'] === 'web_footer_text') $footerText = $fs['setting_value'];
+                            if ($fs['setting_key'] === 'web_footer_show_logo') $footerShowLogo = $fs['setting_value'];
+                            if ($fs['setting_key'] === 'web_logo' && empty($footerLogo)) $footerLogo = $fs['setting_value'];
+                            if ($fs['setting_key'] === 'web_site_name' && !empty($fs['setting_value'])) $footerSiteName = $fs['setting_value'];
+                            if ($fs['setting_key'] === 'web_instagram') $footerInstagram = $fs['setting_value'];
+                            if ($fs['setting_key'] === 'web_whatsapp') $footerWhatsapp = $fs['setting_value'];
+                        }
                     }
                 } catch (Exception $e) {
+                    // Silently continue with defaults
+                } catch (Error $e) {
                     // Silently continue with defaults
                 }
                 ?>
@@ -87,11 +93,17 @@
             <?php
             $footerCopyright = '';
             try {
-                $copyrightRow = $footerDb->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'web_footer_copyright'");
-                if ($copyrightRow && !empty($copyrightRow['setting_value'])) {
-                    $footerCopyright = $copyrightRow['setting_value'];
+                $ftDb2 = PublicDatabase::getInstance();
+                $ft2Check = $ftDb2->fetchOne("SHOW TABLES LIKE 'settings'");
+                if ($ft2Check) {
+                    $copyrightRow = $ftDb2->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'web_footer_copyright'");
+                    if ($copyrightRow && !empty($copyrightRow['setting_value'])) {
+                        $footerCopyright = $copyrightRow['setting_value'];
+                    }
                 }
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+            } catch (Error $e) {
+            }
             ?>
             <?php if (!empty($footerCopyright)): ?>
             <p>&copy; <?php echo htmlize($footerCopyright); ?></p>

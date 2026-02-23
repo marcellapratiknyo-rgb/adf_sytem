@@ -28,11 +28,17 @@ try {
 // Load web settings from database (destinations, footer logo, etc.)
 $webSettingsData = [];
 try {
-    $settingsRows = $db->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('web_destinations', 'web_footer_logo', 'web_footer_text', 'web_footer_show_logo', 'web_logo', 'web_site_name', 'web_instagram', 'web_whatsapp')");
-    foreach ($settingsRows as $sr) {
-        $webSettingsData[$sr['setting_key']] = $sr['setting_value'];
+    // Check if settings table exists first
+    $tableCheck = $db->fetchOne("SHOW TABLES LIKE 'settings'");
+    if ($tableCheck) {
+        $settingsRows = $db->fetchAll("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('web_destinations', 'web_footer_logo', 'web_footer_text', 'web_footer_show_logo', 'web_logo', 'web_site_name', 'web_instagram', 'web_whatsapp')");
+        foreach ($settingsRows as $sr) {
+            $webSettingsData[$sr['setting_key']] = $sr['setting_value'];
+        }
     }
 } catch (Exception $e) {
+    $webSettingsData = [];
+} catch (Error $e) {
     $webSettingsData = [];
 }
 
