@@ -46,11 +46,35 @@ $webSettings = [
     'web_footer_show_logo'   => '1', // Show logo in footer (1=yes, 0=no)
     'web_footer_copyright'   => '', // Custom copyright text
 
-    // Hero Section
+    // Hero Section — Homepage
     'web_hero_accent'       => 'Welcome to Paradise',
     'web_hero_title'        => 'Experience Karimunjawa<br>Like Never Before',
     'web_hero_subtitle'     => 'An exclusive island retreat where tropical luxury meets the pristine beauty of the Java Sea',
     'web_hero_background'   => '', // Path to hero background image
+    
+    // Hero Section — Rooms
+    'web_hero_rooms_eyebrow'    => 'Accommodations',
+    'web_hero_rooms_title'      => 'Our Rooms',
+    'web_hero_rooms_subtitle'   => 'Thoughtfully designed spaces where island comfort meets refined elegance.',
+    'web_hero_rooms_background' => '',
+    
+    // Hero Section — Booking
+    'web_hero_booking_eyebrow'    => 'Book Your Stay',
+    'web_hero_booking_title'      => 'Reservations',
+    'web_hero_booking_subtitle'   => 'Select your dates and find the perfect room for your island escape.',
+    'web_hero_booking_background' => '',
+    
+    // Hero Section — Destinations
+    'web_hero_dest_eyebrow'    => 'Explore Karimunjawa',
+    'web_hero_dest_title'      => 'Discover the Island',
+    'web_hero_dest_subtitle'   => 'Your guide to the most breathtaking destinations and hidden gems of Karimunjawa — from pristine beaches and vibrant coral reefs to lush mangrove forests and unforgettable sunset spots.',
+    'web_hero_dest_background' => '',
+    
+    // Hero Section — Contact
+    'web_hero_contact_eyebrow'    => 'Get in Touch',
+    'web_hero_contact_title'      => 'Contact Us',
+    'web_hero_contact_subtitle'   => 'We\'d love to hear from you. Reach out and let us help plan your stay.',
+    'web_hero_contact_background' => '',
     
     // Contact & Social
     'web_whatsapp'          => '6281222228590',
@@ -309,97 +333,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     elseif ($action === 'save_hero') {
         $redirectTab = 'hero';
-        // DEBUG LOG - temporary
-        $debugLog = [];
-        $debugLog[] = "save_hero triggered at " . date('H:i:s');
-        $debugLog[] = "POST data: " . json_encode($_POST);
         
-        $fields = ['web_hero_accent', 'web_hero_title', 'web_hero_subtitle'];
-        foreach ($fields as $key) {
+        // Determine which page's hero is being saved
+        $heroPage = $_POST['hero_page'] ?? 'home';
+        
+        // Define field mappings per page
+        $heroFieldMap = [
+            'home' => [
+                'fields'     => ['web_hero_accent', 'web_hero_title', 'web_hero_subtitle'],
+                'bg_key'     => 'web_hero_background',
+                'remove_key' => 'remove_background',
+                'file_key'   => 'web_hero_background',
+            ],
+            'rooms' => [
+                'fields'     => ['web_hero_rooms_eyebrow', 'web_hero_rooms_title', 'web_hero_rooms_subtitle'],
+                'bg_key'     => 'web_hero_rooms_background',
+                'remove_key' => 'remove_background_rooms',
+                'file_key'   => 'web_hero_rooms_background',
+            ],
+            'booking' => [
+                'fields'     => ['web_hero_booking_eyebrow', 'web_hero_booking_title', 'web_hero_booking_subtitle'],
+                'bg_key'     => 'web_hero_booking_background',
+                'remove_key' => 'remove_background_booking',
+                'file_key'   => 'web_hero_booking_background',
+            ],
+            'destinations' => [
+                'fields'     => ['web_hero_dest_eyebrow', 'web_hero_dest_title', 'web_hero_dest_subtitle'],
+                'bg_key'     => 'web_hero_dest_background',
+                'remove_key' => 'remove_background_dest',
+                'file_key'   => 'web_hero_dest_background',
+            ],
+            'contact' => [
+                'fields'     => ['web_hero_contact_eyebrow', 'web_hero_contact_title', 'web_hero_contact_subtitle'],
+                'bg_key'     => 'web_hero_contact_background',
+                'remove_key' => 'remove_background_contact',
+                'file_key'   => 'web_hero_contact_background',
+            ],
+        ];
+        
+        $pageConfig = $heroFieldMap[$heroPage] ?? $heroFieldMap['home'];
+        $pageLabels = ['home' => 'Homepage', 'rooms' => 'Rooms', 'booking' => 'Reservations', 'destinations' => 'Destinations', 'contact' => 'Contact'];
+        $pageLabel = $pageLabels[$heroPage] ?? 'Homepage';
+        
+        // Save text fields
+        foreach ($pageConfig['fields'] as $key) {
             if (isset($_POST[$key])) {
                 $val = trim($_POST[$key]);
-                $debugLog[] = "Saving $key = '$val'";
                 $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) 
                             VALUES (?, ?, 'text', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
-                $stmt->execute([$key, $val, 'Website Hero: ' . str_replace('web_hero_', '', $key), $val]);
+                $desc = 'Hero ' . $pageLabel . ': ' . str_replace(['web_hero_', 'web_hero_rooms_', 'web_hero_booking_', 'web_hero_dest_', 'web_hero_contact_'], '', $key);
+                $stmt->execute([$key, $val, $desc, $val]);
                 $webSettings[$key] = $val;
-                $debugLog[] = "Rows affected: " . $stmt->rowCount();
-            } else {
-                $debugLog[] = "KEY NOT FOUND IN POST: $key";
             }
         }
         
-        // Verify save
-        $verifyStmt = $webDb->query("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'web_hero_%'");
-        $verifyRows = $verifyStmt->fetchAll(PDO::FETCH_ASSOC);
-        $debugLog[] = "After save DB check: " . json_encode($verifyRows);
-        
-        // Write debug log
-        file_put_contents(dirname(dirname(__FILE__)) . '/debug_hero_save.log', implode("\n", $debugLog) . "\n\n", FILE_APPEND);
-        
-        $success = 'Hero section berhasil disimpan! ✅';
+        $success = "Hero $pageLabel berhasil disimpan! ✅";
         
         // Handle hero background image upload
-        if (isset($_FILES['web_hero_background']) && $_FILES['web_hero_background']['error'] === UPLOAD_ERR_OK) {
+        $bgFileKey = $pageConfig['file_key'];
+        $bgDbKey = $pageConfig['bg_key'];
+        if (isset($_FILES[$bgFileKey]) && $_FILES[$bgFileKey]['error'] === UPLOAD_ERR_OK) {
             $uploadDir = dirname(dirname(__FILE__)) . '/uploads/hero/';
-            
-            // Create directory if not exists
             if (!is_dir($uploadDir)) {
                 mkdir($uploadDir, 0755, true);
             }
             
-            $fileInfo = pathinfo($_FILES['web_hero_background']['name']);
+            $fileInfo = pathinfo($_FILES[$bgFileKey]['name']);
             $allowedExts = ['jpg', 'jpeg', 'png', 'webp'];
             
-            if (in_array(strtolower($fileInfo['extension']), $allowedExts)) {
-                $newFileName = 'hero-bg-' . time() . '.' . $fileInfo['extension'];
+            if (in_array(strtolower($fileInfo['extension'] ?? ''), $allowedExts)) {
+                $prefix = ($heroPage === 'home') ? 'hero-bg' : 'hero-' . $heroPage . '-bg';
+                $newFileName = $prefix . '-' . time() . '.' . $fileInfo['extension'];
                 $uploadPath = $uploadDir . $newFileName;
                 
-                if (move_uploaded_file($_FILES['web_hero_background']['tmp_name'], $uploadPath)) {
-                    // Save relative path to database
+                if (move_uploaded_file($_FILES[$bgFileKey]['tmp_name'], $uploadPath)) {
                     $relativePath = 'uploads/hero/' . $newFileName;
                     $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value, setting_type, description) 
-                                VALUES ('web_hero_background', ?, 'text', 'Website Hero Background Image') 
-                                ON DUPLICATE KEY UPDATE setting_value = ?");
-                    $stmt->execute([$relativePath, $relativePath]);
-                    $webSettings['web_hero_background'] = $relativePath;
+                                VALUES (?, ?, 'text', ?) ON DUPLICATE KEY UPDATE setting_value = ?");
+                    $stmt->execute([$bgDbKey, $relativePath, "Hero $pageLabel Background Image", $relativePath]);
                     
-                    // Auto-sync to narayanakarimunjawa website folder
+                    // Auto-sync to website folder
                     $websiteUploadDir = $websitePublicDir . '/uploads/hero/';
                     if (!is_dir($websiteUploadDir)) {
                         mkdir($websiteUploadDir, 0755, true);
                     }
                     @copy($uploadPath, $websiteUploadDir . $newFileName);
                     
-                    // Delete old image if exists (both locations)
-                    $oldBg = $currentValues['web_hero_background'] ?? '';
+                    // Delete old image
+                    $oldBg = $webSettings[$bgDbKey] ?? '';
                     if ($oldBg) {
                         $oldFile1 = dirname(dirname(__FILE__)) . '/' . $oldBg;
                         $oldFile2 = $websitePublicDir . '/' . $oldBg;
-                        if (file_exists($oldFile1)) unlink($oldFile1);
+                        if (file_exists($oldFile1)) @unlink($oldFile1);
                         if (file_exists($oldFile2)) @unlink($oldFile2);
                     }
+                    
+                    $webSettings[$bgDbKey] = $relativePath;
                 }
             }
         }
         
         // Handle remove background
-        if (isset($_POST['remove_background']) && $_POST['remove_background'] === '1') {
-            $oldBg = $webSettings['web_hero_background'] ?? '';
+        $removeKey = $pageConfig['remove_key'];
+        if (isset($_POST[$removeKey]) && $_POST[$removeKey] === '1') {
+            $oldBg = $webSettings[$bgDbKey] ?? '';
             if ($oldBg) {
-                // Delete from both locations
                 $file1 = dirname(dirname(__FILE__)) . '/' . $oldBg;
                 $file2 = $websitePublicDir . '/' . $oldBg;
-                if (file_exists($file1)) unlink($file1);
+                if (file_exists($file1)) @unlink($file1);
                 if (file_exists($file2)) @unlink($file2);
             }
             $stmt = $webDb->prepare("INSERT INTO settings (setting_key, setting_value) 
-                        VALUES ('web_hero_background', '') ON DUPLICATE KEY UPDATE setting_value = ''");
-            $stmt->execute();
-            $webSettings['web_hero_background'] = '';
+                        VALUES (?, '') ON DUPLICATE KEY UPDATE setting_value = ''");
+            $stmt->execute([$bgDbKey]);
+            $webSettings[$bgDbKey] = '';
         }
-        
-        // success already set above with debug info
     }
     
     elseif ($action === 'save_contact') {
@@ -1356,75 +1404,223 @@ require_once __DIR__ . '/includes/header.php';
                     <i class="bi bi-image-fill"></i>
                 </div>
                 <div>
-                    <h5>Hero Section</h5>
-                    <small>Customize the main banner on the homepage</small>
+                    <h5>Hero Manager</h5>
+                    <small>Customize the hero banner for each page of your website</small>
                 </div>
             </div>
             <div class="settings-card-body">
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="action" value="save_hero">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Accent Text</label>
-                        <input type="text" name="web_hero_accent" class="form-control" value="<?= htmlspecialchars($webSettings['web_hero_accent']) ?>" id="heroAccent">
-                        <div class="form-text">Small italic text above the title</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Hero Title</label>
-                        <input type="text" name="web_hero_title" class="form-control" value="<?= htmlspecialchars($webSettings['web_hero_title']) ?>" id="heroTitle">
-                        <div class="form-text">Main heading. Use &lt;br&gt; for line breaks.</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Hero Subtitle</label>
-                        <textarea name="web_hero_subtitle" class="form-control" rows="2" id="heroSubtitle"><?= htmlspecialchars($webSettings['web_hero_subtitle']) ?></textarea>
-                        <div class="form-text">Description paragraph below the title</div>
-                    </div>
-                    
-                    <hr>
-                    
-                    <!-- Hero Background Image -->
-                    <div class="mb-3">
-                        <label class="form-label"><i class="bi bi-image me-1"></i>Hero Background Image</label>
-                        
-                        <?php if (!empty($webSettings['web_hero_background'])): ?>
-                        <div class="current-bg-preview mb-3" style="position: relative;">
-                            <img src="../<?= htmlspecialchars($webSettings['web_hero_background']) ?>" 
-                                 alt="Current Hero Background" 
-                                 style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px;">
-                            <div class="mt-2">
-                                <button type="button" class="btn btn-sm btn-danger" onclick="removeBackground()">
-                                    <i class="bi bi-trash me-1"></i>Remove Background
-                                </button>
-                                <input type="hidden" name="remove_background" id="removeBackgroundInput" value="0">
-                            </div>
-                        </div>
-                        <?php endif; ?>
-                        
-                        <input type="file" name="web_hero_background" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp">
-                        <div class="form-text">
-                            Upload hero background image (JPG, PNG, WEBP). Recommended size: 1920x1080px. 
-                            <?php if (!empty($webSettings['web_hero_background'])): ?>
-                                Leave empty to keep current image.
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    
-                    <!-- Live Preview -->
-                    <div class="preview-hero" id="heroPreview" style="--preview-primary: <?= htmlspecialchars($webSettings['web_primary_color']) ?>; --preview-accent: <?= htmlspecialchars($webSettings['web_accent_color']) ?>; <?php if (!empty($webSettings['web_hero_background'])): ?>background-image: url('../<?= htmlspecialchars($webSettings['web_hero_background']) ?>');<?php endif; ?>">
-                        <p class="accent" id="previewAccent"><i><?= htmlspecialchars($webSettings['web_hero_accent']) ?></i></p>
-                        <h3 id="previewTitle"><?= $webSettings['web_hero_title'] ?></h3>
-                        <p id="previewSubtitle"><?= htmlspecialchars($webSettings['web_hero_subtitle']) ?></p>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100 mt-3">
-                        <i class="bi bi-check-lg me-1"></i>Save Hero Section
+                
+                <!-- Page Selector Pills -->
+                <div class="d-flex flex-wrap gap-2 mb-4" id="heroPageSelector">
+                    <button type="button" class="btn btn-sm hero-page-btn active" data-page="home" onclick="switchHeroPage('home')">
+                        <i class="bi bi-house-door me-1"></i>Homepage
                     </button>
-                </form>
+                    <button type="button" class="btn btn-sm hero-page-btn" data-page="rooms" onclick="switchHeroPage('rooms')">
+                        <i class="bi bi-door-open me-1"></i>Rooms
+                    </button>
+                    <button type="button" class="btn btn-sm hero-page-btn" data-page="booking" onclick="switchHeroPage('booking')">
+                        <i class="bi bi-calendar-check me-1"></i>Reservations
+                    </button>
+                    <button type="button" class="btn btn-sm hero-page-btn" data-page="destinations" onclick="switchHeroPage('destinations')">
+                        <i class="bi bi-compass me-1"></i>Destinations
+                    </button>
+                    <button type="button" class="btn btn-sm hero-page-btn" data-page="contact" onclick="switchHeroPage('contact')">
+                        <i class="bi bi-envelope me-1"></i>Contact
+                    </button>
+                </div>
+                
+                <style>
+                    .hero-page-btn {
+                        background: #f0f0f0; color: #555; border: 2px solid transparent;
+                        padding: 8px 18px; border-radius: 25px; font-weight: 500; transition: all 0.3s;
+                    }
+                    .hero-page-btn:hover { background: #e0e0e0; color: #333; }
+                    .hero-page-btn.active {
+                        background: linear-gradient(135deg, #007bff, #0056b3); color: #fff;
+                        border-color: #0056b3; box-shadow: 0 3px 12px rgba(0,123,255,0.3);
+                    }
+                    .hero-page-form { display: none; }
+                    .hero-page-form.active { display: block; }
+                    .hero-status-badge {
+                        display: inline-flex; align-items: center; gap: 6px;
+                        padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+                    }
+                    .hero-status-custom { background: #d4edda; color: #155724; }
+                    .hero-status-default { background: #fff3cd; color: #856404; }
+                </style>
+                
+                <!-- ===== HOME HERO ===== -->
+                <div class="hero-page-form active" id="heroForm-home">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0"><i class="bi bi-house-door me-1 text-primary"></i> Homepage Hero</h6>
+                        <?php if (!empty($webSettings['web_hero_title']) && $webSettings['web_hero_title'] !== 'Experience Karimunjawa<br>Like Never Before'): ?>
+                            <span class="hero-status-badge hero-status-custom"><i class="bi bi-check-circle"></i> Customized</span>
+                        <?php else: ?>
+                            <span class="hero-status-badge hero-status-default"><i class="bi bi-exclamation-circle"></i> Default</span>
+                        <?php endif; ?>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="save_hero">
+                        <input type="hidden" name="hero_page" value="home">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Eyebrow / Accent Text</label>
+                            <input type="text" name="web_hero_accent" class="form-control" value="<?= htmlspecialchars($webSettings['web_hero_accent']) ?>">
+                            <div class="form-text">Small italic text above the hero title</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hero Title</label>
+                            <input type="text" name="web_hero_title" class="form-control" value="<?= htmlspecialchars($webSettings['web_hero_title']) ?>">
+                            <div class="form-text">Main heading. Use &lt;br&gt; for line breaks.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hero Subtitle</label>
+                            <textarea name="web_hero_subtitle" class="form-control" rows="2"><?= htmlspecialchars($webSettings['web_hero_subtitle']) ?></textarea>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-image me-1"></i>Background Image</label>
+                            <?php if (!empty($webSettings['web_hero_background'])): ?>
+                            <div class="mb-2 p-2 rounded" style="background: #f8f9fa;">
+                                <img src="../<?= htmlspecialchars($webSettings['web_hero_background']) ?>" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;" alt="Hero BG">
+                                <div class="mt-2">
+                                    <label style="font-size:12px;color:#dc3545;cursor:pointer;">
+                                        <input type="checkbox" name="remove_background" value="1" style="margin-right:4px;">Remove image
+                                    </label>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <input type="file" name="web_hero_background" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp">
+                            <div class="form-text">Recommended: 1920×1080px (JPG, PNG, WEBP)</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Save Homepage Hero</button>
+                    </form>
+                </div>
+                
+                <?php
+                // Per-page hero configurations
+                $heroPages = [
+                    'rooms' => [
+                        'label'       => 'Rooms',
+                        'icon'        => 'bi-door-open',
+                        'color'       => '#28a745',
+                        'eyebrow_key' => 'web_hero_rooms_eyebrow',
+                        'title_key'   => 'web_hero_rooms_title',
+                        'subtitle_key'=> 'web_hero_rooms_subtitle',
+                        'bg_key'      => 'web_hero_rooms_background',
+                        'remove_key'  => 'remove_background_rooms',
+                        'default_title'=> 'Our Rooms',
+                    ],
+                    'booking' => [
+                        'label'       => 'Reservations',
+                        'icon'        => 'bi-calendar-check',
+                        'color'       => '#ffc107',
+                        'eyebrow_key' => 'web_hero_booking_eyebrow',
+                        'title_key'   => 'web_hero_booking_title',
+                        'subtitle_key'=> 'web_hero_booking_subtitle',
+                        'bg_key'      => 'web_hero_booking_background',
+                        'remove_key'  => 'remove_background_booking',
+                        'default_title'=> 'Reservations',
+                    ],
+                    'destinations' => [
+                        'label'       => 'Destinations',
+                        'icon'        => 'bi-compass',
+                        'color'       => '#17a2b8',
+                        'eyebrow_key' => 'web_hero_dest_eyebrow',
+                        'title_key'   => 'web_hero_dest_title',
+                        'subtitle_key'=> 'web_hero_dest_subtitle',
+                        'bg_key'      => 'web_hero_dest_background',
+                        'remove_key'  => 'remove_background_dest',
+                        'default_title'=> 'Discover the Island',
+                    ],
+                    'contact' => [
+                        'label'       => 'Contact',
+                        'icon'        => 'bi-envelope',
+                        'color'       => '#6f42c1',
+                        'eyebrow_key' => 'web_hero_contact_eyebrow',
+                        'title_key'   => 'web_hero_contact_title',
+                        'subtitle_key'=> 'web_hero_contact_subtitle',
+                        'bg_key'      => 'web_hero_contact_background',
+                        'remove_key'  => 'remove_background_contact',
+                        'default_title'=> 'Contact Us',
+                    ],
+                ];
+                
+                foreach ($heroPages as $pageSlug => $pg):
+                    $isCustomized = !empty($webSettings[$pg['title_key']]) && $webSettings[$pg['title_key']] !== $pg['default_title'];
+                ?>
+                <!-- ===== <?= strtoupper($pg['label']) ?> HERO ===== -->
+                <div class="hero-page-form" id="heroForm-<?= $pageSlug ?>">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0"><i class="bi <?= $pg['icon'] ?> me-1" style="color:<?= $pg['color'] ?>"></i> <?= $pg['label'] ?> Hero</h6>
+                        <?php if ($isCustomized): ?>
+                            <span class="hero-status-badge hero-status-custom"><i class="bi bi-check-circle"></i> Customized</span>
+                        <?php else: ?>
+                            <span class="hero-status-badge hero-status-default"><i class="bi bi-exclamation-circle"></i> Default</span>
+                        <?php endif; ?>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="save_hero">
+                        <input type="hidden" name="hero_page" value="<?= $pageSlug ?>">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Eyebrow Text</label>
+                            <input type="text" name="<?= $pg['eyebrow_key'] ?>" class="form-control" value="<?= htmlspecialchars($webSettings[$pg['eyebrow_key']]) ?>">
+                            <div class="form-text">Small label above the title (e.g. "Accommodations")</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hero Title</label>
+                            <input type="text" name="<?= $pg['title_key'] ?>" class="form-control" value="<?= htmlspecialchars($webSettings[$pg['title_key']]) ?>">
+                            <div class="form-text">Main heading. Use &lt;br&gt; for line breaks.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Hero Subtitle</label>
+                            <textarea name="<?= $pg['subtitle_key'] ?>" class="form-control" rows="2"><?= htmlspecialchars($webSettings[$pg['subtitle_key']]) ?></textarea>
+                            <div class="form-text">Description paragraph below the title</div>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label"><i class="bi bi-image me-1"></i>Background Image</label>
+                            <?php if (!empty($webSettings[$pg['bg_key']])): ?>
+                            <div class="mb-2 p-2 rounded" style="background: #f8f9fa;">
+                                <img src="../<?= htmlspecialchars($webSettings[$pg['bg_key']]) ?>" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;" alt="Hero BG">
+                                <div class="mt-2">
+                                    <label style="font-size:12px;color:#dc3545;cursor:pointer;">
+                                        <input type="checkbox" name="<?= $pg['remove_key'] ?>" value="1" style="margin-right:4px;">Remove image
+                                    </label>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+                            <input type="file" name="<?= $pg['bg_key'] ?>" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp">
+                            <div class="form-text">Upload a background image. Leave empty to use default gradient. Recommended: 1920×800px</div>
+                        </div>
+                        
+                        <!-- Live Preview -->
+                        <div style="background: linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5)), <?php echo !empty($webSettings[$pg['bg_key']]) ? "url('../" . htmlspecialchars($webSettings[$pg['bg_key']]) . "') center/cover" : 'linear-gradient(135deg, #1a3a5c, #2d5a7b)'; ?>; padding: 40px 24px; border-radius: 12px; text-align: center; margin-bottom: 16px;">
+                            <div style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#c8a45e;margin-bottom:8px;"><?= htmlspecialchars($webSettings[$pg['eyebrow_key']]) ?></div>
+                            <h4 style="color:#fff;margin:0 0 8px;font-weight:300;"><?= $webSettings[$pg['title_key']] ?></h4>
+                            <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0;max-width:400px;margin:0 auto;"><?= htmlspecialchars($webSettings[$pg['subtitle_key']]) ?></p>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-check-lg me-1"></i>Save <?= $pg['label'] ?> Hero</button>
+                    </form>
+                </div>
+                <?php endforeach; ?>
+                
             </div>
         </div>
     </div>
+    
+    <script>
+    function switchHeroPage(page) {
+        // Toggle buttons
+        document.querySelectorAll('.hero-page-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.hero-page-btn[data-page="'+page+'"]').classList.add('active');
+        // Toggle forms
+        document.querySelectorAll('.hero-page-form').forEach(f => f.classList.remove('active'));
+        document.getElementById('heroForm-' + page).classList.add('active');
+    }
+    </script>
     
     <!-- ============== CONTACT TAB ============== -->
     <div class="tab-content <?= $activeTab === 'contact' ? 'active' : '' ?>" id="tab-contact">
