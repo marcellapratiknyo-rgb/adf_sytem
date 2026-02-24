@@ -562,8 +562,8 @@ if ($trialStatus) {
         
         <!-- KAS TERSEDIA (Gabungan Modal Owner + Petty Cash) -->
         <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%); padding: 1rem; border-radius: 10px; border: 2px solid rgba(59, 130, 246, 0.3);">
-            <div style="font-size: 0.688rem; color: var(--info); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">🏦 KAS TERSEDIA</div>
-            <div style="font-size: 1.5rem; font-weight: 900; color: var(--info); margin-bottom: 0.75rem;">
+            <div style="font-size: 0.688rem; color: var(--info); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">🏦 KAS TERSEDIA</div>
+            <div style="font-size: 1.5rem; font-weight: 900; color: var(--info); margin-bottom: 0.75rem; text-align: center;">
                 <?php echo formatCurrency($totalOperationalCash); ?>
             </div>
             <div style="display: flex; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed rgba(59, 130, 246, 0.3);">
