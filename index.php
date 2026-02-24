@@ -537,47 +537,51 @@ if ($trialStatus) {
 </style>
 
 <!-- KAS OPERASIONAL HARIAN Widget -->
-<div class="card fade-in" style="margin-bottom: 1.25rem; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border: 2px solid rgba(251, 191, 36, 0.4);">
-    <div style="padding: 1rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-            <h3 style="font-size: 1rem; color: var(--warning); font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
-                <span style="font-size: 1.5rem;">💰</span>
+<div class="card fade-in" style="margin-bottom: 1rem; background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%); border: 1.5px solid rgba(251, 191, 36, 0.35);">
+    <div style="padding: 0.65rem 0.75rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3 style="font-size: 0.8rem; color: var(--warning); font-weight: 700; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+                <span style="font-size: 1.1rem;">💰</span>
                 <div>
                     <div>Daily Operational - <?php echo date('F Y'); ?></div>
-                    <div style="font-size: 0.7rem; color: var(--warning); font-weight: 500; margin-top: 0.125rem;">📊 Kas Operasional Harian (Petty Cash + Modal Owner)</div>
+                    <div style="font-size: 0.6rem; color: var(--warning); font-weight: 500; margin-top: 0.1rem; opacity: 0.8;">Kas Operasional Harian (Petty Cash + Modal Owner)</div>
                 </div>
             </h3>
-            <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 8px; text-decoration: none; font-size: 0.813rem; font-weight: 600; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                <i data-feather="external-link" style="width: 14px; height: 14px; margin-right: 4px;"></i>
+            <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.3rem 0.65rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 6px; text-decoration: none; font-size: 0.7rem; font-weight: 600; transition: all 0.3s ease; white-space: nowrap;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+                <i data-feather="external-link" style="width: 11px; height: 11px; margin-right: 3px;"></i>
                 Detail Monitor
             </a>
         </div>
         
         <!-- KAS TERSEDIA (Gabungan Modal Owner + Petty Cash) -->
-        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%); padding: 1rem; border-radius: 10px; border: 2px solid rgba(59, 130, 246, 0.3);">
-            <div style="font-size: 0.688rem; color: var(--info); font-weight: 700; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; text-align: center;">🏦 KAS TERSEDIA</div>
-            <div style="font-size: 1.5rem; font-weight: 900; color: var(--info); margin-bottom: 0.75rem; text-align: center;">
-                <?php echo formatCurrency($totalOperationalCash); ?>
-            </div>
-            <div style="display: flex; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px dashed rgba(59, 130, 246, 0.3);">
-                <div style="flex: 1;">
-                    <div style="font-size: 0.6rem; color: var(--success); font-weight: 600; text-transform: uppercase;">💵 Modal Owner</div>
-                    <div style="font-size: 0.95rem; font-weight: 700; color: var(--success);"><?php echo formatCurrency($capitalStats['balance']); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-muted); margin-top: 0.15rem;">Sisa modal owner</div>
+        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(16, 185, 129, 0.06) 100%); padding: 0.6rem 0.75rem; border-radius: 8px; border: 1.5px solid rgba(59, 130, 246, 0.25);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                <!-- KAS TERSEDIA Main -->
+                <div style="text-align: center; min-width: 140px;">
+                    <div style="font-size: 0.6rem; color: var(--info); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">🏦 KAS TERSEDIA</div>
+                    <div style="font-size: 1.15rem; font-weight: 900; color: var(--info); margin-top: 0.15rem;">
+                        <?php echo formatCurrency($totalOperationalCash); ?>
+                    </div>
                 </div>
-                <div style="width: 1px; background: rgba(0,0,0,0.1);"></div>
+                <div style="width: 1px; height: 32px; background: rgba(59, 130, 246, 0.25);"></div>
+                <!-- Modal Owner -->
                 <div style="flex: 1;">
-                    <div style="font-size: 0.6rem; color: var(--warning); font-weight: 600; text-transform: uppercase;">💰 Petty Cash</div>
-                    <div style="font-size: 0.95rem; font-weight: 700; color: var(--warning);"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
-                    <div style="font-size: 0.55rem; color: var(--text-muted); margin-top: 0.15rem;">Uang cash dari tamu</div>
+                    <div style="font-size: 0.55rem; color: var(--success); font-weight: 600; text-transform: uppercase;">💵 Modal Owner</div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--success);"><?php echo formatCurrency($capitalStats['balance']); ?></div>
+                </div>
+                <div style="width: 1px; height: 32px; background: rgba(0,0,0,0.08);"></div>
+                <!-- Petty Cash -->
+                <div style="flex: 1;">
+                    <div style="font-size: 0.55rem; color: var(--warning); font-weight: 600; text-transform: uppercase;">💰 Petty Cash</div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: var(--warning);"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
                 </div>
             </div>
         </div>
         
         <?php if ($totalOperationalCash < 0): ?>
-        <div style="margin-top: 0.75rem; padding: 0.625rem; background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); border-radius: 4px;">
-            <div style="font-size: 0.75rem; color: var(--danger); font-weight: 600;">
-                ⚠️ Peringatan: Total kas operasional negatif! Perlu tambah modal dari owner.
+        <div style="margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); border-radius: 4px;">
+            <div style="font-size: 0.65rem; color: var(--danger); font-weight: 600;">
+                ⚠️ Kas operasional negatif! Perlu tambah modal.
             </div>
         </div>
         <?php endif; ?>
