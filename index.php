@@ -293,14 +293,14 @@ $topDivisions = $db->fetchAll(
 $recentTransactions = $db->fetchAll(
     "SELECT 
         cb.*,
-        d.division_name,
-        c.category_name,
-        u.full_name as created_by_name
+        COALESCE(d.division_name, 'Unknown') as division_name,
+        COALESCE(c.category_name, 'Unknown') as category_name,
+        COALESCE(u.full_name, 'System') as created_by_name
     FROM cash_book cb
     LEFT JOIN divisions d ON cb.division_id = d.id
     LEFT JOIN categories c ON cb.category_id = c.id
     LEFT JOIN users u ON cb.created_by = u.id
-    ORDER BY cb.transaction_date DESC, cb.transaction_time DESC
+    ORDER BY cb.transaction_date DESC, cb.id DESC
     LIMIT 10"
 );
 
