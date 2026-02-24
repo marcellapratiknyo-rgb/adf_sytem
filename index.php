@@ -594,70 +594,58 @@ if ($trialStatus) {
 </style>
 
 <!-- KAS OPERASIONAL HARIAN Widget -->
-<div class="card fade-in" style="margin-bottom: 1rem; background: linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%); border: 1.5px solid rgba(251, 191, 36, 0.35);">
-    <div style="padding: 0.65rem 0.75rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <h3 style="font-size: 0.8rem; color: var(--warning); font-weight: 700; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
-                <span style="font-size: 1.1rem;">💰</span>
-                <div>
-                    <div>Daily Operational - <?php echo date('F Y'); ?></div>
-                    <div style="font-size: 0.6rem; color: var(--warning); font-weight: 500; margin-top: 0.1rem; opacity: 0.8;">Kas Operasional Harian (Petty Cash + Modal Owner)</div>
-                </div>
+<div class="card fade-in" style="margin-bottom: 1rem; background: #fff; border: 1px solid #e5e7eb;">
+    <div style="padding: 1rem 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h3 style="font-size: 0.95rem; color: #111827; font-weight: 700; margin: 0;">
+                Kas Operasional Harian
+                <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 400; margin-left: 0.5rem;"><?php echo date('F Y'); ?></span>
             </h3>
-            <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.3rem 0.65rem; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 6px; text-decoration: none; font-size: 0.7rem; font-weight: 600; transition: all 0.3s ease; white-space: nowrap;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
-                <i data-feather="external-link" style="width: 11px; height: 11px; margin-right: 3px;"></i>
+            <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.4rem 0.85rem; background: #111827; color: white; border-radius: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 500; transition: all 0.2s ease;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                 Detail Monitor
             </a>
         </div>
         
         <!-- START KAS + KAS TERSEDIA -->
-        <div style="background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.06)); padding: 0.6rem 0.75rem; border-radius: 8px 8px 0 0; border: 1.5px solid rgba(251,191,36,0.25); border-bottom: none; display: flex; align-items: center; justify-content: space-between;">
+        <div style="background: #f9fafb; padding: 1rem 1.25rem; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
             <div>
-                <div style="font-size: 0.55rem; color: #92400e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">☀️ Start Kas Awal Hari Ini (<?php echo date('d M'); ?>)</div>
-                <div style="font-size: 1.1rem; font-weight: 800; color: #92400e; margin-top: 0.15rem;"><?php echo formatCurrency($startKasHariIni); ?></div>
-                <div style="font-size: 0.48rem; color: #b45309; margin-top: 0.1rem;">Sisa saldo dari kemarin · otomatis reset tiap hari</div>
+                <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500; margin-bottom: 0.25rem;">Start Kas Hari Ini (<?php echo date('d M'); ?>)</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($startKasHariIni); ?></div>
             </div>
-            <div style="width: 1px; height: 38px; background: rgba(251,191,36,0.3);"></div>
+            <div style="width: 1px; height: 48px; background: #e5e7eb;"></div>
             <div style="text-align: right;">
-                <div style="font-size: 0.55rem; color: #1e40af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">🏦 Kas Tersedia Sekarang</div>
-                <div style="font-size: 1.2rem; font-weight: 900; color: #1e40af; margin-top: 0.15rem;"><?php echo formatCurrency($totalOperationalCash); ?></div>
-                <div style="font-size: 0.48rem; color: #3b82f6; margin-top: 0.1rem;">Total saldo real-time</div>
+                <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500; margin-bottom: 0.25rem;">Kas Tersedia Sekarang</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($totalOperationalCash); ?></div>
             </div>
         </div>
         
         <!-- Detail breakdown: 4 columns -->
-        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(16, 185, 129, 0.04)); padding: 0.5rem 0.5rem; border-radius: 0 0 8px 8px; border: 1px solid rgba(59, 130, 246, 0.15); border-top: none;">
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem;">
-                <!-- Modal Owner -->
-                <div style="background: rgba(16,185,129,0.08); padding: 0.4rem 0.5rem; border-radius: 6px; border-left: 2.5px solid var(--success);">
-                    <div style="font-size: 0.5rem; color: var(--success); font-weight: 600; text-transform: uppercase;">💵 Modal Owner</div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--success); margin-top: 0.1rem;"><?php echo formatCurrency($capitalStats['balance']); ?></div>
-                    <div style="font-size: 0.42rem; color: var(--text-muted); margin-top: 0.1rem;">Sisa modal dari owner</div>
-                </div>
-                <!-- Petty Cash -->
-                <div style="background: rgba(245,158,11,0.08); padding: 0.4rem 0.5rem; border-radius: 6px; border-left: 2.5px solid var(--warning);">
-                    <div style="font-size: 0.5rem; color: var(--warning); font-weight: 600; text-transform: uppercase;">💰 Petty Cash</div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--warning); margin-top: 0.1rem;"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
-                    <div style="font-size: 0.42rem; color: var(--text-muted); margin-top: 0.1rem;">Uang cash dari tamu</div>
-                </div>
-                <!-- Uang Masuk Bulan Ini -->
-                <div style="background: rgba(59,130,246,0.08); padding: 0.4rem 0.5rem; border-radius: 6px; border-left: 2.5px solid var(--info);">
-                    <div style="font-size: 0.5rem; color: var(--info); font-weight: 600; text-transform: uppercase;">📥 Uang Masuk</div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--info); margin-top: 0.1rem;"><?php echo formatCurrency($totalOperationalIncome); ?></div>
-                    <div style="font-size: 0.42rem; color: var(--text-muted); margin-top: 0.1rem;">Total masuk bulan ini</div>
-                </div>
-                <!-- Uang Keluar Bulan Ini -->
-                <div style="background: rgba(239,68,68,0.08); padding: 0.4rem 0.5rem; border-radius: 6px; border-left: 2.5px solid var(--danger);">
-                    <div style="font-size: 0.5rem; color: var(--danger); font-weight: 600; text-transform: uppercase;">📤 Uang Keluar</div>
-                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--danger); margin-top: 0.1rem;"><?php echo formatCurrency($totalOperationalExpense); ?></div>
-                    <div style="font-size: 0.42rem; color: var(--text-muted); margin-top: 0.1rem;">Total keluar bulan ini</div>
-                </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
+            <!-- Modal Owner -->
+            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Modal Owner</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($capitalStats['balance']); ?></div>
+            </div>
+            <!-- Petty Cash -->
+            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Petty Cash</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
+            </div>
+            <!-- Uang Masuk Bulan Ini -->
+            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Uang Masuk</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #16a34a;"><?php echo formatCurrency($totalOperationalIncome); ?></div>
+            </div>
+            <!-- Uang Keluar Bulan Ini -->
+            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Uang Keluar</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #dc2626;"><?php echo formatCurrency($totalOperationalExpense); ?></div>
             </div>
         </div>
         
         <?php if ($totalOperationalCash < 0): ?>
-        <div style="margin-top: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(239, 68, 68, 0.1); border-left: 3px solid var(--danger); border-radius: 4px;">
-            <div style="font-size: 0.65rem; color: var(--danger); font-weight: 600;">
+        <div style="margin-top: 0.75rem; padding: 0.6rem 1rem; background: #fef2f2; border-left: 3px solid #dc2626; border-radius: 6px;">
+            <div style="font-size: 0.8rem; color: #dc2626; font-weight: 600;">
                 ⚠️ Kas operasional negatif! Perlu tambah modal.
             </div>
         </div>
