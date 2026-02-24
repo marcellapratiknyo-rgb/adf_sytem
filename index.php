@@ -55,6 +55,23 @@ $thisYear = date('Y');
 // ============================================
 // EXCLUDE OWNER CAPITAL FROM OPERATIONAL STATS
 // ============================================
+// First check if cash_account_id column exists in cash_book (may not exist on hosting)
+$hasCashAccountIdCol = false;
+try {
+    $colCheck = $db->getConnection()->query("SHOW COLUMNS FROM cash_book LIKE 'cash_account_id'");
+    $hasCashAccountIdCol = $colCheck && $colCheck->rowCount() > 0;
+} catch (\Throwable $e) {
+    $hasCashAccountIdCol = false;
+}
+
+// Also check if transaction_time column exists
+$hasTransactionTimeCol = true;
+try {
+    $db->getConnection()->query("SELECT transaction_time FROM cash_book LIMIT 1");
+} catch (\Throwable $e) {
+    $hasTransactionTimeCol = false;
+}
+
 // Get owner capital account IDs to exclude from operational income
 $ownerCapitalAccountIds = [];
 try {
@@ -72,9 +89,9 @@ try {
     error_log("Error fetching owner capital accounts: " . $e->getMessage());
 }
 
-// Build exclusion clause
+// Build exclusion clause - ONLY if cash_account_id column exists in cash_book
 $excludeOwnerCapital = '';
-if (!empty($ownerCapitalAccountIds)) {
+if ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
     $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
@@ -183,8 +200,8 @@ try {
         'balance' => 0
     ];
     
-    // Query Modal Owner stats
-    if (!empty($capitalAccounts)) {
+    // Query Modal Owner stats - only if cash_account_id column exists
+    if ($hasCashAccountIdCol && !empty($capitalAccounts)) {
         $placeholders = implode(',', array_fill(0, count($capitalAccounts), '?'));
         
         $query = "
@@ -206,8 +223,8 @@ try {
         $capitalStats['balance'] = $result['balance'] ?? 0;
     }
     
-    // Query Petty Cash stats (Only cash payment method)
-    if (!empty($pettyCashAccounts)) {
+    // Query Petty Cash stats (Only cash payment method) - only if cash_account_id column exists
+    if ($hasCashAccountIdCol && !empty($pettyCashAccounts)) {
         $placeholders = implode(',', array_fill(0, count($pettyCashAccounts), '?'));
         
         $query = "
@@ -249,7 +266,7 @@ try {
 // ============================================
 // Exclude owner capital ONLY from income, not from expense
 $divisionOwnerCapitalFilter = '';
-if (!empty($ownerCapitalAccountIds)) {
+if ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
     $divisionOwnerCapitalFilter = " AND (cb.transaction_type = 'expense' OR cb.cash_account_id IS NULL OR cb.cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
@@ -280,9 +297,9 @@ $recentTransactions = $db->fetchAll(
         c.category_name,
         u.full_name as created_by_name
     FROM cash_book cb
-    JOIN divisions d ON cb.division_id = d.id
-    JOIN categories c ON cb.category_id = c.id
-    JOIN users u ON cb.created_by = u.id
+    LEFT JOIN divisions d ON cb.division_id = d.id
+    LEFT JOIN categories c ON cb.category_id = c.id
+    LEFT JOIN users u ON cb.created_by = u.id
     ORDER BY cb.transaction_date DESC, cb.transaction_time DESC
     LIMIT 10"
 );
@@ -292,7 +309,7 @@ $recentTransactions = $db->fetchAll(
 // ============================================
 // Exclude owner capital from income
 $divisionIncomeFilter = '';
-if (!empty($ownerCapitalAccountIds)) {
+if ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
     $divisionIncomeFilter = " AND (cb.cash_account_id IS NULL OR cb.cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
@@ -382,7 +399,7 @@ foreach ($dates as $date) {
 // ============================================
 // Exclude owner capital ONLY from income, not from expense
 $ownerCapitalFilter = '';
-if (!empty($ownerCapitalAccountIds)) {
+if ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
     $ownerCapitalFilter = " AND (cb.transaction_type = 'expense' OR cb.cash_account_id IS NULL OR cb.cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
