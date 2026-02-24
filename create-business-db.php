@@ -64,58 +64,9 @@ if ($action === 'create' && !empty($dbName)) {
         $created = false;
         
         // ============================================================
-        // STRATEGY 1: UAPI shell binary (best for shared hosting - NO auth needed)
-        // PHP runs as the cPanel user, so uapi works without credentials
-        // ============================================================
-        $uapiBin = '/usr/local/cpanel/bin/uapi';
-        if (!$created && @is_executable($uapiBin)) {
-            $cmd = escapeshellcmd($uapiBin) . ' --output=json Mysql create_database name=' . escapeshellarg($dbName) . ' 2>&1';
-            $output = @shell_exec($cmd);
-            $json = @json_decode($output, true);
-            
-            if ($json && isset($json['result']['status'])) {
-                if ($json['result']['status'] == 1) {
-                    $results[] = ['type' => 'success', 'msg' => "Database '{$dbName}' created via UAPI shell!"];
-                    $created = true;
-                } else {
-                    $errMsg = $json['result']['errors'][0] ?? 'Unknown error';
-                    if (stripos($errMsg, 'already exists') !== false) {
-                        $results[] = ['type' => 'success', 'msg' => "Database '{$dbName}' already exists."];
-                        $created = true;
-                    } else {
-                        $results[] = ['type' => 'warning', 'msg' => "UAPI shell: {$errMsg}"];
-                    }
-                }
-            } else {
-                $results[] = ['type' => 'warning', 'msg' => "UAPI shell no JSON response. Output: " . substr($output ?? '(empty)', 0, 300)];
-            }
-        } elseif (!$created) {
-            $results[] = ['type' => 'warning', 'msg' => "UAPI binary not found or not executable at {$uapiBin}"];
-        }
-        
-        // ============================================================
-        // STRATEGY 2: cpapi2 shell binary (older cPanel)
-        // ============================================================
-        $cpapi2Bin = '/usr/local/cpanel/bin/cpapi2';
-        if (!$created && @is_executable($cpapi2Bin)) {
-            $cmd2 = escapeshellcmd($cpapi2Bin) . ' --output=json MysqlFE createdb db=' . escapeshellarg($dbName) . ' 2>&1';
-            $output2 = @shell_exec($cmd2);
-            $json2 = @json_decode($output2, true);
-            
-            if ($json2 && isset($json2['cpanelresult']['data'][0]['result']) && $json2['cpanelresult']['data'][0]['result'] == 1) {
-                $results[] = ['type' => 'success', 'msg' => "Database '{$dbName}' created via cpapi2 shell!"];
-                $created = true;
-            } else {
-                $results[] = ['type' => 'warning', 'msg' => "cpapi2 shell: " . substr($output2 ?? '(empty)', 0, 300)];
-            }
-        }
-        
-        // ============================================================
-        // STRATEGY 3: cPanel UAPI via curl (needs cPanel credentials)
-        // Try the actual cPanel hostname, not localhost
+        // STRATEGY 1: cPanel UAPI via curl (needs cPanel credentials)
         // ============================================================
         if (!$created && !empty($cpanelUser) && !empty($cpanelPass)) {
-            // Try multiple hostnames
             $cpanelHosts = [
                 'guangmao.iixcp.rumahweb.net:2083',
                 'localhost:2083',
@@ -147,7 +98,7 @@ if ($action === 'create' && !empty($dbName)) {
                 if ($httpCode === 200) {
                     $json = json_decode($response, true);
                     if (isset($json['status']) && $json['status'] == 1) {
-                        $results[] = ['type' => 'success', 'msg' => "Database '{$dbName}' created via cPanel curl ({$hostPort})!"];
+                        $results[] = ['type' => 'success', 'msg' => "Database '{$dbName}' created via cPanel API ({$hostPort})!"];
                         $created = true;
                     } elseif (isset($json['errors'])) {
                         $errMsg = is_array($json['errors']) ? implode(', ', $json['errors']) : $json['errors'];
@@ -155,17 +106,17 @@ if ($action === 'create' && !empty($dbName)) {
                             $results[] = ['type' => 'success', 'msg' => "Database '{$dbName}' already exists."];
                             $created = true;
                         } else {
-                            $results[] = ['type' => 'warning', 'msg' => "cPanel curl ({$hostPort}): {$errMsg}"];
+                            $results[] = ['type' => 'warning', 'msg' => "cPanel API ({$hostPort}): {$errMsg}"];
                         }
                     }
                 } else {
-                    $results[] = ['type' => 'warning', 'msg' => "cPanel curl ({$hostPort}): HTTP {$httpCode}. {$curlError}"];
+                    $results[] = ['type' => 'warning', 'msg' => "cPanel API ({$hostPort}): HTTP {$httpCode}. {$curlError}"];
                 }
             }
         }
         
         // ============================================================
-        // STRATEGY 4: Direct SQL (works on VPS/dedicated servers)
+        // STRATEGY 2: Direct SQL (works on VPS/dedicated servers)
         // ============================================================
         if (!$created) {
             try {
@@ -180,49 +131,41 @@ if ($action === 'create' && !empty($dbName)) {
         }
         
         if (!$created) {
-            $results[] = ['type' => 'error', 'msg' => "❌ All strategies failed. Please create '{$dbName}' manually in cPanel → MySQL Databases."];
+            $results[] = ['type' => 'error', 'msg' => "All auto-creation strategies failed. Please enter your cPanel password (the one you use to login at guangmao.iixcp.rumahweb.net:2083), or create '{$dbName}' manually in cPanel → MySQL Databases."];
         }
         
         // ============================================================
         // GRANT PRIVILEGES (if DB was created)
         // ============================================================
-        if ($created) {
-            // Try UAPI shell first
-            if (@is_executable($uapiBin)) {
-                $grantCmd = escapeshellcmd($uapiBin) . ' --output=json Mysql set_privileges_on_database' .
-                    ' user=' . escapeshellarg(DB_USER) .
-                    ' database=' . escapeshellarg($dbName) .
-                    ' privileges=' . escapeshellarg('ALL PRIVILEGES') . ' 2>&1';
-                $grantOut = @shell_exec($grantCmd);
-                $grantJson = @json_decode($grantOut, true);
-                if ($grantJson && isset($grantJson['result']['status']) && $grantJson['result']['status'] == 1) {
-                    $results[] = ['type' => 'success', 'msg' => "Privileges granted to '" . DB_USER . "' via UAPI shell"];
+        if ($created && !empty($cpanelUser) && !empty($cpanelPass)) {
+            $grantUrl = "https://guangmao.iixcp.rumahweb.net:2083/execute/Mysql/set_privileges_on_database";
+            $ch3 = curl_init();
+            curl_setopt_array($ch3, [
+                CURLOPT_URL => $grantUrl,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query([
+                    'user' => DB_USER,
+                    'database' => $dbName,
+                    'privileges' => 'ALL PRIVILEGES'
+                ]),
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
+                CURLOPT_USERPWD => "{$cpanelUser}:{$cpanelPass}",
+                CURLOPT_TIMEOUT => 15,
+            ]);
+            $grantResponse = curl_exec($ch3);
+            $grantCode = curl_getinfo($ch3, CURLINFO_HTTP_CODE);
+            curl_close($ch3);
+            
+            if ($grantCode === 200) {
+                $grantJson = json_decode($grantResponse, true);
+                if (isset($grantJson['status']) && $grantJson['status'] == 1) {
+                    $results[] = ['type' => 'success', 'msg' => "Privileges granted to '" . DB_USER . "' on '{$dbName}'"];
                 } else {
-                    $results[] = ['type' => 'warning', 'msg' => "UAPI grant: " . substr($grantOut ?? '', 0, 200)];
+                    $results[] = ['type' => 'warning', 'msg' => "Grant response: " . substr($grantResponse, 0, 300)];
                 }
-            }
-            // Also try curl if credentials provided
-            elseif (!empty($cpanelUser) && !empty($cpanelPass)) {
-                $grantUrl = "https://guangmao.iixcp.rumahweb.net:2083/execute/Mysql/set_privileges_on_database";
-                $ch3 = curl_init();
-                curl_setopt_array($ch3, [
-                    CURLOPT_URL => $grantUrl,
-                    CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => http_build_query([
-                        'user' => DB_USER,
-                        'database' => $dbName,
-                        'privileges' => 'ALL PRIVILEGES'
-                    ]),
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_SSL_VERIFYPEER => false,
-                    CURLOPT_SSL_VERIFYHOST => false,
-                    CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
-                    CURLOPT_USERPWD => "{$cpanelUser}:{$cpanelPass}",
-                    CURLOPT_TIMEOUT => 15,
-                ]);
-                $grantResponse = curl_exec($ch3);
-                curl_close($ch3);
-                $results[] = ['type' => 'info', 'msg' => "Grant via curl attempted"];
             }
             
             // ============================================================
@@ -230,7 +173,6 @@ if ($action === 'create' && !empty($dbName)) {
             // ============================================================
             $templatePath = __DIR__ . '/database/business_template.sql';
             if (file_exists($templatePath)) {
-                // Wait a moment for privileges to propagate
                 usleep(500000);
                 try {
                     $newPdo = new PDO("mysql:host=" . DB_HOST . ";dbname={$dbName}", DB_USER, DB_PASS);
@@ -244,9 +186,9 @@ if ($action === 'create' && !empty($dbName)) {
                             $executed++;
                         }
                     }
-                    $results[] = ['type' => 'success', 'msg' => "✅ Business template executed: {$executed} statements in '{$dbName}'"];
+                    $results[] = ['type' => 'success', 'msg' => "Business template executed: {$executed} statements in '{$dbName}'"];
                 } catch (PDOException $e) {
-                    $results[] = ['type' => 'error', 'msg' => "Template execution failed (need privileges?): " . $e->getMessage()];
+                    $results[] = ['type' => 'error', 'msg' => "Template execution failed: " . $e->getMessage()];
                 }
             }
         }
@@ -316,8 +258,8 @@ if ($action === 'create' && !empty($dbName)) {
             <input type="text" name="cpanel_user" value="<?= htmlspecialchars($cpanelUser ?: $defaultCpanelUser) ?>" required>
             
             <label>cPanel Password</label>
-            <input type="password" name="cpanel_pass" value="" placeholder="Only needed if UAPI shell fails (optional)">
-            <div class="hint">Usually not needed — UAPI shell works without password on shared hosting.</div>
+            <input type="password" name="cpanel_pass" value="" placeholder="Your cPanel login password" required>
+            <div class="hint">Password for cPanel at guangmao.iixcp.rumahweb.net:2083. Not stored.</div>
             
             <button type="submit">Create Database + Run Template</button>
         </form>
