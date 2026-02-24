@@ -103,10 +103,6 @@ function printFooter($userName = '') {
             <div class="print-footer-text">_______________</div>
         </div>
     </div>
-    
-    <div class="print-notes">
-        📌 <strong>Catatan:</strong> Dokumen ini adalah hasil pencetakan dari Sistem Manajemen Multi-Bisnis. Untuk keaslian dokumen, silakan verifikasi dengan pihak yang berwenang.
-    </div>
     <?php
     return ob_get_clean();
 }

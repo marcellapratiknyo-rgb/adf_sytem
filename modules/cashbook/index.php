@@ -831,20 +831,20 @@ echo getPrintCSS();
             <?php endforeach; ?>
         </tbody>
         <tfoot>
-            <tr style="background: #f1f5f9; font-weight: 700;">
-                <td colspan="7" style="text-align: right; padding: 0.6rem 0.75rem; border-top: 2px solid #1e293b;">TOTAL PEMASUKAN:</td>
-                <td style="text-align: right; color: #059669; padding: 0.6rem 0.75rem; border-top: 2px solid #1e293b; font-size: 0.95rem;"><?php echo formatCurrency($totalIncome); ?></td>
-                <td style="border-top: 2px solid #1e293b;"></td>
+            <tr style="font-weight: 600; font-size: 0.78rem;">
+                <td colspan="7" style="text-align: right; padding: 0.4rem 0.5rem; border-top: 1.5px solid #d1d5db;">Total Pemasukan:</td>
+                <td style="text-align: right; color: #059669; padding: 0.4rem 0.5rem; border-top: 1.5px solid #d1d5db;"><?php echo formatCurrency($totalIncome); ?></td>
+                <td style="border-top: 1.5px solid #d1d5db;"></td>
             </tr>
-            <tr style="background: #f1f5f9; font-weight: 700;">
-                <td colspan="7" style="text-align: right; padding: 0.6rem 0.75rem;">TOTAL PENGELUARAN:</td>
-                <td style="text-align: right; color: #dc2626; padding: 0.6rem 0.75rem; font-size: 0.95rem;"><?php echo formatCurrency($totalExpense); ?></td>
+            <tr style="font-weight: 600; font-size: 0.78rem;">
+                <td colspan="7" style="text-align: right; padding: 0.4rem 0.5rem;">Total Pengeluaran:</td>
+                <td style="text-align: right; color: #dc2626; padding: 0.4rem 0.5rem;"><?php echo formatCurrency($totalExpense); ?></td>
                 <td></td>
             </tr>
-            <tr style="background: #1e293b; color: white; font-weight: 800;">
-                <td colspan="7" style="text-align: right; padding: 0.75rem; font-size: 0.95rem;">SALDO:</td>
-                <td style="text-align: right; padding: 0.75rem; font-size: 1.1rem;"><?php echo formatCurrency($balance); ?></td>
-                <td></td>
+            <tr style="font-weight: 700; font-size: 0.85rem; background: #f3f4f6;">
+                <td colspan="7" style="text-align: right; padding: 0.5rem; border-top: 1.5px solid #9ca3af;">Saldo:</td>
+                <td style="text-align: right; padding: 0.5rem; border-top: 1.5px solid #9ca3af; color: #111827;"><?php echo formatCurrency($balance); ?></td>
+                <td style="border-top: 1.5px solid #9ca3af;"></td>
             </tr>
         </tfoot>
     </table>
