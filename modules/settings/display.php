@@ -28,17 +28,18 @@ foreach ($result as $row) {
 try {
     $db->fetchOne("SELECT 1 FROM user_preferences LIMIT 1");
 } catch (Exception $e) {
-    // Table doesn't exist, create it
+    // Table doesn't exist, create it (no FK to avoid errors on fresh DBs)
     try {
         $db->getConnection()->exec("
             CREATE TABLE IF NOT EXISTS user_preferences (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL UNIQUE,
+                user_id INT NOT NULL,
+                branch_id VARCHAR(50) NOT NULL DEFAULT '',
                 theme VARCHAR(50) DEFAULT 'dark',
                 language VARCHAR(20) DEFAULT 'id',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                UNIQUE KEY unique_user_branch (user_id, branch_id),
                 INDEX idx_user_id (user_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");

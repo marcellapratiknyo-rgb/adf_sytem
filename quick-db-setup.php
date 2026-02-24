@@ -128,6 +128,33 @@ try {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_user (user_id),
                 INDEX idx_action (action_type)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            
+            "CREATE TABLE IF NOT EXISTS user_preferences (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                branch_id VARCHAR(50) NOT NULL DEFAULT '',
+                theme VARCHAR(50) DEFAULT 'dark',
+                language VARCHAR(20) DEFAULT 'id',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_user_branch (user_id, branch_id),
+                INDEX idx_user_id (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            
+            "CREATE TABLE IF NOT EXISTS user_menu_permissions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id INT NOT NULL,
+                business_id INT NOT NULL,
+                menu_key VARCHAR(100) NOT NULL,
+                can_view TINYINT(1) DEFAULT 1,
+                can_create TINYINT(1) DEFAULT 0,
+                can_edit TINYINT(1) DEFAULT 0,
+                can_delete TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_permission (user_id, business_id, menu_key),
+                INDEX idx_user (user_id),
+                INDEX idx_business (business_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         ];
         
@@ -136,7 +163,7 @@ try {
             try { $dbPdo->exec($stmt); $extraOk++; } 
             catch (PDOException $e) { $errors[] = 'Extra: ' . $e->getMessage(); }
         }
-        $results[] = ['success', "Extra system tables: {$extraOk} created (users, settings, cash_accounts, roles, audit_logs)."];
+        $results[] = ['success', "Extra system tables: {$extraOk} created (users, settings, cash_accounts, roles, audit_logs, user_preferences, user_menu_permissions)."];
 
         // ====================================================
         // STEP 3: Default admin user
