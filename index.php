@@ -276,13 +276,13 @@ $topDivisions = $db->fetchAll(
 $recentTransactions = $db->fetchAll(
     "SELECT 
         cb.*,
-        d.division_name,
-        c.category_name,
-        u.full_name as created_by_name
+        COALESCE(d.division_name, 'Unknown') as division_name,
+        COALESCE(c.category_name, 'Unknown') as category_name,
+        COALESCE(u.full_name, 'System') as created_by_name
     FROM cash_book cb
-    JOIN divisions d ON cb.division_id = d.id
-    JOIN categories c ON cb.category_id = c.id
-    JOIN users u ON cb.created_by = u.id
+    LEFT JOIN divisions d ON cb.division_id = d.id
+    LEFT JOIN categories c ON cb.category_id = c.id
+    LEFT JOIN users u ON cb.created_by = u.id
     ORDER BY cb.transaction_date DESC, cb.transaction_time DESC
     LIMIT 10"
 );
@@ -526,52 +526,6 @@ if ($trialStatus) {
 }
 </style>
 
-<!-- Secondary Stats - Compact -->
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1rem;">
-    <!-- Today Income -->
-    <div class="card fade-in">
-        <div style="padding: 0.625rem 0.75rem;">
-            <div style="font-size: 0.625rem; color: var(--text-muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em;">Hari Ini</div>
-            <div style="font-size: 1rem; font-weight: 800; color: var(--success); margin-bottom: 0.15rem;">
-                <?php echo formatCurrency($todayIncome['total']); ?>
-            </div>
-            <div style="font-size: 0.625rem; color: var(--success);">↑ Pemasukan</div>
-        </div>
-    </div>
-    
-    <!-- Today Expense -->
-    <div class="card fade-in">
-        <div style="padding: 0.625rem 0.75rem;">
-            <div style="font-size: 0.625rem; color: var(--text-muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em;">Hari Ini</div>
-            <div style="font-size: 1rem; font-weight: 800; color: var(--danger); margin-bottom: 0.15rem;">
-                <?php echo formatCurrency($todayExpense['total']); ?>
-            </div>
-            <div style="font-size: 0.625rem; color: var(--danger);">↓ Pengeluaran</div>
-        </div>
-    </div>
-    
-    <!-- Total Balance -->
-    <div class="card fade-in">
-        <div style="padding: 0.625rem 0.75rem;">
-            <div style="font-size: 0.625rem; color: var(--text-muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em;">Saldo <?php echo $thisYear; ?></div>
-            <div style="font-size: 1rem; font-weight: 800; color: <?php echo $totalBalance >= 0 ? 'var(--success)' : 'var(--danger)'; ?>; margin-bottom: 0.15rem;">
-                <?php echo formatCurrency($totalBalance); ?>
-            </div>
-            <div style="font-size: 0.625rem; color: var(--text-muted);">💰 Net Balance</div>
-        </div>
-    </div>
-    
-    <!-- Yearly Income -->
-    <div class="card fade-in">
-        <div style="padding: 0.625rem 0.75rem;">
-            <div style="font-size: 0.625rem; color: var(--text-muted); margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.05em;">Total <?php echo $thisYear; ?></div>
-            <div style="font-size: 1rem; font-weight: 800; color: var(--success); margin-bottom: 0.15rem;">
-                <?php echo formatCurrency($yearlyIncome['total']); ?>
-            </div>
-            <div style="font-size: 0.625rem; color: var(--success);">📈 Pemasukan</div>
-        </div>
-    </div>
-</div>
 
 <!-- KAS OPERASIONAL HARIAN Widget -->
 <div class="card fade-in" style="margin-bottom: 1.25rem; background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%); border: 2px solid rgba(251, 191, 36, 0.4);">
@@ -590,58 +544,44 @@ if ($trialStatus) {
             </a>
         </div>
         
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 0.75rem;">
-            <!-- Modal dari Owner -->
-            <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%); padding: 0.875rem; border-radius: 8px; border-left: 4px solid var(--success);">
-                <div style="font-size: 0.688rem; color: var(--success); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">💵 Modal Owner</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: var(--success);">
-                    <?php echo formatCurrency($capitalStats['received']); ?>
-                </div>
-                <div style="font-size: 0.65rem; color: var(--success); opacity: 0.85; margin-top: 0.25rem;">Setoran owner</div>
-            </div>
+        <!-- SINGLE CONTAINER: Semua info kas dalam 1 box -->
+        <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(255,255,255,0) 100%); padding: 1rem; border-radius: 10px; border: 2px solid rgba(59, 130, 246, 0.2); margin-bottom: 0.5rem;">
             
-            <!-- Saldo Petty Cash (dari tamu) -->
-            <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%); padding: 0.875rem; border-radius: 8px; border-left: 4px solid var(--warning);">
-                <div style="font-size: 0.688rem; color: var(--warning); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">💰 Petty Cash</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: var(--warning);">
-                    <?php echo formatCurrency($pettyCashStats['balance']); ?>
-                </div>
-                <div style="font-size: 0.65rem; color: var(--warning); opacity: 0.85; margin-top: 0.25rem;">Uang cash dari tamu</div>
-            </div>
-            
-            <!-- Total Digunakan (Petty Cash + Modal Owner) -->
-            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%); padding: 0.875rem; border-radius: 8px; border-left: 4px solid var(--danger);">
-                <div style="font-size: 0.688rem; color: var(--danger); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">💸 Digunakan</div>
-                <div style="font-size: 1.25rem; font-weight: 800; color: var(--danger);">
-                    <?php echo formatCurrency($totalOperationalExpense); ?>
-                </div>
-                <div style="font-size: 0.65rem; color: var(--danger); opacity: 0.85; margin-top: 0.25rem;">Total pengeluaran operasional</div>
-            </div>
-            
-            <!-- TOTAL KAS OPERASIONAL (HIGHLIGHTED - PALING AKHIR) -->
-            <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%); padding: 0.875rem; border-radius: 8px; border: 3px solid var(--info); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);">
-                <div style="font-size: 0.688rem; color: var(--info); font-weight: 700; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">🏦 TOTAL KAS</div>
-                <div style="font-size: 1.4rem; font-weight: 900; color: var(--info);">
+            <!-- Baris atas: KAS TERSEDIA (angka besar) -->
+            <div style="text-align: center; margin-bottom: 0.75rem;">
+                <div style="font-size: 0.7rem; color: var(--info); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">🏦 Kas Tersedia</div>
+                <div style="font-size: 1.75rem; font-weight: 900; color: <?php echo $totalOperationalCash < 0 ? 'var(--danger)' : 'var(--info)'; ?>;">
                     <?php echo formatCurrency($totalOperationalCash); ?>
                 </div>
-                <div style="font-size: 0.65rem; color: var(--info); opacity: 0.85; margin-top: 0.25rem; font-weight: 600;">Uang cash tersedia</div>
             </div>
-        </div>
-        
-        <!-- Info Box -->
-        <div style="padding: 0.625rem; background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--info); border-radius: 4px;">
-            <div style="font-size: 0.75rem; color: var(--info); font-weight: 600;">
-                💡 <strong>Logika Operasional:</strong> Ketika bayar pengeluaran, sistem akan gunakan Petty Cash dulu. Jika kurang, baru potong dari Modal Owner.
+            
+            <!-- Baris bawah: 3 kolom kecil (Modal Owner | Petty Cash | Pengeluaran) -->
+            <div style="display: flex; gap: 0; border-top: 1px dashed rgba(59, 130, 246, 0.25); padding-top: 0.625rem;">
+                <div style="flex: 1; text-align: center; padding: 0 0.5rem;">
+                    <div style="font-size: 0.6rem; color: var(--success); font-weight: 600; text-transform: uppercase;">💵 Modal Owner</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--success); margin: 0.2rem 0;"><?php echo formatCurrency($capitalStats['balance']); ?></div>
+                    <div style="font-size: 0.55rem; color: var(--text-muted);">Sisa modal</div>
+                </div>
+                <div style="width: 1px; background: rgba(0,0,0,0.08);"></div>
+                <div style="flex: 1; text-align: center; padding: 0 0.5rem;">
+                    <div style="font-size: 0.6rem; color: var(--warning); font-weight: 600; text-transform: uppercase;">💰 Petty Cash</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--warning); margin: 0.2rem 0;"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
+                    <div style="font-size: 0.55rem; color: var(--text-muted);">Cash dari tamu</div>
+                </div>
+                <div style="width: 1px; background: rgba(0,0,0,0.08);"></div>
+                <div style="flex: 1; text-align: center; padding: 0 0.5rem;">
+                    <div style="font-size: 0.6rem; color: var(--danger); font-weight: 600; text-transform: uppercase;">💸 Pengeluaran</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--danger); margin: 0.2rem 0;"><?php echo formatCurrency($totalOperationalExpense); ?></div>
+                    <div style="font-size: 0.55rem; color: var(--text-muted);">Total terpakai</div>
+                </div>
             </div>
-        </div>
-        
-        <?php if ($totalOperationalCash < 0): ?>
-        <div style="margin-top: 0.75rem; padding: 0.625rem; background: rgba(239, 68, 68, 0.1); border-left: 4px solid var(--danger); border-radius: 4px;">
-            <div style="font-size: 0.75rem; color: var(--danger); font-weight: 600;">
-                ⚠️ Peringatan: Total kas operasional negatif! Perlu tambah modal dari owner.
+            
+            <?php if ($totalOperationalCash < 0): ?>
+            <div style="margin-top: 0.625rem; padding: 0.4rem 0.6rem; background: rgba(239, 68, 68, 0.1); border-radius: 6px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--danger); font-weight: 600;">⚠️ Kas negatif — perlu tambah modal dari owner</div>
             </div>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
     </div>
 </div>
 
