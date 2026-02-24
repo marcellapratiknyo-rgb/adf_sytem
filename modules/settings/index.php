@@ -160,6 +160,21 @@ include '../../includes/header.php';
         </div>
     </a>
     
+    <!-- Reset Audit Log -->
+    <a href="reset-audit-log.php" class="card" style="text-decoration: none; transition: all 0.3s; cursor: pointer;">
+        <div style="padding: 1.25rem;">
+            <div style="width: 48px; height: 48px; border-radius: var(--radius-lg); background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.05)); display: flex; align-items: center; justify-content: center; margin-bottom: 0.875rem;">
+                <i data-feather="trash-2" style="width: 24px; height: 24px; color: var(--danger);"></i>
+            </div>
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.4rem;">
+                Reset Audit Log
+            </h3>
+            <p style="font-size: 0.813rem; color: var(--text-muted); margin: 0;">
+                Hapus semua catatan audit log sistem untuk membersihkan data lama
+            </p>
+        </div>
+    </a>
+    
 </div>
 
 <!-- System Info -->

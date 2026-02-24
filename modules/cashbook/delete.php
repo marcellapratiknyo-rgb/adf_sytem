@@ -27,13 +27,13 @@ if ($id <= 0) {
 $transaction = $db->fetchOne(
     "SELECT 
         cb.*,
-        d.division_name,
-        c.category_name,
-        u.full_name as created_by_name
+        COALESCE(d.division_name, '-') as division_name,
+        COALESCE(c.category_name, '-') as category_name,
+        COALESCE(u.full_name, '-') as created_by_name
     FROM cash_book cb
-    JOIN divisions d ON cb.division_id = d.id
-    JOIN categories c ON cb.category_id = c.id
-    JOIN users u ON cb.created_by = u.id
+    LEFT JOIN divisions d ON cb.division_id = d.id
+    LEFT JOIN categories c ON cb.category_id = c.id
+    LEFT JOIN users u ON cb.created_by = u.id
     WHERE cb.id = :id",
     ['id' => $id]
 );
@@ -66,15 +66,15 @@ try {
     // Create audit log
     $oldData = json_encode([
         'id' => $transaction['id'],
-        'transaction_date' => $transaction['transaction_date'],
-        'transaction_time' => $transaction['transaction_time'],
-        'division' => $transaction['division_name'],
-        'category' => $transaction['category_name'],
-        'transaction_type' => $transaction['transaction_type'],
-        'amount' => $transaction['amount'],
-        'payment_method' => $transaction['payment_method'],
-        'description' => $transaction['description'],
-        'created_by' => $transaction['created_by_name'],
+        'transaction_date' => $transaction['transaction_date'] ?? '',
+        'transaction_time' => $transaction['transaction_time'] ?? '',
+        'division' => $transaction['division_name'] ?? '-',
+        'category' => $transaction['category_name'] ?? '-',
+        'transaction_type' => $transaction['transaction_type'] ?? '',
+        'amount' => $transaction['amount'] ?? 0,
+        'payment_method' => $transaction['payment_method'] ?? '',
+        'description' => $transaction['description'] ?? '',
+        'created_by' => $transaction['created_by_name'] ?? '-',
         'source_type' => $transaction['source_type'] ?? 'manual',
         'source_id' => $transaction['source_id'] ?? null
     ], JSON_UNESCAPED_UNICODE);
@@ -83,17 +83,21 @@ try {
     $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
     
-    // Insert audit log
-    $db->insert('audit_logs', [
-        'table_name' => 'cash_book',
-        'record_id' => $id,
-        'action' => 'DELETE',
-        'old_data' => $oldData,
-        'user_id' => $currentUser['id'],
-        'user_name' => $currentUser['full_name'],
-        'ip_address' => $ipAddress,
-        'user_agent' => $userAgent
-    ]);
+    // Insert audit log (wrapped in try-catch so it doesn't block delete)
+    try {
+        $db->insert('audit_logs', [
+            'table_name' => 'cash_book',
+            'record_id' => $id,
+            'action' => 'DELETE',
+            'old_data' => $oldData,
+            'user_id' => $currentUser['id'],
+            'user_name' => $currentUser['full_name'],
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent
+        ]);
+    } catch (Exception $auditEx) {
+        // Audit log failed, continue with delete anyway
+    }
     
     // If from PO, update PO status back to submitted and remove attachment
     if ($isPurchaseOrder && $poId) {
