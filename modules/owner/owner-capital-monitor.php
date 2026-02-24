@@ -169,6 +169,73 @@ if ($pettyCashAccount) {
     $pettyCashBalance = $pettyCashAccount['current_balance'];
 }
 
+// =====================================================
+// START CASH DAILY - Saldo awal hari ini
+// =====================================================
+$today = date('Y-m-d');
+
+// Modal Owner: sum all transactions BEFORE today
+$startCashOwner = 0;
+$todayOwnerIncome = 0;
+$todayOwnerExpense = 0;
+if ($ownerCapitalAccount) {
+    // All transactions before today
+    $stmt = $masterDb->prepare(
+        "SELECT 
+            COALESCE(SUM(CASE WHEN transaction_type IN ('income','capital_injection') THEN amount ELSE 0 END), 0) as total_in,
+            COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as total_out
+         FROM cash_account_transactions 
+         WHERE cash_account_id = ? AND transaction_date < ?"
+    );
+    $stmt->execute([$ownerCapitalAccount['id'], $today]);
+    $row = $stmt->fetch();
+    $startCashOwner = ($row['total_in'] ?? 0) - ($row['total_out'] ?? 0);
+    
+    // Today's transactions
+    $stmt = $masterDb->prepare(
+        "SELECT 
+            COALESCE(SUM(CASE WHEN transaction_type IN ('income','capital_injection') THEN amount ELSE 0 END), 0) as today_in,
+            COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as today_out
+         FROM cash_account_transactions 
+         WHERE cash_account_id = ? AND transaction_date = ?"
+    );
+    $stmt->execute([$ownerCapitalAccount['id'], $today]);
+    $row = $stmt->fetch();
+    $todayOwnerIncome = $row['today_in'] ?? 0;
+    $todayOwnerExpense = $row['today_out'] ?? 0;
+}
+
+// Petty Cash: sum all cash_book CASH transactions BEFORE today
+$startCashPetty = 0;
+$todayPettyIncome = 0;
+$todayPettyExpense = 0;
+$pettyCashStmtStart = $db->getConnection()->prepare(
+    "SELECT 
+        COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END), 0) as total_in,
+        COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as total_out
+     FROM cash_book WHERE payment_method = 'cash' AND transaction_date < ?"
+);
+$pettyCashStmtStart->execute([$today]);
+$row = $pettyCashStmtStart->fetch();
+$startCashPetty = ($row['total_in'] ?? 0) - ($row['total_out'] ?? 0);
+
+// Today's petty cash
+$pettyCashStmtToday = $db->getConnection()->prepare(
+    "SELECT 
+        COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END), 0) as today_in,
+        COALESCE(SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END), 0) as today_out
+     FROM cash_book WHERE payment_method = 'cash' AND transaction_date = ?"
+);
+$pettyCashStmtToday->execute([$today]);
+$row = $pettyCashStmtToday->fetch();
+$todayPettyIncome = $row['today_in'] ?? 0;
+$todayPettyExpense = $row['today_out'] ?? 0;
+
+$totalStartCash = $startCashOwner + $startCashPetty;
+$totalTodayIncome = $todayOwnerIncome + $todayPettyIncome;
+$totalTodayExpense = $todayOwnerExpense + $todayPettyExpense;
+$totalCurrentCash = $totalStartCash + $totalTodayIncome - $totalTodayExpense;
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -201,9 +268,9 @@ if ($pettyCashAccount) {
         
         .page-header {
             background: white;
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 12px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
@@ -211,29 +278,29 @@ if ($pettyCashAccount) {
         }
         
         .page-title {
-            font-size: 1.75rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #1e293b;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.35rem;
         }
         
         .page-subtitle {
             color: #64748b;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
         
         .grid-2 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
         
         .card {
             background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
+            padding: 1.25rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
         }
         
         .stat-card {
@@ -246,34 +313,34 @@ if ($pettyCashAccount) {
             position: absolute;
             top: 0;
             right: 0;
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent);
             border-radius: 50%;
         }
         
         .stat-label {
             color: #64748b;
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.4rem;
         }
         
         .stat-value {
-            font-size: 2rem;
+            font-size: 1.6rem;
             font-weight: 700;
             color: #1e293b;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
         
         .stat-change {
-            font-size: 0.8rem;
-            padding: 0.4rem 0.75rem;
+            font-size: 0.72rem;
+            padding: 0.3rem 0.6rem;
             border-radius: 6px;
             display: inline-block;
         }
@@ -324,13 +391,13 @@ if ($pettyCashAccount) {
         }
         
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1rem;
             font-weight: 700;
             color: #1e293b;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
         
         .transaction-table {
@@ -727,8 +794,44 @@ if ($pettyCashAccount) {
             </div>
         </div>
         
+        <!-- ======================================== -->
+        <!-- START CASH DAILY - Saldo Awal Hari Ini -->
+        <!-- ======================================== -->
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span style="font-size: 1.2rem;">☀️</span>
+                <div style="font-size: 0.85rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.5px;">Start Cash Hari Ini — <?php echo date('d M Y'); ?></div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
+                <!-- Saldo Awal -->
+                <div style="background: rgba(255,255,255,0.08); padding: 0.75rem; border-radius: 8px; border-left: 3px solid #94a3b8;">
+                    <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">Saldo Awal</div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #e2e8f0;">Rp <?php echo number_format($totalStartCash, 0, ',', '.'); ?></div>
+                    <div style="font-size: 0.55rem; color: #64748b; margin-top: 0.15rem;">Sisa saldo kemarin</div>
+                </div>
+                <!-- Masuk Hari Ini -->
+                <div style="background: rgba(16,185,129,0.1); padding: 0.75rem; border-radius: 8px; border-left: 3px solid #10b981;">
+                    <div style="font-size: 0.65rem; color: #10b981; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">+ Masuk Hari Ini</div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #10b981;">Rp <?php echo number_format($totalTodayIncome, 0, ',', '.'); ?></div>
+                    <div style="font-size: 0.55rem; color: #64748b; margin-top: 0.15rem;">Owner + Petty Cash</div>
+                </div>
+                <!-- Keluar Hari Ini -->
+                <div style="background: rgba(239,68,68,0.1); padding: 0.75rem; border-radius: 8px; border-left: 3px solid #ef4444;">
+                    <div style="font-size: 0.65rem; color: #ef4444; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">- Keluar Hari Ini</div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: #ef4444;">Rp <?php echo number_format($totalTodayExpense, 0, ',', '.'); ?></div>
+                    <div style="font-size: 0.55rem; color: #64748b; margin-top: 0.15rem;">Pengeluaran hari ini</div>
+                </div>
+                <!-- Kas Sekarang -->
+                <div style="background: rgba(59,130,246,0.12); padding: 0.75rem; border-radius: 8px; border-left: 3px solid #3b82f6;">
+                    <div style="font-size: 0.65rem; color: #3b82f6; font-weight: 600; text-transform: uppercase; margin-bottom: 0.25rem;">= Kas Sekarang</div>
+                    <div style="font-size: 1.15rem; font-weight: 800; color: <?php echo $totalCurrentCash >= 0 ? '#3b82f6' : '#ef4444'; ?>;">Rp <?php echo number_format($totalCurrentCash, 0, ',', '.'); ?></div>
+                    <div style="font-size: 0.55rem; color: #64748b; margin-top: 0.15rem;">Real-time saat ini</div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Key Statistics - MODAL OWNER -->
-        <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 0.75rem;">
+        <h2 style="margin-bottom: 1rem; font-size: 1.15rem; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 0.5rem;">
             💰 Modal Owner - Setoran Dari Owner
         </h2>
         
@@ -799,22 +902,22 @@ if ($pettyCashAccount) {
             </div>
             
             <?php if (!empty($allTransactions)): ?>
-                <div style="margin-bottom: 1rem; padding: 1rem; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <small style="color: #64748b; font-weight: 600;">Total Transaksi</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #1e293b;"><?php echo count($allTransactions); ?> transaksi</div>
+                        <small style="color: #64748b; font-weight: 600; font-size: 0.7rem;">Total Transaksi</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: #1e293b;"><?php echo count($allTransactions); ?> transaksi</div>
                     </div>
                     <div>
-                        <small style="color: #10b981; font-weight: 600;">Uang Masuk</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #10b981;">Rp <?php echo number_format($totalCapitalInjected, 0, ',', '.'); ?></div>
+                        <small style="color: #10b981; font-weight: 600; font-size: 0.7rem;">Uang Masuk</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: #10b981;">Rp <?php echo number_format($totalCapitalInjected, 0, ',', '.'); ?></div>
                     </div>
                     <div>
-                        <small style="color: #ef4444; font-weight: 600;">Uang Keluar</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #ef4444;">Rp <?php echo number_format($totalCapitalUsed, 0, ',', '.'); ?></div>
+                        <small style="color: #ef4444; font-weight: 600; font-size: 0.7rem;">Uang Keluar</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: #ef4444;">Rp <?php echo number_format($totalCapitalUsed, 0, ',', '.'); ?></div>
                     </div>
                     <div>
-                        <small style="color: #3b82f6; font-weight: 600;">Selisih</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: <?php echo ($totalCapitalInjected - $totalCapitalUsed) >= 0 ? '#10b981' : '#ef4444'; ?>;">
+                        <small style="color: #3b82f6; font-weight: 600; font-size: 0.7rem;">Selisih</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: <?php echo ($totalCapitalInjected - $totalCapitalUsed) >= 0 ? '#10b981' : '#ef4444'; ?>;">
                             Rp <?php echo number_format($totalCapitalInjected - $totalCapitalUsed, 0, ',', '.'); ?>
                         </div>
                     </div>
@@ -925,7 +1028,7 @@ if ($pettyCashAccount) {
         <!-- PETTY CASH SECTION - Uang Cash dari Hotel/Tamu -->
         <!-- ======================================================== -->
         
-        <h2 style="margin-top: 2.5rem; margin-bottom: 1.5rem; font-size: 1.5rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 0.75rem;">
+        <h2 style="margin-top: 1.5rem; margin-bottom: 1rem; font-size: 1.15rem; font-weight: 700; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
             💵 Petty Cash - Uang Cash Dari Tamu
         </h2>
         
@@ -990,22 +1093,22 @@ if ($pettyCashAccount) {
             </div>
             
             <?php if (!empty($pettyCashTransactions)): ?>
-                <div style="margin-bottom: 1rem; padding: 1rem; background: #fffbeb; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <small style="color: #64748b; font-weight: 600;">Total Transaksi</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #1e293b;"><?php echo count($pettyCashTransactions); ?> transaksi</div>
+                        <small style="color: #64748b; font-weight: 600; font-size: 0.7rem;">Total Transaksi</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: #1e293b;"><?php echo count($pettyCashTransactions); ?> transaksi</div>
                     </div>
                     <div>
-                        <small style="color: #10b981; font-weight: 600;">Uang Masuk</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #10b981;">Rp <?php echo number_format($totalPettyCashReceived, 0, ',', '.'); ?></div>
+                        <small style="color: #10b981; font-weight: 600; font-size: 0.7rem;">Uang Masuk</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: #10b981;">Rp <?php echo number_format($totalPettyCashReceived, 0, ',', '.'); ?></div>
                     </div>
                     <div>
-                        <small style="color: #ef4444; font-weight: 600;">Uang Keluar</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #ef4444;">Rp <?php echo number_format($totalPettyCashUsed, 0, ',', '.'); ?></div>
+                        <small style="color: #ef4444; font-weight: 600; font-size: 0.7rem;">Uang Keluar</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: #ef4444;">Rp <?php echo number_format($totalPettyCashUsed, 0, ',', '.'); ?></div>
                     </div>
                     <div>
-                        <small style="color: #6366f1; font-weight: 600;">Balance</small>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: <?php echo ($totalPettyCashReceived - $totalPettyCashUsed) >= 0 ? '#10b981' : '#ef4444'; ?>;">
+                        <small style="color: #6366f1; font-weight: 600; font-size: 0.7rem;">Balance</small>
+                        <div style="font-size: 1rem; font-weight: 700; color: <?php echo ($totalPettyCashReceived - $totalPettyCashUsed) >= 0 ? '#10b981' : '#ef4444'; ?>;">
                             Rp <?php echo number_format($totalPettyCashReceived - $totalPettyCashUsed, 0, ',', '.'); ?>
                         </div>
                     </div>
