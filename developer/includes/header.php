@@ -505,6 +505,9 @@
             <a href="permissions.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'permissions.php' ? 'active' : ''; ?>">
                 <i class="bi bi-shield-lock"></i>Permissions
             </a>
+            <a href="owner-access.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'owner-access.php' ? 'active' : ''; ?>">
+                <i class="bi bi-eye"></i>Owner Monitoring
+            </a>
             
             <div class="menu-section">System</div>
             <a href="database.php" class="<?php echo basename($_SERVER['PHP_SELF']) == 'database.php' ? 'active' : ''; ?>">

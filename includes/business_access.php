@@ -9,6 +9,93 @@ if (!defined('APP_ACCESS')) {
 }
 
 /**
+ * Get business code to slug mapping from businesses table
+ * @param PDO $pdo Master database connection
+ * @return array ['BUSINESS_CODE' => 'business-slug', ...]
+ */
+function getBusinessCodeToSlugMap($pdo = null) {
+    // Static hardcoded fallback + dynamic from DB
+    $map = [
+        'BENSCAFE' => 'bens-cafe',
+        'NARAYANAHOTEL' => 'narayana-hotel',
+        'DEMO' => 'demo'
+    ];
+    
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT id, business_code, database_name FROM businesses WHERE is_active = 1");
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                // Try to derive slug from database_name (adf_benscafe -> bens-cafe mapping)
+                // Keep hardcoded map as primary, add any missing dynamically
+                if (!isset($map[$row['business_code']])) {
+                    $map[$row['business_code']] = strtolower(str_replace('_', '-', preg_replace('/^adf_/', '', $row['database_name'])));
+                }
+            }
+        } catch (Exception $e) {}
+    }
+    
+    return $map;
+}
+
+/**
+ * Check if owner user has access to a specific business via user_business_assignment
+ * @param int $userId Master user ID
+ * @param string $businessSlug e.g. 'bens-cafe', 'narayana-hotel'
+ * @return bool
+ */
+function checkOwnerBusinessAccess($userId, $businessSlug) {
+    try {
+        $masterPdo = new PDO(
+            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+            DB_USER, DB_PASS,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+        
+        // Check if user_business_assignment table exists
+        $tableCheck = $masterPdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = '" . DB_NAME . "' AND TABLE_NAME = 'user_business_assignment'")->fetchColumn();
+        if (!$tableCheck) {
+            // Table doesn't exist yet — allow access (backward compatibility)
+            return true;
+        }
+        
+        // Check if owner has ANY assignments at all
+        $countStmt = $masterPdo->prepare("SELECT COUNT(*) FROM user_business_assignment WHERE user_id = ?");
+        $countStmt->execute([$userId]);
+        $totalAssignments = (int)$countStmt->fetchColumn();
+        
+        // If owner has no assignments configured, allow all (backward compatibility for unconfigured owners)
+        if ($totalAssignments === 0) {
+            return true;
+        }
+        
+        // Owner has assignments — check if current business is in the list
+        $codeMap = getBusinessCodeToSlugMap($masterPdo);
+        $slugToId = [];
+        
+        // Build slug → business_id map
+        $bizStmt = $masterPdo->query("SELECT id, business_code FROM businesses WHERE is_active = 1");
+        while ($row = $bizStmt->fetch(PDO::FETCH_ASSOC)) {
+            $slug = $codeMap[$row['business_code']] ?? strtolower($row['business_code']);
+            $slugToId[$slug] = $row['id'];
+        }
+        
+        $targetBizId = $slugToId[$businessSlug] ?? null;
+        if (!$targetBizId) {
+            return false;
+        }
+        
+        $checkStmt = $masterPdo->prepare("SELECT COUNT(*) FROM user_business_assignment WHERE user_id = ? AND business_id = ?");
+        $checkStmt->execute([$userId, $targetBizId]);
+        return (int)$checkStmt->fetchColumn() > 0;
+        
+    } catch (Exception $e) {
+        error_log('checkOwnerBusinessAccess error: ' . $e->getMessage());
+        // On error, allow access (fail-open for owners)
+        return true;
+    }
+}
+
+/**
  * Check if current user has access to active business
  * @return bool
  */
@@ -20,21 +107,29 @@ function checkBusinessAccess() {
     }
     
     $currentUser = $auth->getCurrentUser();
+    $role = $currentUser['role'] ?? 'staff';
     
-    // Owner and admin have access to all businesses
-    if ($currentUser['role'] === 'owner' || $currentUser['role'] === 'admin') {
+    // Developer has full access everywhere
+    if ($role === 'developer') {
         return true;
     }
     
-    // Check if user has specific business access
+    // Owner access — check via user_business_assignment table
+    if ($role === 'owner' || $role === 'admin') {
+        $userId = $_SESSION['user_id'] ?? null;
+        if ($userId) {
+            return checkOwnerBusinessAccess($userId, ACTIVE_BUSINESS_ID);
+        }
+        return true;
+    }
+    
+    // Staff — check business_access JSON or user_menu_permissions
     $businessAccess = json_decode($currentUser['business_access'] ?? '[]', true);
     
     if (empty($businessAccess)) {
-        // If no business_access set, deny access (secure by default)
         return false;
     }
     
-    // Check if user has access to current business
     return in_array(ACTIVE_BUSINESS_ID, $businessAccess);
 }
 
@@ -65,8 +160,9 @@ function getUserAvailableBusinesses() {
         return [];
     }
     
-    // Developer role has access to all businesses
     $userRole = $_SESSION['role'] ?? 'staff';
+    
+    // Developer role has access to all businesses
     if ($userRole === 'developer') {
         return getAvailableBusinesses();
     }
@@ -90,8 +186,49 @@ function getUserAvailableBusinesses() {
         }
         
         $masterId = $masterUser['id'];
+        $codeToIdMap = getBusinessCodeToSlugMap($masterPdo);
         
-        // Get businesses user has permissions for
+        // Owner/Admin — use user_business_assignment
+        if ($userRole === 'owner' || $userRole === 'admin') {
+            // Check if owner has any assignments
+            $countStmt = $masterPdo->prepare("SELECT COUNT(*) FROM user_business_assignment WHERE user_id = ?");
+            $countStmt->execute([$masterId]);
+            $totalAssignments = (int)$countStmt->fetchColumn();
+            
+            // If owner has no assignments configured, show all (backward compatibility)
+            if ($totalAssignments === 0) {
+                return getAvailableBusinesses();
+            }
+            
+            // Get assigned businesses
+            $bizStmt = $masterPdo->prepare("
+                SELECT DISTINCT b.id, b.business_code, b.business_name
+                FROM businesses b
+                JOIN user_business_assignment uba ON b.id = uba.business_id
+                WHERE uba.user_id = ? AND b.is_active = 1
+                ORDER BY b.business_name
+            ");
+            $bizStmt->execute([$masterId]);
+            $userBusinesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($userBusinesses)) {
+                return [];
+            }
+            
+            $allBusinesses = getAvailableBusinesses();
+            $filtered = [];
+            
+            foreach ($userBusinesses as $biz) {
+                $businessId = $codeToIdMap[$biz['business_code']] ?? strtolower($biz['business_code']);
+                if (isset($allBusinesses[$businessId])) {
+                    $filtered[$businessId] = $allBusinesses[$businessId];
+                }
+            }
+            
+            return $filtered;
+        }
+        
+        // Staff — use user_menu_permissions
         $bizStmt = $masterPdo->prepare("
             SELECT DISTINCT b.id, b.business_code, b.business_name
             FROM businesses b
@@ -105,12 +242,6 @@ function getUserAvailableBusinesses() {
         if (empty($userBusinesses)) {
             return [];
         }
-        
-        // Map database results to business config format
-        $codeToIdMap = [
-            'BENSCAFE' => 'bens-cafe',
-            'NARAYANAHOTEL' => 'narayana-hotel'
-        ];
         
         $allBusinesses = getAvailableBusinesses();
         $filtered = [];
