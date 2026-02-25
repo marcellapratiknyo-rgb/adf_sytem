@@ -266,7 +266,8 @@ class Auth {
             // Map business_id to business_code
             $idToCodeMap = [
                 'bens-cafe' => 'BENSCAFE',
-                'narayana-hotel' => 'NARAYANAHOTEL'
+                'narayana-hotel' => 'NARAYANAHOTEL',
+                'demo' => 'DEMO'
             ];
             $businessCode = $idToCodeMap[$activeBusinessId] ?? strtoupper(str_replace('-', '', $activeBusinessId));
             
@@ -340,7 +341,7 @@ class Auth {
         
         // Final fallback: role-based permissions
         $rolePermissions = [
-            'admin' => ['dashboard', 'cashbook', 'divisions', 'frontdesk', 'sales_invoice', 'procurement', 'users', 'reports', 'settings', 'inventor', 'project'],
+            'admin' => ['dashboard', 'cashbook', 'divisions', 'frontdesk', 'sales_invoice', 'procurement', 'users', 'reports', 'settings', 'investor', 'project'],
             'manager' => ['dashboard', 'cashbook', 'divisions', 'frontdesk', 'sales_invoice', 'procurement', 'users', 'reports', 'settings', 'investor', 'project'],
             'accountant' => ['dashboard', 'cashbook', 'reports', 'procurement', 'investor', 'project'],
             'staff' => ['dashboard', 'cashbook', 'investor', 'project']

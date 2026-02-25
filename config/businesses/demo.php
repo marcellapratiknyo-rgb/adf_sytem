@@ -12,10 +12,12 @@ return [
         'auth',
         'settings',
         'reports',
+        'frontdesk',
         'divisions',
         'procurement',
         'sales',
-        'bills'
+        'bills',
+        'investor'
     ],
     
     'theme' => [
