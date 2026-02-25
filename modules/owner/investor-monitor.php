@@ -7,6 +7,7 @@
 
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/business_helper.php';
 
 // Auth check
 $role = $_SESSION['role'] ?? null;
@@ -32,11 +33,26 @@ if (!$role || !in_array($role, ['admin', 'owner', 'manager', 'developer'])) {
 $isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
 $basePath = $isProduction ? '' : '/adf_system';
 
+// Multi-business: get active business config
+require_once __DIR__ . '/../../includes/business_access.php';
+$allBusinesses = getUserAvailableBusinesses();
+$activeBusinessId = getActiveBusinessId();
+
+// Auto-switch if current business not in user's allowed list
+if (!empty($allBusinesses) && !isset($allBusinesses[$activeBusinessId])) {
+    $firstAllowed = array_key_first($allBusinesses);
+    setActiveBusinessId($firstAllowed);
+    $activeBusinessId = $firstAllowed;
+}
+
+$activeConfig = getActiveBusinessConfig();
+
 // Database config - connect to BUSINESS database for investors/projects
 $dbHost = DB_HOST;
 $dbUser = DB_USER;
 $dbPass = DB_PASS;
-$businessDbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
+$businessDbName = getDbName($activeConfig['database'] ?? 'adf_narayana_hotel');
+$businessName = $activeConfig['name'] ?? 'Unknown Business';
 
 // Initialize variables
 $investors = [];
@@ -1161,10 +1177,10 @@ foreach ($projects as $proj) {
         <!-- Header -->
         <div class="header">
             <div class="header-logo">
-                <img src="<?= $basePath ?>/uploads/logos/narayana-hotel_logo.png" alt="Logo" onerror="this.parentElement.style.display='none'">
+                <img src="<?= $basePath ?>/uploads/logos/<?= htmlspecialchars($activeBusinessId) ?>_logo.png" alt="Logo" onerror="this.parentElement.style.display='none'">
             </div>
             <div class="header-title">Projects & Investors</div>
-            <div class="header-subtitle">Investment Overview</div>
+            <div class="header-subtitle"><?= htmlspecialchars($businessName) ?></div>
         </div>
         
         <?php if ($error): ?>

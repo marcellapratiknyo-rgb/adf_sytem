@@ -1,4 +1,4 @@
-,<?php
+<?php
 /**
  * FRONTDESK MOBILE DASHBOARD
  * Mobile-optimized view for owner monitoring
@@ -7,6 +7,7 @@
 
 define('APP_ACCESS', true);
 require_once __DIR__ . '/../../config/config.php';
+require_once __DIR__ . '/../../includes/business_helper.php';
 
 // Auth check
 $role = $_SESSION['role'] ?? null;
@@ -32,11 +33,30 @@ if (!$role || !in_array($role, ['admin', 'owner', 'manager', 'developer'])) {
 $isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
 $basePath = $isProduction ? '' : '/adf_system';
 
+// Multi-business: get active business config
+require_once __DIR__ . '/../../includes/business_access.php';
+$allBusinesses = getUserAvailableBusinesses();
+$activeBusinessId = getActiveBusinessId();
+
+// Auto-switch if current business not in user's allowed list
+if (!empty($allBusinesses) && !isset($allBusinesses[$activeBusinessId])) {
+    $firstAllowed = array_key_first($allBusinesses);
+    setActiveBusinessId($firstAllowed);
+    $activeBusinessId = $firstAllowed;
+}
+
+$activeConfig = getActiveBusinessConfig();
+
 // Database config - connect to BUSINESS database
 $dbHost = DB_HOST;
 $dbUser = DB_USER;
 $dbPass = DB_PASS;
-$businessDbName = $isProduction ? 'adfb2574_narayana_hotel' : 'adf_narayana_hotel';
+$businessDbName = getDbName($activeConfig['database'] ?? 'adf_narayana_hotel');
+$businessName = $activeConfig['name'] ?? 'Unknown Business';
+$businessIcon = $activeConfig['theme']['icon'] ?? '🏢';
+$enabledModules = $activeConfig['enabled_modules'] ?? [];
+$hasLogo = !empty($activeConfig['logo']);
+$logoFile = $activeBusinessId . '_logo.png';
 
 // Get today's date
 $today = date('Y-m-d');
@@ -703,10 +723,10 @@ function rp($num) {
         <!-- Header -->
         <div class="header">
             <div class="header-logo">
-                <img src="<?= $basePath ?>/uploads/logos/narayana-hotel_logo.png" alt="Logo" onerror="this.parentElement.style.display='none'">
+                <img src="<?= $basePath ?>/uploads/logos/<?= htmlspecialchars($logoFile) ?>" alt="Logo" onerror="this.parentElement.style.display='none'">
             </div>
             <div class="header-title">Frontdesk Monitor</div>
-            <div class="header-subtitle">Narayana Hotel & Ayurveda</div>
+            <div class="header-subtitle"><?= htmlspecialchars($businessName) ?></div>
             <div class="header-date"><?= date('l, d F Y') ?></div>
         </div>
         
