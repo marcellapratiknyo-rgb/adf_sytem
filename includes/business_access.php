@@ -114,23 +114,13 @@ function checkBusinessAccess() {
         return true;
     }
     
-    // Owner access — check via user_business_assignment table
-    if ($role === 'owner' || $role === 'admin') {
-        $userId = $_SESSION['user_id'] ?? null;
-        if ($userId) {
-            return checkOwnerBusinessAccess($userId, ACTIVE_BUSINESS_ID);
-        }
-        return true;
+    // All non-developer users — check via user_business_assignment table
+    $userId = $_SESSION['user_id'] ?? null;
+    if ($userId) {
+        return checkOwnerBusinessAccess($userId, ACTIVE_BUSINESS_ID);
     }
     
-    // Staff — check business_access JSON or user_menu_permissions
-    $businessAccess = json_decode($currentUser['business_access'] ?? '[]', true);
-    
-    if (empty($businessAccess)) {
-        return false;
-    }
-    
-    return in_array(ACTIVE_BUSINESS_ID, $businessAccess);
+    return false;
 }
 
 /**
@@ -188,52 +178,23 @@ function getUserAvailableBusinesses() {
         $masterId = $masterUser['id'];
         $codeToIdMap = getBusinessCodeToSlugMap($masterPdo);
         
-        // Owner/Admin — use user_business_assignment
-        if ($userRole === 'owner' || $userRole === 'admin') {
-            // Check if owner has any assignments
-            $countStmt = $masterPdo->prepare("SELECT COUNT(*) FROM user_business_assignment WHERE user_id = ?");
-            $countStmt->execute([$masterId]);
-            $totalAssignments = (int)$countStmt->fetchColumn();
-            
-            // If owner has no assignments configured, show all (backward compatibility)
-            if ($totalAssignments === 0) {
-                return getAvailableBusinesses();
-            }
-            
-            // Get assigned businesses
-            $bizStmt = $masterPdo->prepare("
-                SELECT DISTINCT b.id, b.business_code, b.business_name
-                FROM businesses b
-                JOIN user_business_assignment uba ON b.id = uba.business_id
-                WHERE uba.user_id = ? AND b.is_active = 1
-                ORDER BY b.business_name
-            ");
-            $bizStmt->execute([$masterId]);
-            $userBusinesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            if (empty($userBusinesses)) {
-                return [];
-            }
-            
-            $allBusinesses = getAvailableBusinesses();
-            $filtered = [];
-            
-            foreach ($userBusinesses as $biz) {
-                $businessId = $codeToIdMap[$biz['business_code']] ?? strtolower($biz['business_code']);
-                if (isset($allBusinesses[$businessId])) {
-                    $filtered[$businessId] = $allBusinesses[$businessId];
-                }
-            }
-            
-            return $filtered;
+        // All non-developer users — use user_business_assignment
+        // Check if user has any assignments
+        $countStmt = $masterPdo->prepare("SELECT COUNT(*) FROM user_business_assignment WHERE user_id = ?");
+        $countStmt->execute([$masterId]);
+        $totalAssignments = (int)$countStmt->fetchColumn();
+        
+        // If user has no assignments configured, show all (backward compatibility)
+        if ($totalAssignments === 0) {
+            return getAvailableBusinesses();
         }
         
-        // Staff — use user_menu_permissions
+        // Get assigned businesses
         $bizStmt = $masterPdo->prepare("
             SELECT DISTINCT b.id, b.business_code, b.business_name
             FROM businesses b
-            JOIN user_menu_permissions p ON b.id = p.business_id
-            WHERE p.user_id = ?
+            JOIN user_business_assignment uba ON b.id = uba.business_id
+            WHERE uba.user_id = ? AND b.is_active = 1
             ORDER BY b.business_name
         ");
         $bizStmt->execute([$masterId]);

@@ -41,19 +41,19 @@ try {
     $businesses = $pdo->query("SELECT id, business_code, business_name, business_type, database_name, is_active FROM businesses WHERE is_active = 1 ORDER BY business_name")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {}
 
-// Get all owner users (role_code = 'owner')
+// Get all users (except developer) for monitoring access management
 $owners = [];
 try {
     $owners = $pdo->query("
         SELECT u.id, u.username, u.full_name, u.email, u.phone, u.is_active, u.last_login, r.role_name, r.role_code
         FROM users u
         JOIN roles r ON u.role_id = r.id
-        WHERE r.role_code = 'owner' AND u.is_active = 1
-        ORDER BY u.full_name
+        WHERE r.role_code != 'developer' AND u.is_active = 1
+        ORDER BY r.role_code, u.full_name
     ")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {}
 
-// Get current assignments for all owners
+// Get current assignments for all users
 $assignments = [];
 try {
     $stmt = $pdo->query("SELECT user_id, business_id FROM user_business_assignment");
@@ -139,8 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
             
-            // Clear all owner assignments
-            $ownerIds = array_column($owners, 'id');
+// Clear all user assignments (non-developer users only)
+                $ownerIds = array_column($owners, 'id');
+                if (empty($ownerIds)) {
+                    // Re-fetch user IDs since $owners may not be populated yet in POST
+                    $idRows = $pdo->query("SELECT u.id FROM users u JOIN roles r ON u.role_id = r.id WHERE r.role_code != 'developer' AND u.is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
+                    $ownerIds = $idRows;
+                }
             if (!empty($ownerIds)) {
                 $placeholders = implode(',', array_fill(0, count($ownerIds), '?'));
                 $pdo->prepare("DELETE FROM user_business_assignment WHERE user_id IN ($placeholders)")->execute($ownerIds);
@@ -163,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'total_assignments' => $totalAssigned
             ]);
             
-            $_SESSION['success_message'] = "Semua akses owner berhasil diperbarui! ({$totalAssigned} assignment untuk " . count($allAccess) . " owner)";
+            $_SESSION['success_message'] = "Semua akses monitoring berhasil diperbarui! ({$totalAssigned} assignment untuk " . count($allAccess) . " user)";
             header("Location: owner-access.php");
             exit;
             
@@ -414,7 +419,7 @@ require_once __DIR__ . '/includes/header.php';
                 </div>
                 <div class="d-flex gap-2">
                     <span class="badge bg-light text-dark border" style="font-size: 0.8rem; padding: 8px 15px;">
-                        <i class="bi bi-people me-1"></i> <?php echo count($owners); ?> Owner
+                        <i class="bi bi-people me-1"></i> <?php echo count($owners); ?> User
                     </span>
                     <span class="badge bg-light text-dark border" style="font-size: 0.8rem; padding: 8px 15px;">
                         <i class="bi bi-building me-1"></i> <?php echo count($businesses); ?> Bisnis
@@ -439,14 +444,14 @@ require_once __DIR__ . '/includes/header.php';
     <?php endif; ?>
     
     <?php if (empty($owners)): ?>
-    <!-- No Owners Found -->
+    <!-- No Users Found -->
     <div class="content-card">
         <div class="text-center py-5">
             <i class="bi bi-person-x fs-1 text-muted mb-3 d-block"></i>
-            <h5>Belum Ada User Owner</h5>
-            <p class="text-muted">Buat user dengan role "Owner" terlebih dahulu di menu User Setup</p>
+            <h5>Belum Ada User</h5>
+            <p class="text-muted">Buat user terlebih dahulu di menu User Setup</p>
             <a href="index.php?section=user-setup" class="btn btn-primary">
-                <i class="bi bi-person-plus me-1"></i> Buat User Owner
+                <i class="bi bi-person-plus me-1"></i> Buat User
             </a>
         </div>
     </div>
@@ -482,6 +487,7 @@ require_once __DIR__ . '/includes/header.php';
                             <div class="owner-info" style="flex:1;">
                                 <h6><?php echo htmlspecialchars($owner['full_name']); ?></h6>
                                 <small>@<?php echo htmlspecialchars($owner['username']); ?></small>
+                                <span class="badge <?php echo $owner['role_code'] === 'owner' ? 'bg-warning text-dark' : 'bg-secondary'; ?>" style="font-size:0.65rem; margin-left:4px;"><?php echo $owner['role_name']; ?></span>
                             </div>
                             <span class="access-count <?php echo $accessCount > 0 ? 'has-access' : 'no-access'; ?>">
                                 <?php echo $accessCount; ?>/<?php echo count($businesses); ?> bisnis
