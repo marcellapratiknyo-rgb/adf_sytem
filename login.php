@@ -103,13 +103,35 @@ if (isPost()) {
                 $masterId = $masterUser['id'];
                 $roleCode = $masterUser['role_code'];
                 
+                // Build dynamic business code <-> slug mappings from DB
+                $allBizRows = $masterPdo->query("SELECT id, business_code, database_name FROM businesses WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
+                $codeToSlugMap = []; // BENSCAFE => bens-cafe
+                $slugToCodeMap = []; // bens-cafe => BENSCAFE
+                foreach ($allBizRows as $br) {
+                    $slug = strtolower(str_replace('_', '-', $br['business_code']));
+                    $codeToSlugMap[$br['business_code']] = $slug;
+                    $slugToCodeMap[$slug] = $br['business_code'];
+                }
+                // Keep known overrides
+                $codeToSlugMap['BENSCAFE'] = 'bens-cafe';
+                $codeToSlugMap['NARAYANAHOTEL'] = 'narayana-hotel';
+                $codeToSlugMap['DEMO'] = 'demo';
+                $slugToCodeMap['bens-cafe'] = 'BENSCAFE';
+                $slugToCodeMap['narayana-hotel'] = 'NARAYANAHOTEL';
+                $slugToCodeMap['demo'] = 'DEMO';
+                
                 // Check if owner login requested
                 if ($loginType === 'owner') {
                     // Only owner, admin, developer can access owner dashboard
                     if (in_array($roleCode, ['owner', 'admin', 'developer'])) {
-                        // Set session for owner dashboard
                         $_SESSION['role'] = $roleCode;
-                        $_SESSION['active_business_id'] = 'narayana-hotel';
+                        // Set active business to user's first assigned business
+                        require_once __DIR__ . '/includes/business_access.php';
+                        $ownerBizList = getUserAvailableBusinesses();
+                        if (!empty($ownerBizList)) {
+                            $firstOwnerBiz = array_key_first($ownerBizList);
+                            setActiveBusinessId($firstOwnerBiz);
+                        }
                         setFlash('success', 'Login Owner berhasil!');
                         header('Location: ' . BASE_URL . '/modules/owner/dashboard-2028.php');
                         exit;
@@ -121,41 +143,63 @@ if (isPost()) {
                 
                 // Developer role has full access to all businesses
                 if ($roleCode === 'developer') {
-                    // If specific business requested, use it
                     if ($forcedBusiness) {
                         setActiveBusinessId($forcedBusiness);
                     } else {
-                        // Default to first business
-                        setActiveBusinessId('narayana-hotel');
+                        // Default to first available business
+                        $allBiz = getAvailableBusinesses();
+                        $firstBiz = !empty($allBiz) ? array_key_first($allBiz) : 'narayana-hotel';
+                        setActiveBusinessId($firstBiz);
                     }
                     setFlash('success', 'Login berhasil! Developer mode aktif.');
                     redirect(BASE_URL . '/index.php');
                 }
                 
-                // Get businesses user has access to
-                $bizStmt = $masterPdo->prepare("
-                    SELECT DISTINCT b.id, b.business_code, b.business_name
-                    FROM businesses b
-                    JOIN user_menu_permissions p ON b.id = p.business_id
-                    WHERE p.user_id = ?
-                    ORDER BY b.business_name
-                ");
-                $bizStmt->execute([$masterId]);
-                $userBusinesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
+                // Get businesses user has access to (check both user_menu_permissions and user_business_assignment)
+                $userBusinesses = [];
+                
+                // Try user_business_assignment first (newer system)
+                try {
+                    $bizStmt = $masterPdo->prepare("
+                        SELECT DISTINCT b.id, b.business_code, b.business_name
+                        FROM businesses b
+                        JOIN user_business_assignment uba ON b.id = uba.business_id
+                        WHERE uba.user_id = ? AND b.is_active = 1
+                        ORDER BY b.business_name
+                    ");
+                    $bizStmt->execute([$masterId]);
+                    $userBusinesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
+                } catch (Exception $e) {}
+                
+                // Fallback: try user_menu_permissions (legacy)
+                if (empty($userBusinesses)) {
+                    try {
+                        $bizStmt = $masterPdo->prepare("
+                            SELECT DISTINCT b.id, b.business_code, b.business_name
+                            FROM businesses b
+                            JOIN user_menu_permissions p ON b.id = p.business_id
+                            WHERE p.user_id = ? AND b.is_active = 1
+                            ORDER BY b.business_name
+                        ");
+                        $bizStmt->execute([$masterId]);
+                        $userBusinesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
+                    } catch (Exception $e) {}
+                }
+                
+                // Final fallback: if user has no assignments, get all active businesses
+                if (empty($userBusinesses)) {
+                    try {
+                        $bizStmt = $masterPdo->query("SELECT id, business_code, business_name FROM businesses WHERE is_active = 1 ORDER BY business_name");
+                        $userBusinesses = $bizStmt->fetchAll(PDO::FETCH_ASSOC);
+                    } catch (Exception $e) {}
+                }
                 
                 if (empty($userBusinesses)) {
                     $error = 'Anda tidak memiliki akses ke bisnis manapun! Hubungi pengembang.';
                     $auth->logout();
                 } elseif ($forcedBusiness) {
                     // Direct link with business parameter - validate access
-                    // Map business_id to business_code
-                    $idToCodeMap = [
-                        'bens-cafe' => 'BENSCAFE',
-                        'narayana-hotel' => 'NARAYANAHOTEL',
-                        'demo' => 'DEMO'
-                    ];
-                    
-                    $forcedBizCode = isset($idToCodeMap[$forcedBusiness]) ? $idToCodeMap[$forcedBusiness] : strtoupper(str_replace('-', '', $forcedBusiness));
+                    $forcedBizCode = isset($slugToCodeMap[$forcedBusiness]) ? $slugToCodeMap[$forcedBusiness] : strtoupper(str_replace('-', '_', $forcedBusiness));
                     $hasAccess = false;
                     
                     foreach ($userBusinesses as $biz) {
@@ -183,15 +227,7 @@ if (isPost()) {
                 } else {
                     // One or multiple businesses - auto login to first business
                     $bizCode = $userBusinesses[0]['business_code'];
-                    
-                    // Map business_code to business_id
-                    $codeToIdMap = [
-                        'BENSCAFE' => 'bens-cafe',
-                        'NARAYANAHOTEL' => 'narayana-hotel',
-                        'DEMO' => 'demo'
-                    ];
-                    
-                    $businessId = isset($codeToIdMap[$bizCode]) ? $codeToIdMap[$bizCode] : strtolower($bizCode);
+                    $businessId = isset($codeToSlugMap[$bizCode]) ? $codeToSlugMap[$bizCode] : strtolower(str_replace('_', '-', $bizCode));
                     $_SESSION['business_id'] = (int)$userBusinesses[0]['id']; // Set numeric business_id
                     setActiveBusinessId($businessId);
                     
