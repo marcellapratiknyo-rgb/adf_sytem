@@ -295,6 +295,21 @@ if (isset($_GET['biz'])) {
     
     if (isset($businessMap[$bizParam])) {
         $displayInfo = $businessMap[$bizParam];
+    } else {
+        // Dynamic: try to load from businesses table
+        try {
+            $bizSlugCode = strtoupper(str_replace('-', '_', $bizParam));
+            $dynBiz = $db->fetchOne("SELECT business_name, business_type FROM businesses WHERE business_code = :code AND is_active = 1", ['code' => $bizSlugCode]);
+            if ($dynBiz) {
+                $typeIcons = ['hotel' => '🏨', 'restaurant' => '🍽️', 'cafe' => '☕', 'retail' => '🏪', 'manufacture' => '🏭', 'tourism' => '🏝️'];
+                $displayInfo = [
+                    'icon' => $typeIcons[$dynBiz['business_type']] ?? '🏢',
+                    'name' => $dynBiz['business_name'],
+                    'subtitle' => ucfirst($dynBiz['business_type'] ?? 'Business'),
+                    'db_name' => $bizParam
+                ];
+            }
+        } catch (Exception $e) {}
     }
 }
 ?>

@@ -130,8 +130,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $auth->logAction('create_business', 'businesses', $businessId, null, ['name' => $businessName, 'database' => $actualDbName]);
                     
-                    // Redirect to setup wizard at step 2
-                    header('Location: businesses.php?action=setup&id=' . $businessId . '&step=2');
+                    // Auto-generate config file immediately (so system recognizes this business)
+                    $autoSlug = strtolower(str_replace('_', '-', $businessCode));
+                    $autoConfigPath = dirname(dirname(__FILE__)) . '/config/businesses/' . $autoSlug . '.php';
+                    if (!file_exists($autoConfigPath)) {
+                        $typeConf = [
+                            'hotel'      => ['icon' => '🏨', 'primary' => '#4338ca', 'secondary' => '#1e1b4b', 'extra' => "'frontdesk', 'investor', 'project'"],
+                            'restaurant' => ['icon' => '🍽️', 'primary' => '#dc2626', 'secondary' => '#7f1d1d', 'extra' => ''],
+                            'cafe'       => ['icon' => '☕', 'primary' => '#92400e', 'secondary' => '#78350f', 'extra' => ''],
+                            'retail'     => ['icon' => '🏪', 'primary' => '#0d9488', 'secondary' => '#134e4a', 'extra' => ''],
+                            'manufacture'=> ['icon' => '🏭', 'primary' => '#4f46e5', 'secondary' => '#312e81', 'extra' => ''],
+                            'tourism'    => ['icon' => '🏝️', 'primary' => '#0891b2', 'secondary' => '#164e63', 'extra' => "'frontdesk', 'investor', 'project'"],
+                            'other'      => ['icon' => '🏢', 'primary' => '#059669', 'secondary' => '#065f46', 'extra' => ''],
+                        ];
+                        $tc = $typeConf[$businessType] ?? $typeConf['other'];
+                        $mods = "'cashbook', 'auth', 'settings', 'reports', 'divisions', 'procurement', 'sales', 'bills'";
+                        if (!empty($tc['extra'])) $mods .= ', ' . $tc['extra'];
+                        $cfgContent = "<?php\nreturn [\n    'business_id' => '{$autoSlug}',\n    'name' => '" . addslashes($businessName) . "',\n    'business_type' => '{$businessType}',\n    'database' => '{$dbName}',\n    'logo' => '',\n    'enabled_modules' => [{$mods}],\n    'theme' => [\n        'color_primary' => '{$tc['primary']}',\n        'color_secondary' => '{$tc['secondary']}',\n        'icon' => '{$tc['icon']}'\n    ],\n    'cashbook_columns' => [],\n    'dashboard_widgets' => ['show_daily_sales' => true, 'show_orders' => true, 'show_revenue' => true]\n];\n";
+                        @file_put_contents($autoConfigPath, $cfgContent);
+                    }
+                    
+                    // Try to CREATE DATABASE automatically
+                    $dbCreated = false;
+                    try {
+                        $rootPdo = new PDO("mysql:host=" . DB_HOST, DB_USER, DB_PASS);
+                        $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                        $rootPdo->exec("CREATE DATABASE IF NOT EXISTS `{$actualDbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                        $dbCreated = true;
+                    } catch (Exception $dbCreateErr) {
+                        // Shared hosting - CREATE DATABASE not allowed, need cPanel
+                        error_log("Auto CREATE DATABASE failed: " . $dbCreateErr->getMessage());
+                    }
+                    
+                    if ($dbCreated) {
+                        // DB created automatically! Skip to step 3 (setup tables)
+                        header('Location: businesses.php?action=setup&id=' . $businessId . '&step=3&auto_db=1');
+                    } else {
+                        // Need manual cPanel DB creation
+                        header('Location: businesses.php?action=setup&id=' . $businessId . '&step=2');
+                    }
                     exit;
                 }
             } catch (PDOException $e) {
@@ -415,7 +452,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             if ($seedSuccess) {
-                header('Location: businesses.php?action=setup&id=' . $setupBizId . '&step=4&db_ok=1');
+                // Also generate config file and activate business (merge step 4 here)
+                $cfgCode = $setupBiz['business_code'];
+                $cfgSlug = strtolower(str_replace('_', '-', $cfgCode));
+                $cfgPath = dirname(dirname(__FILE__)) . '/config/businesses/' . $cfgSlug . '.php';
+                
+                if (!file_exists($cfgPath)) {
+                    $cfgType = $setupBiz['business_type'] ?? 'other';
+                    $cfgName = $setupBiz['business_name'];
+                    $localDb = $bizDbName;
+                    // If hosting name, convert back to local name for config
+                    if (defined('DB_USER') && strpos($bizDbName, explode('_', DB_USER)[0] . '_') === 0) {
+                        $localDb = 'adf_' . substr($bizDbName, strlen(explode('_', DB_USER)[0] . '_'));
+                    }
+                    
+                    $typeConf2 = [
+                        'hotel'      => ['icon' => '🏨', 'primary' => '#4338ca', 'secondary' => '#1e1b4b', 'extra' => "'frontdesk', 'investor', 'project'"],
+                        'restaurant' => ['icon' => '🍽️', 'primary' => '#dc2626', 'secondary' => '#7f1d1d', 'extra' => ''],
+                        'cafe'       => ['icon' => '☕', 'primary' => '#92400e', 'secondary' => '#78350f', 'extra' => ''],
+                        'retail'     => ['icon' => '🏪', 'primary' => '#0d9488', 'secondary' => '#134e4a', 'extra' => ''],
+                        'manufacture'=> ['icon' => '🏭', 'primary' => '#4f46e5', 'secondary' => '#312e81', 'extra' => ''],
+                        'tourism'    => ['icon' => '🏝️', 'primary' => '#0891b2', 'secondary' => '#164e63', 'extra' => "'frontdesk', 'investor', 'project'"],
+                        'other'      => ['icon' => '🏢', 'primary' => '#059669', 'secondary' => '#065f46', 'extra' => ''],
+                    ];
+                    $tc2 = $typeConf2[$cfgType] ?? $typeConf2['other'];
+                    $mods2 = "'cashbook', 'auth', 'settings', 'reports', 'divisions', 'procurement', 'sales', 'bills'";
+                    if (!empty($tc2['extra'])) $mods2 .= ', ' . $tc2['extra'];
+                    
+                    $configContent2 = "<?php\nreturn [\n    'business_id' => '{$cfgSlug}',\n    'name' => '" . addslashes($cfgName) . "',\n    'business_type' => '{$cfgType}',\n    'database' => '{$localDb}',\n    'logo' => '',\n    'enabled_modules' => [{$mods2}],\n    'theme' => [\n        'color_primary' => '{$tc2['primary']}',\n        'color_secondary' => '{$tc2['secondary']}',\n        'icon' => '{$tc2['icon']}'\n    ],\n    'cashbook_columns' => [],\n    'dashboard_widgets' => ['show_daily_sales' => true, 'show_orders' => true, 'show_revenue' => true]\n];\n";
+                    @file_put_contents($cfgPath, $configContent2);
+                }
+                
+                // Activate business
+                $pdo->prepare("UPDATE businesses SET is_active = 1 WHERE id = ?")->execute([$setupBizId]);
+                
+                // Auto-assign owner to this business
+                try {
+                    $ownerRow = $pdo->prepare("SELECT owner_id FROM businesses WHERE id = ?");
+                    $ownerRow->execute([$setupBizId]);
+                    $ownerId = (int)$ownerRow->fetchColumn();
+                    if ($ownerId > 0) {
+                        $checkAssign = $pdo->prepare("SELECT COUNT(*) FROM user_business_assignment WHERE user_id = ? AND business_id = ?");
+                        $checkAssign->execute([$ownerId, $setupBizId]);
+                        if ($checkAssign->fetchColumn() == 0) {
+                            $pdo->prepare("INSERT INTO user_business_assignment (user_id, business_id) VALUES (?, ?)")->execute([$ownerId, $setupBizId]);
+                        }
+                    }
+                } catch (Exception $e) {}
+                
+                header('Location: businesses.php?action=setup&id=' . $setupBizId . '&step=done');
             } else {
                 header('Location: businesses.php?action=setup&id=' . $setupBizId . '&step=3&db_error=' . urlencode($setupError));
             }
@@ -551,7 +636,7 @@ if ($action === 'edit' && $editId) {
 
 // Get business for setup wizard
 $setupBusiness = null;
-$setupStep = (int)($_GET['step'] ?? 2);
+$setupStep = $_GET['step'] ?? '2';
 if ($action === 'setup' && $editId) {
     $stmt = $pdo->prepare("SELECT * FROM businesses WHERE id = ?");
     $stmt->execute([$editId]);
@@ -636,6 +721,7 @@ require_once __DIR__ . '/includes/header.php';
     $sName = $setupBusiness['business_name'];
     $sSlug = strtolower(str_replace('_', '-', $sCode));
     $hostingDbName = $sDb;
+    $isDone = ($setupStep === 'done' || (isset($_GET['step']) && $_GET['step'] === 'done'));
     ?>
     
     <div class="row justify-content-center">
@@ -646,26 +732,18 @@ require_once __DIR__ . '/includes/header.php';
                 <a href="businesses.php" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
             </div>
             
-            <!-- Step Indicators -->
+            <!-- Step Indicators (simplified: 3 steps) -->
             <div class="wizard-steps flex-wrap">
-                <div class="wizard-step <?= $setupStep >= 2 ? ($setupStep > 1 ? 'done' : 'active') : '' ?> <?= $setupStep == 1 ? 'active' : '' ?>">
-                    <span class="step-num"><?= $setupStep > 1 ? '<i class="bi bi-check"></i>' : '1' ?></span> Register
+                <div class="wizard-step done">
+                    <span class="step-num"><i class="bi bi-check"></i></span> Register
                 </div>
                 <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                <div class="wizard-step <?= $setupStep == 2 ? 'active' : ($setupStep > 2 ? 'done' : '') ?>">
-                    <span class="step-num"><?= $setupStep > 2 ? '<i class="bi bi-check"></i>' : '2' ?></span> Buat Database
+                <div class="wizard-step <?= $setupStep == 2 ? 'active' : ($setupStep == 3 || $isDone ? 'done' : '') ?>">
+                    <span class="step-num"><?= ($setupStep == 3 || $isDone) ? '<i class="bi bi-check"></i>' : '2' ?></span> Database
                 </div>
                 <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                <div class="wizard-step <?= $setupStep == 3 ? 'active' : ($setupStep > 3 ? 'done' : '') ?>">
-                    <span class="step-num"><?= $setupStep > 3 ? '<i class="bi bi-check"></i>' : '3' ?></span> Setup Tables
-                </div>
-                <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                <div class="wizard-step <?= $setupStep == 4 ? 'active' : ($setupStep > 4 ? 'done' : '') ?>">
-                    <span class="step-num"><?= $setupStep > 4 ? '<i class="bi bi-check"></i>' : '4' ?></span> Config File
-                </div>
-                <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                <div class="wizard-step <?= $setupStep == 5 ? 'done' : '' ?>">
-                    <span class="step-num"><?= $setupStep == 5 ? '<i class="bi bi-check"></i>' : '5' ?></span> Selesai!
+                <div class="wizard-step <?= $setupStep == 3 ? 'active' : ($isDone ? 'done' : '') ?>">
+                    <span class="step-num"><?= $isDone ? '<i class="bi bi-check"></i>' : '3' ?></span> Setup & Selesai
                 </div>
             </div>
             
@@ -717,8 +795,15 @@ require_once __DIR__ . '/includes/header.php';
             <!-- ========== STEP 3: Setup Tables ========== -->
             <?php elseif ($setupStep == 3): ?>
             <div class="setup-card">
-                <h4><i class="bi bi-table me-2"></i>Step 3: Setup Tables & Data</h4>
-                <p class="subtitle">Buat semua tabel yang diperlukan dan isi data awal.</p>
+                <h4><i class="bi bi-table me-2"></i>Step 3: Setup Tables & Selesaikan</h4>
+                <p class="subtitle">Buat semua tabel yang diperlukan, generate config, dan aktifkan bisnis.</p>
+                
+                <?php if (isset($_GET['auto_db'])): ?>
+                <div class="alert alert-success mt-3">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <strong>Database berhasil dibuat otomatis!</strong> Lanjut setup tabel di bawah.
+                </div>
+                <?php endif; ?>
                 
                 <?php if (isset($_GET['db_error'])): ?>
                 <div class="alert alert-danger mt-3">
@@ -765,67 +850,15 @@ require_once __DIR__ . '/includes/header.php';
                         <input type="hidden" name="form_action" value="setup_database">
                         <input type="hidden" name="business_id" value="<?= $setupBusiness['id'] ?>">
                         <button type="submit" class="btn-setup" <?= !$dbConnected ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : '' ?>>
-                            <i class="bi bi-play-circle"></i> Setup Database Sekarang
+                            <i class="bi bi-play-circle"></i> Setup Database & Aktifkan Bisnis
                         </button>
                     </form>
                 </div>
                 <?php endif; ?>
             </div>
             
-            <!-- ========== STEP 4: Generate Config ========== -->
-            <?php elseif ($setupStep == 4): ?>
-            <div class="setup-card">
-                <h4><i class="bi bi-file-earmark-code me-2"></i>Step 4: Generate Config File</h4>
-                <p class="subtitle">Buat file konfigurasi supaya bisnis muncul di aplikasi.</p>
-                
-                <?php if (isset($_GET['db_ok'])): ?>
-                <div class="alert alert-success mt-3">
-                    <i class="bi bi-check-circle me-2"></i>
-                    <strong>Database berhasil di-setup!</strong> Semua tabel dan data awal sudah dibuat.
-                </div>
-                <?php endif; ?>
-                
-                <?php if (isset($_GET['config_error'])): ?>
-                <div class="alert alert-danger mt-3">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    <strong>Gagal membuat file config!</strong> Pastikan folder <code>config/businesses/</code> writable.
-                </div>
-                <?php endif; ?>
-                
-                <div class="instruction-box">
-                    <div class="step-label">Config yang akan dibuat</div>
-                    <p>File: <code>config/businesses/<?= htmlspecialchars($sSlug) ?>.php</code></p>
-                    <p>Business ID: <code><?= htmlspecialchars($sSlug) ?></code></p>
-                    <p>Database: <code><?= htmlspecialchars($sDb) ?></code></p>
-                    <p>Type: <code><?= htmlspecialchars($setupBusiness['business_type']) ?></code></p>
-                    <p>Status Config: 
-                        <?php if ($configExists): ?>
-                        <span class="status-badge success"><i class="bi bi-check-circle"></i> Sudah ada</span>
-                        <?php else: ?>
-                        <span class="status-badge pending"><i class="bi bi-clock"></i> Belum dibuat</span>
-                        <?php endif; ?>
-                    </p>
-                </div>
-                
-                <div class="d-flex gap-3 mt-4">
-                    <?php if (!$configExists): ?>
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="form_action" value="generate_config">
-                        <input type="hidden" name="business_id" value="<?= $setupBusiness['id'] ?>">
-                        <button type="submit" class="btn-config">
-                            <i class="bi bi-magic"></i> Generate Config & Activate
-                        </button>
-                    </form>
-                    <?php else: ?>
-                    <a href="businesses.php?action=setup&id=<?= $setupBusiness['id'] ?>&step=5&config_ok=1" class="btn-config">
-                        <i class="bi bi-arrow-right-circle"></i> Config sudah ada → Lanjut
-                    </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-            
-            <!-- ========== STEP 5: Done! ========== -->
-            <?php elseif ($setupStep == 5): ?>
+            <!-- ========== DONE ========== -->
+            <?php elseif ($isDone): ?>
             <div class="setup-card">
                 <div class="completion-card">
                     <div class="icon-big">🎉</div>
@@ -867,12 +900,18 @@ require_once __DIR__ . '/includes/header.php';
                         </p>
                     </div>
                     
+                    <div class="instruction-box">
+                        <div class="step-label">Langkah Selanjutnya</div>
+                        <p><i class="bi bi-arrow-right-circle text-info me-1"></i> Buka <strong>Owner Access</strong> untuk assign user ke bisnis ini</p>
+                        <p><i class="bi bi-arrow-right-circle text-info me-1"></i> Atau buka <strong>User Management</strong> untuk buat user baru untuk bisnis ini</p>
+                    </div>
+                    
                     <div class="d-flex justify-content-center gap-3 mt-4">
                         <a href="businesses.php" class="btn btn-lg btn-outline-light">
                             <i class="bi bi-list me-1"></i> Kembali ke List
                         </a>
                         <a href="owner-access.php" class="btn btn-lg btn-outline-info">
-                            <i class="bi bi-eye me-1"></i> Setup Akses User
+                            <i class="bi bi-people me-1"></i> Setup Akses User
                         </a>
                     </div>
                 </div>
@@ -910,17 +949,13 @@ require_once __DIR__ . '/includes/header.php';
                     <div class="wizard-steps flex-wrap mb-4">
                         <div class="wizard-step active"><span class="step-num">1</span> Register</div>
                         <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                        <div class="wizard-step"><span class="step-num">2</span> Buat Database</div>
+                        <div class="wizard-step"><span class="step-num">2</span> Database</div>
                         <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                        <div class="wizard-step"><span class="step-num">3</span> Setup Tables</div>
-                        <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                        <div class="wizard-step"><span class="step-num">4</span> Config File</div>
-                        <div class="wizard-connector"><i class="bi bi-chevron-right"></i></div>
-                        <div class="wizard-step"><span class="step-num">5</span> Selesai!</div>
+                        <div class="wizard-step"><span class="step-num">3</span> Setup & Selesai</div>
                     </div>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
-                        <strong>Step 1:</strong> Isi data bisnis di bawah. Setelah submit, Anda akan dipandu step-by-step untuk membuat database, setup tabel, dan generate config.
+                        <strong>Step 1:</strong> Isi data bisnis. Sistem akan otomatis coba buat database. Jika di shared hosting, Anda akan dipandu buat DB di cPanel.
                     </div>
                     <?php endif; ?>
                     
@@ -1015,7 +1050,7 @@ require_once __DIR__ . '/includes/header.php';
                         
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-<?php echo $action === 'add' ? 'arrow-right-circle' : 'check-lg'; ?> me-1"></i><?php echo $action === 'add' ? 'Register & Lanjut ke Step 2 →' : 'Update Business'; ?>
+                                <i class="bi bi-<?php echo $action === 'add' ? 'arrow-right-circle' : 'check-lg'; ?> me-1"></i><?php echo $action === 'add' ? 'Register & Buat Database →' : 'Update Business'; ?>
                             </button>
                             <a href="businesses.php" class="btn btn-outline-secondary">Cancel</a>
                         </div>

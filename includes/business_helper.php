@@ -5,10 +5,85 @@
  */
 
 /**
+ * Auto-generate missing config files from businesses table in DB.
+ * Called automatically so any business registered in the DB gets a config file.
+ */
+function autoSyncBusinessConfigs() {
+    static $synced = false;
+    if ($synced) return;
+    $synced = true;
+    
+    $businessesPath = __DIR__ . '/../config/businesses/';
+    if (!is_dir($businessesPath)) {
+        @mkdir($businessesPath, 0755, true);
+    }
+    
+    try {
+        $masterDb = defined('MASTER_DB_NAME') ? MASTER_DB_NAME : (defined('DB_NAME') ? DB_NAME : 'adf_system');
+        $pdo = new PDO(
+            "mysql:host=" . DB_HOST . ";dbname=" . $masterDb . ";charset=" . DB_CHARSET,
+            DB_USER, DB_PASS,
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+        
+        $rows = $pdo->query("SELECT * FROM businesses WHERE is_active = 1")->fetchAll(PDO::FETCH_ASSOC);
+        
+        $typeConfig = [
+            'hotel'      => ['icon' => '🏨', 'primary' => '#4338ca', 'secondary' => '#1e1b4b',
+                             'extra_modules' => "'frontdesk', 'investor', 'project'"],
+            'restaurant' => ['icon' => '🍽️', 'primary' => '#dc2626', 'secondary' => '#7f1d1d', 'extra_modules' => ''],
+            'cafe'       => ['icon' => '☕', 'primary' => '#92400e', 'secondary' => '#78350f', 'extra_modules' => ''],
+            'retail'     => ['icon' => '🏪', 'primary' => '#0d9488', 'secondary' => '#134e4a', 'extra_modules' => ''],
+            'manufacture'=> ['icon' => '🏭', 'primary' => '#4f46e5', 'secondary' => '#312e81', 'extra_modules' => ''],
+            'tourism'    => ['icon' => '🏝️', 'primary' => '#0891b2', 'secondary' => '#164e63',
+                             'extra_modules' => "'frontdesk', 'investor', 'project'"],
+            'other'      => ['icon' => '🏢', 'primary' => '#059669', 'secondary' => '#065f46', 'extra_modules' => ''],
+        ];
+        
+        foreach ($rows as $biz) {
+            $code = $biz['business_code'];
+            $slug = strtolower(str_replace('_', '-', $code));
+            // Known slug overrides
+            $knownSlugs = ['BENSCAFE' => 'bens-cafe', 'NARAYANAHOTEL' => 'narayana-hotel', 'DEMO' => 'demo'];
+            if (isset($knownSlugs[$code])) $slug = $knownSlugs[$code];
+            
+            $configFile = $businessesPath . $slug . '.php';
+            if (file_exists($configFile)) continue; // Already exists, skip
+            
+            $name = $biz['business_name'];
+            $type = $biz['business_type'] ?? 'other';
+            $dbName = $biz['database_name'];
+            // For config file, store the LOCAL db name (adf_ prefix)
+            $localDbName = $dbName;
+            if (defined('DB_USER') && strpos($dbName, explode('_', DB_USER)[0] . '_') === 0) {
+                // Convert hosting name back to local: adfb2574_eat_meet -> adf_eat_meet
+                $localDbName = 'adf_' . substr($dbName, strlen(explode('_', DB_USER)[0] . '_'));
+            }
+            
+            $tc = $typeConfig[$type] ?? $typeConfig['other'];
+            $modules = "'cashbook', 'auth', 'settings', 'reports', 'divisions', 'procurement', 'sales', 'bills'";
+            if (!empty($tc['extra_modules'])) {
+                $modules .= ', ' . $tc['extra_modules'];
+            }
+            
+            $content = "<?php\nreturn [\n    'business_id' => '" . addslashes($slug) . "',\n    'name' => '" . addslashes($name) . "',\n    'business_type' => '" . addslashes($type) . "',\n    'database' => '" . addslashes($localDbName) . "',\n    'logo' => '',\n    'enabled_modules' => [{$modules}],\n    'theme' => [\n        'color_primary' => '{$tc['primary']}',\n        'color_secondary' => '{$tc['secondary']}',\n        'icon' => '{$tc['icon']}'\n    ],\n    'cashbook_columns' => [],\n    'dashboard_widgets' => ['show_daily_sales' => true, 'show_orders' => true, 'show_revenue' => true]\n];\n";
+            
+            @file_put_contents($configFile, $content);
+            error_log("autoSyncBusinessConfigs: Generated config for {$slug} at {$configFile}");
+        }
+    } catch (Exception $e) {
+        error_log("autoSyncBusinessConfigs error: " . $e->getMessage());
+    }
+}
+
+/**
  * Get list of all available businesses
  * @return array Array of business configurations
  */
 function getAvailableBusinesses() {
+    // Auto-generate missing config files from DB
+    autoSyncBusinessConfigs();
+    
     $businessesPath = __DIR__ . '/../config/businesses/';
     $businesses = [];
     
@@ -38,6 +113,9 @@ function getAvailableBusinesses() {
  * @return string Business ID
  */
 function getActiveBusinessId() {
+    // Auto-sync config files from DB first
+    autoSyncBusinessConfigs();
+    
     // Session should already be started by config.php
     // Check if business is set in session AND config file exists
     if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['active_business_id'])) {
@@ -76,6 +154,9 @@ function setActiveBusinessId($businessCode) {
     // Session should already be started by config.php
     // Just set the value if session is active
     if (session_status() === PHP_SESSION_ACTIVE) {
+        // Auto-sync config files from DB (generates missing configs)
+        autoSyncBusinessConfigs();
+        
         // Validate business exists
         $businessFile = __DIR__ . '/../config/businesses/' . $businessCode . '.php';
         if (file_exists($businessFile)) {
@@ -101,14 +182,15 @@ function setActiveBusinessId($businessCode) {
  * @return int|null Numeric business ID or null if not found
  */
 function getNumericBusinessId($businessCode) {
-    // Map string ID to business_code used in database
+    // Known slug -> code overrides
     $codeMap = [
         'narayana-hotel' => 'NARAYANAHOTEL',
         'bens-cafe' => 'BENSCAFE',
         'demo' => 'DEMO'
     ];
     
-    $dbCode = isset($codeMap[$businessCode]) ? $codeMap[$businessCode] : strtoupper(str_replace('-', '', $businessCode));
+    // Try known map first, then try both with and without hyphens/underscores
+    $dbCode = isset($codeMap[$businessCode]) ? $codeMap[$businessCode] : strtoupper(str_replace('-', '_', $businessCode));
     
     try {
         $masterPdo = new PDO(
