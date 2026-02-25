@@ -150,6 +150,32 @@ class Auth {
             exit;
         }
         
+        // Verify user still exists and is active in master database (check every 60 seconds)
+        $lastUserCheck = $_SESSION['last_user_check'] ?? 0;
+        if (time() - $lastUserCheck > 60) {
+            try {
+                $masterPdo = new PDO(
+                    "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+                    DB_USER, DB_PASS,
+                    [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+                );
+                $checkStmt = $masterPdo->prepare("SELECT id, is_active FROM users WHERE id = ? LIMIT 1");
+                $checkStmt->execute([$_SESSION['user_id']]);
+                $existingUser = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$existingUser || !$existingUser['is_active']) {
+                    // User deleted or deactivated — force logout
+                    session_unset();
+                    session_destroy();
+                    header('Location: ' . BASE_URL . '/login.php?error=account_removed');
+                    exit;
+                }
+                $_SESSION['last_user_check'] = time();
+            } catch (Exception $e) {
+                // DB error — don't block, just skip check
+            }
+        }
+        
         // Update last activity (every 5 minutes to reduce DB load)
         $lastUpdate = $_SESSION['last_activity_update'] ?? 0;
         if (time() - $lastUpdate > 300) { // 5 minutes

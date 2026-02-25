@@ -214,6 +214,11 @@ if (isPost()) {
     }
 }
 
+// Check if redirected from account removal
+if (isset($_GET['error']) && $_GET['error'] === 'account_removed') {
+    $error = 'Akun Anda telah dihapus atau dinonaktifkan. Hubungi pengembang.';
+}
+
 // Prevent caching
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");

@@ -136,12 +136,40 @@ if ($action === 'delete' && $editId) {
                 $stmt->execute([$editId]);
             }
             
-            // Delete the user
+            // Get username before deleting (for cascade to business DBs)
+            $usernameStmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+            $usernameStmt->execute([$editId]);
+            $deletedUser = $usernameStmt->fetch(PDO::FETCH_ASSOC);
+            $deletedUsername = $deletedUser['username'] ?? '';
+            
+            // Delete the user from master database
             $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
             $stmt->execute([$editId]);
             
             // Re-enable FK checks
             $pdo->exec("SET FOREIGN_KEY_CHECKS=1");
+            
+            // Also delete/deactivate user from ALL business databases
+            if ($deletedUsername) {
+                $businessDatabases = ['adf_narayana_hotel', 'adf_benscafe', 'adf_demo'];
+                foreach ($businessDatabases as $bizDb) {
+                    try {
+                        $bizDbName = getDbName($bizDb);
+                        $bizPdo = new PDO(
+                            "mysql:host=" . DB_HOST . ";dbname=" . $bizDbName . ";charset=utf8mb4",
+                            DB_USER, DB_PASS,
+                            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+                        );
+                        $bizPdo->exec("SET FOREIGN_KEY_CHECKS=0");
+                        // Delete user from business DB
+                        $bizStmt = $bizPdo->prepare("DELETE FROM users WHERE username = ?");
+                        $bizStmt->execute([$deletedUsername]);
+                        $bizPdo->exec("SET FOREIGN_KEY_CHECKS=1");
+                    } catch (Exception $bizErr) {
+                        // Business DB might not exist or no users table — skip
+                    }
+                }
+            }
             
             $auth->logAction('delete_user', 'users', $editId);
             $deleteMsg = $ownedBusinessesCount > 0 
