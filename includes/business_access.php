@@ -139,9 +139,15 @@ function requireBusinessAccess() {
  * @return array Filtered list of businesses user can access
  */
 function getUserAvailableBusinesses() {
-    global $auth;
+    // Check login via session (works with or without Auth class)
+    $isLoggedIn = false;
+    if (isset($GLOBALS['auth']) && method_exists($GLOBALS['auth'], 'isLoggedIn')) {
+        $isLoggedIn = $GLOBALS['auth']->isLoggedIn();
+    } else {
+        $isLoggedIn = !empty($_SESSION['logged_in']) || !empty($_SESSION['user_id']);
+    }
     
-    if (!isset($auth) || !$auth->isLoggedIn()) {
+    if (!$isLoggedIn) {
         return [];
     }
     

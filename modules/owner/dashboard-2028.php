@@ -44,9 +44,6 @@ if (isset($_GET['business']) && !empty($_GET['business'])) {
 // Get all available businesses & active config
 require_once __DIR__ . '/../../includes/business_access.php';
 $allBusinesses = getUserAvailableBusinesses();
-if (empty($allBusinesses)) {
-    $allBusinesses = getAvailableBusinesses(); // fallback
-}
 $activeBusinessId = getActiveBusinessId();
 $activeConfig = getActiveBusinessConfig();
 
@@ -1217,7 +1214,8 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             </div>
         </header>
 
-            <!-- Business Switcher (always visible) -->
+            <?php if (count($allBusinesses) > 1): ?>
+            <!-- Business Switcher -->
             <div class="info-card">
                 <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;">Switch Business</div>
                 <div class="biz-switcher">
@@ -1242,6 +1240,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     <?php endforeach; ?>
                 </div>
             </div>
+            <?php endif; ?>
 
         <?php if ($error): ?>
             <div class="info-card error">
