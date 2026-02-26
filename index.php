@@ -649,6 +649,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                 <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #34c759, #34d399); opacity: 0; transition: opacity 0.3s ease;" class="card-top-bar"></div>
                 <div style="font-size: 0.7rem; color: #8b8b8f; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.4px;">Uang Masuk</div>
                 <div style="font-size: 1.25rem; font-weight: 800; color: #16a34a; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalIncome); ?></div>
+                <div style="font-size: 0.75rem; color: #6b7280; margin-top: 0.35rem; font-weight: 600;">Uang masuk: Owner + Petty Cash</div>
             </div>
             <!-- Uang Keluar Bulan Ini -->
             <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
