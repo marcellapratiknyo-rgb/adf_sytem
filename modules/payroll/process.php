@@ -140,9 +140,16 @@ include '../../includes/header.php';
 .sticky-header { position: sticky; top: 0; z-index: 20; }
 .row-active { background-color: rgba(var(--primary-rgb), 0.05); }
 .total-cell { font-weight: 700; color: var(--primary-color); }
+
+/* Page Wrapper - Compact & Centered */
+.process-page-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
 </style>
 
-<div class="main-content">
+<div class="process-page-wrapper">
     
     <!-- Header & Filter -->
     <div class="header-container fade-in-up">

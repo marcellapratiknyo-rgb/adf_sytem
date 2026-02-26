@@ -455,9 +455,16 @@ include '../../includes/header.php';
     .payroll-hero h1 { font-size: 1.35rem; }
     .pr-actions-grid { grid-template-columns: 1fr; }
 }
+
+/* Page Wrapper - Compact & Centered */
+.pr-page-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0;
+}
 </style>
 
-<div class="main-content">
+<div class="pr-page-wrapper">
     
     <!-- Hero Header -->
     <div class="payroll-hero fade-in-up">

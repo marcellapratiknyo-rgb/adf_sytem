@@ -114,13 +114,13 @@ include '../../includes/header.php';
 .emp-header {
     background: var(--pr-gradient-1);
     border-radius: var(--pr-radius);
-    padding: 1.5rem 2rem;
-    margin-bottom: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.75rem;
     position: relative;
     overflow: hidden;
 }
@@ -138,7 +138,7 @@ include '../../includes/header.php';
 
 .emp-header h1 {
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 700;
     margin: 0;
     position: relative;
@@ -147,7 +147,7 @@ include '../../includes/header.php';
 
 .emp-header p {
     color: rgba(255,255,255,0.8);
-    margin: 0.25rem 0 0;
+    margin: 0.15rem 0 0;
     font-size: 0.9rem;
 }
 
@@ -176,26 +176,26 @@ include '../../includes/header.php';
 
 /* Stats Mini */
 .emp-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    display: flex;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .emp-stat-item {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: var(--pr-radius-sm);
-    padding: 1.25rem;
+    padding: 1rem 1.25rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.85rem;
+    flex: 0 0 auto;
 }
 
 .emp-stat-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,15 +206,15 @@ include '../../includes/header.php';
 .emp-stat-icon.green { background: linear-gradient(135deg, rgba(17,153,142,0.15), rgba(56,239,125,0.15)); color: #11998e; }
 
 .emp-stat-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     color: var(--text-tertiary);
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.1rem;
 }
 
 .emp-stat-value {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
@@ -229,13 +229,13 @@ include '../../includes/header.php';
 }
 
 .emp-table-header {
-    padding: 1rem 1.5rem;
+    padding: 0.85rem 1.25rem;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .emp-table-header h3 {
@@ -282,22 +282,22 @@ include '../../includes/header.php';
 }
 
 .emp-table th {
-    padding: 0.75rem 1rem;
+    padding: 0.6rem 1rem;
     text-align: left;
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.75px;
+    letter-spacing: 0.5px;
     color: var(--text-tertiary);
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
 }
 
 .emp-table td {
-    padding: 0.9rem 1rem;
+    padding: 0.7rem 1rem;
     border-bottom: 1px solid var(--border-light);
     vertical-align: middle;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .emp-table tr:hover td { background: var(--bg-secondary); }
@@ -310,16 +310,16 @@ include '../../includes/header.php';
 }
 
 .emp-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     background: var(--pr-gradient-1);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     flex-shrink: 0;
 }
 
@@ -398,13 +398,13 @@ include '../../includes/header.php';
 /* Empty State */
 .emp-empty {
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 2.5rem 1.5rem;
 }
 
 .emp-empty-icon {
-    width: 70px;
-    height: 70px;
-    margin: 0 auto 1rem;
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 0.75rem;
     border-radius: 50%;
     background: var(--bg-secondary);
     display: flex;
@@ -618,9 +618,16 @@ include '../../includes/header.php';
     .emp-table-header { flex-direction: column; align-items: stretch; }
     .emp-search { width: 100%; }
 }
+
+/* Page Wrapper - Compact & Centered */
+.emp-page-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0;
+}
 </style>
 
-<div class="main-content">
+<div class="emp-page-wrapper">
     
     <!-- Header -->
     <div class="emp-header fade-in-up">
