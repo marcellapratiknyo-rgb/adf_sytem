@@ -29,7 +29,8 @@ try {
         [8, 'investor', 'Investor', 'currency-dollar', 'modules/investor/', 8],
         [9, 'project', 'Project', 'briefcase', 'modules/project/', 9],
         [10, 'finance', 'Manajemen Keuangan', 'wallet2', 'modules/finance/', 10],
-        [11, 'settings', 'Pengaturan', 'gear', 'modules/settings/', 11]
+        [11, 'settings', 'Pengaturan', 'gear', 'modules/settings/', 11],
+        [12, 'payroll', 'Payroll', 'briefcase', 'modules/payroll/', 12]
     ];
     
     $stmt = $pdo->prepare("INSERT INTO menu_items (id, menu_code, menu_name, menu_icon, menu_url, menu_order, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)");
@@ -38,7 +39,7 @@ try {
         echo "OK Added: {$menu[2]}\n";
     }
     
-    echo "\nOK 10 menus inserted successfully!\n\n";
+    echo "\nOK 11 menus inserted successfully!\n\n";
     
     // Re-assign all menus to both businesses
     echo "Assigning menus to businesses...\n";
