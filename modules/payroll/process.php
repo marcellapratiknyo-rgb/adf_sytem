@@ -628,13 +628,62 @@ include '../../includes/header.php';
         
         <div class="ps-actions">
             <?php if($period['status'] == 'draft'): ?>
-                <form method="POST" onsubmit="return confirm('Submit this payroll to Owner?')">
+                <form method="POST" id="saveProsesForm" style="display:inline;">
+                    <input type="hidden" name="save_proses" value="1">
+                    <button type="submit" class="ps-btn ps-btn-primary" style="margin-right:0.5rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Save/Proses
+                    </button>
+                </form>
+                <form method="POST" onsubmit="return confirm('Submit this payroll to Owner?')" style="display:inline;">
                     <input type="hidden" name="submit_period" value="1">
                     <button type="submit" class="ps-btn ps-btn-warning">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         Submit to Owner
                     </button>
                 </form>
+            // Handle Save/Proses Button (recalculate all slips and update period net total)
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_proses'])) {
+                if ($period) {
+                    // Recalculate all slips for this period
+                    $slips = $db->fetchAll("SELECT * FROM payroll_slips WHERE period_id = ?", [$period['id']]);
+                    foreach ($slips as $slip) {
+                        $base_salary = (float)$slip['base_salary'];
+                        $work_hours = (float)$slip['work_hours'];
+                        $overtime_hours = (float)$slip['overtime_hours'];
+                        $incentive = (float)$slip['incentive'];
+                        $allowance = (float)$slip['allowance'];
+                        $bonus = (float)$slip['bonus'];
+                        $other = (float)$slip['other_income'];
+                        $loan = (float)$slip['deduction_loan'];
+                        $absence = (float)$slip['deduction_absence'];
+                        $tax = (float)$slip['deduction_tax'];
+                        $bpjs = (float)$slip['deduction_bpjs'];
+                        $ded_other = (float)$slip['deduction_other'];
+                        $hourly_rate = $base_salary / 200;
+                        $actual_base = ($work_hours >= 200) ? $base_salary : $work_hours * $hourly_rate;
+                        $overtime_rate = $hourly_rate;
+                        $overtime_amount = $overtime_hours * $overtime_rate;
+                        $total_earnings = $actual_base + $overtime_amount + $incentive + $allowance + $bonus + $other;
+                        $total_deductions = $loan + $absence + $tax + $bpjs + $ded_other;
+                        $net_salary = $total_earnings - $total_deductions;
+                        $db->query("UPDATE payroll_slips SET actual_base=?, overtime_rate=?, overtime_amount=?, total_earnings=?, total_deductions=?, net_salary=? WHERE id=?",
+                            [$actual_base, $overtime_rate, $overtime_amount, $total_earnings, $total_deductions, $net_salary, $slip['id']]);
+                    }
+                    // Update period totals
+                    $period_id = $period['id'];
+                    $db->query("UPDATE payroll_periods p
+                        LEFT JOIN (
+                            SELECT period_id, SUM(total_earnings) as gross, SUM(total_deductions) as ded, SUM(net_salary) as net, COUNT(id) as cnt 
+                            FROM payroll_slips WHERE period_id = ?
+                        ) s ON p.id = s.period_id
+                        SET p.total_gross = s.gross, p.total_deductions = s.ded, p.total_net = s.net, p.total_employees = s.cnt
+                        WHERE p.id = ?", [$period_id, $period_id]);
+                    setFlash('success', 'All slips recalculated and totals updated!');
+                    header("Location: process.php?month=$month&year=$year");
+                    exit;
+                }
+            }
             <?php elseif($period['status'] == 'submitted'): ?>
                 <form method="POST" onsubmit="return confirm('Approve and record to Cashbook?')">
                     <input type="hidden" name="approve_period" value="1">
