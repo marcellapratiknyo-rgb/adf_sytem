@@ -181,12 +181,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_paid'])) {
     exit;
 }
 
-// Handle Refresh Employees (Add new employees to period)
+// Handle Refresh Employees (Sync: add new, remove deleted, update info)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_employees'])) {
     $employees = $db->fetchAll("SELECT * FROM payroll_employees WHERE is_active = 1");
+    $activeEmpIds = array_column($employees, 'id');
+    
+    // Remove slips for employees not in active list
+    $existingSlips = $db->fetchAll("SELECT id, employee_id FROM payroll_slips WHERE period_id = ?", [$period['id']]);
+    $removed = 0;
+    foreach ($existingSlips as $slip) {
+        if (!in_array($slip['employee_id'], $activeEmpIds)) {
+            $db->query("DELETE FROM payroll_slips WHERE id = ?", [$slip['id']]);
+            $removed++;
+        }
+    }
+    
+    // Get updated existing IDs
     $existingEmpIds = $db->fetchAll("SELECT employee_id FROM payroll_slips WHERE period_id = ?", [$period['id']]);
     $existingIds = array_column($existingEmpIds, 'employee_id');
     
+    // Add new employees
     $added = 0;
     foreach ($employees as $emp) {
         if (!in_array($emp['id'], $existingIds)) {
@@ -196,10 +210,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_employees']))
         }
     }
     
-    if ($added > 0) {
-        setFlash('success', "$added new employee(s) added to this period");
+    // Update employee info (name, position) for existing slips
+    foreach ($employees as $emp) {
+        if (in_array($emp['id'], $existingIds)) {
+            $db->query("UPDATE payroll_slips SET employee_name = ?, position = ? WHERE period_id = ? AND employee_id = ?",
+                      [$emp['full_name'], $emp['position'], $period['id'], $emp['id']]);
+        }
+    }
+    
+    $msg = [];
+    if ($added > 0) $msg[] = "$added added";
+    if ($removed > 0) $msg[] = "$removed removed";
+    if (empty($msg)) {
+        setFlash('info', 'Employee list is up to date');
     } else {
-        setFlash('info', 'No new employees to add');
+        setFlash('success', 'Employees synced: ' . implode(', ', $msg));
     }
     header("Location: process.php?month=$month&year=$year");
     exit;
