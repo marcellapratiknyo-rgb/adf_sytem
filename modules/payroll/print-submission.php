@@ -1,5 +1,5 @@
 <?php
-// modules/payroll/print-submission.php - OWNER PAYROLL SUBMISSION
+// modules/payroll/print-submission.php - OWNER PAYROLL SUBMISSION WITH BANK DETAILS
 define('APP_ACCESS', true);
 require_once '../../config/config.php';
 require_once '../../config/database.php';
@@ -14,7 +14,10 @@ $period_id = $_GET['period_id'] ?? 0;
 $period = $db->fetchOne("SELECT * FROM payroll_periods WHERE id = ?", [$period_id]);
 if (!$period) die("Period not found");
 
-$slips = $db->fetchAll("SELECT * FROM payroll_slips WHERE period_id = ? ORDER BY employee_name ASC", [$period_id]);
+$slips = $db->fetchAll("SELECT ps.*, pe.bank_name, pe.bank_account 
+                        FROM payroll_slips ps 
+                        LEFT JOIN payroll_employees pe ON ps.employee_id = pe.id 
+                        WHERE ps.period_id = ? ORDER BY ps.employee_name ASC", [$period_id]);
 
 // Calculate totals
 $totalBase = array_sum(array_column($slips, 'base_salary'));
@@ -46,17 +49,17 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-            font-size: 11pt;
+            font-size: 10pt;
             color: #1a1a2e;
             background: #f8fafc;
             padding: 20px;
         }
         
         .document {
-            max-width: 900px;
+            max-width: 100%;
             margin: 0 auto;
             background: #fff;
-            border-radius: 16px;
+            border-radius: 12px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.08);
             overflow: hidden;
         }
@@ -65,12 +68,12 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         .doc-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
-            padding: 24px 32px;
+            padding: 16px 24px;
             text-align: center;
         }
         
         .doc-header h1 { 
-            font-size: 14pt;
+            font-size: 12pt;
             font-weight: 700;
             letter-spacing: 1px;
             margin: 0 0 4px;
@@ -78,56 +81,56 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         }
         
         .doc-header h2 {
-            font-size: 18pt;
+            font-size: 14pt;
             font-weight: 700;
-            margin: 0 0 6px;
+            margin: 0 0 4px;
         }
         
         .doc-header .period {
-            font-size: 11pt;
+            font-size: 10pt;
             opacity: 0.9;
         }
         
         /* Summary Cards */
         .summary-section {
-            padding: 24px 32px;
+            padding: 16px 24px;
             background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
         }
         
         .summary-title {
-            font-size: 10pt;
+            font-size: 8pt;
             font-weight: 600;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
+            gap: 12px;
         }
         
         .summary-card {
             background: #fff;
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 8px;
+            padding: 12px;
             border: 1px solid #e2e8f0;
         }
         
         .summary-card label {
             display: block;
-            font-size: 9pt;
+            font-size: 7pt;
             color: #64748b;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
         
         .summary-card .value {
-            font-size: 14pt;
+            font-size: 11pt;
             font-weight: 700;
             color: #1a1a2e;
         }
@@ -142,27 +145,27 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         
         /* Employee Table */
         .table-section {
-            padding: 24px 32px;
+            padding: 16px 24px;
         }
         
         .table-title {
-            font-size: 10pt;
+            font-size: 8pt;
             font-weight: 600;
             color: #64748b;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9pt;
+            font-size: 8pt;
         }
         
         th {
             background: #f1f5f9;
-            padding: 10px 12px;
+            padding: 8px 10px;
             text-align: left;
             font-weight: 600;
             color: #475569;
@@ -173,7 +176,7 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         }
         
         td {
-            padding: 10px 12px;
+            padding: 6px 8px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
         }
@@ -183,10 +186,10 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
-        .emp-name { font-weight: 600; color: #1a1a2e; }
-        .emp-position { font-size: 8pt; color: #64748b; }
+        .emp-name { font-weight: 600; color: #1a1a2e; font-size: 8pt; }
+        .emp-position { font-size: 7pt; color: #64748b; }
         
-        .amount { font-family: 'SF Mono', Monaco, monospace; }
+        .amount { font-family: 'SF Mono', Monaco, monospace; font-size: 8pt; }
         .amount.positive { color: #10b981; }
         .amount.negative { color: #ef4444; }
         .amount.net { font-weight: 700; color: #667eea; }
@@ -195,17 +198,83 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
             background: #1a1a2e;
             color: #fff;
             font-weight: 700;
-            padding: 12px;
+            padding: 8px;
         }
         
         tfoot .amount { color: #fff; }
         
+        /* Bank Transfer Section */
+        .bank-section {
+            padding: 16px 24px;
+            background: #fffbeb;
+            border-top: 2px solid #f59e0b;
+        }
+        
+        .bank-section .bank-title {
+            font-size: 9pt;
+            font-weight: 700;
+            color: #b45309;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .bank-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8pt;
+        }
+        
+        .bank-table th {
+            background: #fef3c7;
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #92400e;
+            border-bottom: 1px solid #fcd34d;
+            font-size: 7pt;
+        }
+        
+        .bank-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #fef3c7;
+        }
+        
+        .bank-table .bank-info {
+            font-weight: 600;
+            color: #92400e;
+        }
+        
+        .bank-table .acc-number {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 9pt;
+            font-weight: 600;
+            color: #1a1a2e;
+            letter-spacing: 0.5px;
+        }
+        
+        .copy-btn {
+            background: #f59e0b;
+            color: #fff;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 7pt;
+            cursor: pointer;
+            margin-left: 6px;
+        }
+        
+        .copy-btn:hover { background: #d97706; }
+        
+        @media print { .copy-btn { display: none; } }
+        
         /* Total Box */
         .total-box {
-            margin: 24px 32px;
+            margin: 16px 24px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            padding: 20px 24px;
+            border-radius: 10px;
+            padding: 14px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -213,27 +282,28 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         }
         
         .total-box .label {
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: 500;
         }
         
         .total-box .amount {
-            font-size: 20pt;
+            font-size: 16pt;
             font-weight: 700;
+            color: #fff;
         }
         
         .total-box .words {
-            font-size: 9pt;
+            font-size: 8pt;
             opacity: 0.8;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         
         /* Signatures */
         .signature-section {
-            padding: 32px;
+            padding: 20px 24px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
+            gap: 20px;
             page-break-inside: avoid;
         }
         
@@ -242,18 +312,18 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         }
         
         .sig-title {
-            font-size: 9pt;
+            font-size: 8pt;
             color: #64748b;
-            margin-bottom: 60px;
+            margin-bottom: 50px;
         }
         
         .sig-line {
             border-bottom: 1px solid #1a1a2e;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
         
         .sig-name {
-            font-size: 10pt;
+            font-size: 8pt;
             font-weight: 600;
             color: #1a1a2e;
         }
@@ -263,6 +333,7 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
             body { 
                 background: #fff; 
                 padding: 0;
+                font-size: 9pt;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -271,14 +342,15 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
                 border-radius: 0;
                 max-width: 100%;
             }
-            .doc-header, .summary-card.highlight, .total-box, tfoot td {
+            .doc-header, .summary-card.highlight, .total-box, tfoot td, .bank-section {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
             @page { 
                 size: A4 landscape; 
-                margin: 10mm; 
+                margin: 8mm; 
             }
+            .bank-section { page-break-inside: avoid; }
         }
         
         /* Button for screen */
@@ -286,13 +358,13 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
             position: fixed;
             bottom: 20px;
             right: 20px;
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             border: none;
             border-radius: 50px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             box-shadow: 0 4px 16px rgba(102,126,234,0.4);
             display: flex;
@@ -389,6 +461,41 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
         </table>
     </div>
     
+    <!-- Bank Transfer Details -->
+    <div class="bank-section">
+        <div class="bank-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            BANK TRANSFER DETAILS (For Owner / Transfer Person)
+        </div>
+        <table class="bank-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;">#</th>
+                    <th>Employee Name</th>
+                    <th>Bank Name</th>
+                    <th>Account Number</th>
+                    <th class="text-right">Amount to Transfer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php $no = 1; foreach($slips as $slip): ?>
+                <tr>
+                    <td class="text-center"><?php echo $no++; ?></td>
+                    <td class="bank-info"><?php echo htmlspecialchars($slip['employee_name']); ?></td>
+                    <td><?php echo htmlspecialchars($slip['bank_name'] ?? '-'); ?></td>
+                    <td>
+                        <span class="acc-number" id="acc-<?php echo $slip['id']; ?>"><?php echo htmlspecialchars($slip['bank_account'] ?? '-'); ?></span>
+                        <?php if (!empty($slip['bank_account'])): ?>
+                        <button class="copy-btn" onclick="copyToClipboard('acc-<?php echo $slip['id']; ?>')">Copy</button>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-right"><span class="amount net">Rp <?php echo number_format($slip['net_salary'], 0, ',', '.'); ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    
     <!-- Grand Total Box -->
     <div class="total-box">
         <div>
@@ -425,6 +532,23 @@ $periodLabel = $monthNames[$period['period_month']] . ' ' . $period['period_year
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
     Print Document
 </button>
+
+<script>
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent.trim();
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = element.nextElementSibling;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#22c55e';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '#f59e0b';
+        }, 1500);
+    });
+}
+</script>
 
 </body>
 </html>

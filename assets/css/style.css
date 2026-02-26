@@ -993,6 +993,28 @@ tbody td {
     color: white;
 }
 
+.btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #1a1a2e;
+    font-weight: 700;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-outline-secondary:hover {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
 .btn-danger {
     background: var(--danger);
     color: white;

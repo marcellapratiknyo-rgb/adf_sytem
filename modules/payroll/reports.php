@@ -104,10 +104,9 @@ include '../../includes/header.php';
 }
 
 .rp-btn-print {
-    background: rgba(255,255,255,0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.3);
-    color: #fff;
+    background: #fff;
+    border: none;
+    color: #667eea;
     padding: 0.5rem 1rem;
     border-radius: 50px;
     font-weight: 600;
@@ -119,11 +118,13 @@ include '../../includes/header.php';
     transition: all 0.2s;
     position: relative;
     z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .rp-btn-print:hover {
-    background: rgba(255,255,255,0.35);
+    background: #f1f5f9;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 /* Tabs */

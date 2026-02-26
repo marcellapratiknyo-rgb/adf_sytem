@@ -273,11 +273,12 @@ include '../../includes/header.php';
 
 .sl-btn-print {
     padding: 0.35rem 0.65rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--primary-color);
     border-radius: 6px;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--primary-color);
     font-size: 0.75rem;
+    font-weight: 600;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
