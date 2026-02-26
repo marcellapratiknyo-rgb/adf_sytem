@@ -181,6 +181,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_paid'])) {
     exit;
 }
 
+// Handle Refresh Employees (Add new employees to period)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['refresh_employees'])) {
+    $employees = $db->fetchAll("SELECT * FROM payroll_employees WHERE is_active = 1");
+    $existingEmpIds = $db->fetchAll("SELECT employee_id FROM payroll_slips WHERE period_id = ?", [$period['id']]);
+    $existingIds = array_column($existingEmpIds, 'employee_id');
+    
+    $added = 0;
+    foreach ($employees as $emp) {
+        if (!in_array($emp['id'], $existingIds)) {
+            $db->query("INSERT INTO payroll_slips (period_id, employee_id, employee_name, position, base_salary, work_hours, actual_base) VALUES (?, ?, ?, ?, ?, 200, ?)",
+                      [$period['id'], $emp['id'], $emp['full_name'], $emp['position'], $emp['base_salary'], $emp['base_salary']]);
+            $added++;
+        }
+    }
+    
+    if ($added > 0) {
+        setFlash('success', "$added new employee(s) added to this period");
+    } else {
+        setFlash('info', 'No new employees to add');
+    }
+    header("Location: process.php?month=$month&year=$year");
+    exit;
+}
+
 include '../../includes/header.php';
 ?>
 
@@ -341,33 +365,41 @@ include '../../includes/header.php';
 
 .ps-table-container {
     overflow-x: auto;
+    overflow-y: auto;
     max-height: 65vh;
 }
+
+.ps-table-container::-webkit-scrollbar { width: 6px; height: 6px; }
+.ps-table-container::-webkit-scrollbar-track { background: var(--bg-secondary); }
+.ps-table-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
 
 .ps-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1200px;
+    min-width: auto;
+    table-layout: fixed;
 }
 
 .ps-table th {
-    padding: 0.65rem 0.6rem;
+    padding: 0.4rem 0.25rem;
     text-align: center;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0;
     color: var(--text-tertiary);
     background: var(--bg-secondary);
     border-bottom: 2px solid var(--border-color);
     position: sticky;
     top: 0;
     z-index: 10;
+    white-space: nowrap;
 }
 
 .ps-table th.col-employee {
     text-align: left;
-    min-width: 180px;
+    width: 130px;
+    min-width: 130px;
     position: sticky;
     left: 0;
     z-index: 15;
@@ -375,10 +407,11 @@ include '../../includes/header.php';
 }
 
 .ps-table td {
-    padding: 0.5rem 0.4rem;
+    padding: 0.35rem 0.2rem;
     border-bottom: 1px solid var(--border-light);
     vertical-align: middle;
     text-align: center;
+    font-size: 0.78rem;
 }
 
 .ps-table td.col-employee {
@@ -393,17 +426,17 @@ include '../../includes/header.php';
 .ps-table tr:hover td { background: var(--bg-secondary); }
 .ps-table tr:hover td.col-employee { background: var(--bg-secondary); }
 
-.ps-emp-name { font-weight: 600; color: var(--text-primary); font-size: 0.82rem; }
-.ps-emp-pos { font-size: 0.7rem; color: var(--text-tertiary); }
+.ps-emp-name { font-weight: 600; color: var(--text-primary); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-emp-pos { font-size: 0.65rem; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Input Styling */
 .ps-input {
     width: 100%;
-    padding: 0.35rem 0.4rem;
+    padding: 0.25rem 0.2rem;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: 4px;
     background: transparent;
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     text-align: right;
     transition: all 0.2s;
     color: var(--text-primary);
@@ -423,13 +456,13 @@ include '../../includes/header.php';
 
 .ps-cell-calc {
     font-family: 'SF Mono', Monaco, monospace;
-    font-size: 0.78rem;
+    font-size: 0.7rem;
     color: var(--text-secondary);
 }
 
 .ps-cell-net {
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     background: var(--ps-gradient-2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -459,10 +492,11 @@ include '../../includes/header.php';
 
 /* Info Tooltip */
 .ps-info {
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     color: var(--text-tertiary);
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
     font-weight: 400;
+    line-height: 1;
 }
 
 /* Modal */
@@ -597,6 +631,13 @@ include '../../includes/header.php';
                 </form>
             <?php endif; ?>
             
+            <form method="POST" style="display: inline;">
+                <input type="hidden" name="refresh_employees" value="1">
+                <button type="submit" class="ps-btn ps-btn-outline" title="Refresh: Add new employees to this period">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    Refresh
+                </button>
+            </form>
             <a href="print-submission.php?period_id=<?php echo $period['id']; ?>" target="_blank" class="ps-btn ps-btn-outline">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Print
@@ -616,17 +657,17 @@ include '../../includes/header.php';
                 <thead>
                     <tr>
                         <th class="col-employee">Employee</th>
-                        <th style="width: 100px;">Base Salary<div class="ps-info">(Full Rate)</div></th>
-                        <th style="width: 80px; background: rgba(245,158,11,0.1);">Work Hrs<div class="ps-info">(Target: 200)</div></th>
-                        <th style="width: 100px;">Actual Base<div class="ps-info">(Auto Calc)</div></th>
-                        <th style="width: 70px; background: rgba(59,130,246,0.1);">OT Hours</th>
-                        <th style="width: 90px;">OT Amount</th>
-                        <th style="width: 90px;">Incentive</th>
-                        <th style="width: 90px;">Allowance</th>
-                        <th style="width: 90px;">Bonus</th>
-                        <th style="width: 90px; color: #ef4444;">Deductions</th>
-                        <th style="width: 110px;">Net Salary</th>
-                        <th style="width: 40px;">#</th>
+                        <th style="width: 75px;">Base<div class="ps-info">Full</div></th>
+                        <th style="width: 55px; background: rgba(245,158,11,0.1);">Hours<div class="ps-info">200</div></th>
+                        <th style="width: 70px;">Actual<div class="ps-info">Calc</div></th>
+                        <th style="width: 45px; background: rgba(59,130,246,0.1);">OT</th>
+                        <th style="width: 65px;">OT Rp</th>
+                        <th style="width: 60px;">Inctv</th>
+                        <th style="width: 60px;">Allowc</th>
+                        <th style="width: 60px;">Bonus</th>
+                        <th style="width: 65px; color: #ef4444;">Deduct</th>
+                        <th style="width: 80px;">Net</th>
+                        <th style="width: 30px;"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -714,9 +755,9 @@ include '../../includes/header.php';
                         </td>
                         
                         <td>
-                            <button type="button" class="ps-btn ps-btn-outline" style="padding: 0.3rem 0.5rem;"
+                            <button type="button" class="ps-btn ps-btn-outline" style="padding: 0.15rem 0.3rem; font-size: 0.65rem;"
                                     onclick="openDeductionModal(<?php echo $slip['id']; ?>, '<?php echo htmlspecialchars(addslashes($slip['employee_name'])); ?>')">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             </button>
                         </td>
                     </tr>
