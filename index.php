@@ -587,6 +587,21 @@ if ($trialStatus) {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.6; transform: scale(1.1); }
 }
+
+/* Card hover effects for operational section */
+div[style*="grid-template-columns: repeat(4"] > div {
+    cursor: pointer;
+}
+
+div[style*="grid-template-columns: repeat(4"] > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+    border-color: rgba(0, 113, 227, 0.15) !important;
+}
+
+div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
+    opacity: 1 !important;
+}
 </style>
 
 <!-- KAS OPERASIONAL HARIAN Widget -->
@@ -603,39 +618,43 @@ if ($trialStatus) {
         </div>
         
         <!-- START KAS + KAS TERSEDIA -->
-        <div style="background: #f9fafb; padding: 1rem 1.25rem; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+        <div style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 249, 255, 0.5) 100%); backdrop-filter: blur(10px); padding: 1.25rem 1.5rem; border-radius: 14px; border: 1px solid rgba(0, 113, 227, 0.1); display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transition: all 0.3s ease;">
             <div>
-                <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500; margin-bottom: 0.25rem;">Start Kas Hari Ini (<?php echo date('d M'); ?>)</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($startKasHariIni); ?></div>
+                <div style="font-size: 0.75rem; color: #6b7280; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Start Kas Hari Ini (<?php echo date('d M'); ?>)</div>
+                <div style="font-size: 1.625rem; font-weight: 800; color: #1a1a1a; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($startKasHariIni); ?></div>
             </div>
-            <div style="width: 1px; height: 48px; background: #e5e7eb;"></div>
+            <div style="width: 1.5px; height: 56px; background: linear-gradient(180deg, transparent, rgba(0, 113, 227, 0.1), transparent);"></div>
             <div style="text-align: right;">
-                <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500; margin-bottom: 0.25rem;">Kas Tersedia Sekarang</div>
-                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($totalOperationalCash); ?></div>
+                <div style="font-size: 0.75rem; color: #6b7280; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Kas Tersedia Sekarang</div>
+                <div style="font-size: 1.625rem; font-weight: 800; color: #0071e3; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalCash); ?></div>
             </div>
         </div>
         
         <!-- Detail breakdown: 4 columns -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.875rem;">
             <!-- Modal Owner -->
-            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Modal Owner</div>
-                <div style="font-size: 1.1rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($capitalStats['balance']); ?></div>
+            <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #10b981, #34d399); opacity: 0; transition: opacity 0.3s ease;" class="card-top-bar"></div>
+                <div style="font-size: 0.7rem; color: #8b8b8f; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.4px;">Modal Owner</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #1a1a1a; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($capitalStats['balance']); ?></div>
             </div>
             <!-- Petty Cash -->
-            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Petty Cash</div>
-                <div style="font-size: 1.1rem; font-weight: 700; color: #111827;"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
+            <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #f59e0b, #fbbf24); opacity: 0; transition: opacity 0.3s ease;" class="card-top-bar"></div>
+                <div style="font-size: 0.7rem; color: #8b8b8f; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.4px;">Petty Cash</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #1a1a1a; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
             </div>
             <!-- Uang Masuk Bulan Ini -->
-            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Uang Masuk</div>
-                <div style="font-size: 1.1rem; font-weight: 700; color: #16a34a;"><?php echo formatCurrency($totalOperationalIncome); ?></div>
+            <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #34c759, #34d399); opacity: 0; transition: opacity 0.3s ease;" class="card-top-bar"></div>
+                <div style="font-size: 0.7rem; color: #8b8b8f; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.4px;">Uang Masuk</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #16a34a; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalIncome); ?></div>
             </div>
             <!-- Uang Keluar Bulan Ini -->
-            <div style="background: #f9fafb; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
-                <div style="font-size: 0.7rem; color: #6b7280; font-weight: 500; margin-bottom: 0.2rem;">Uang Keluar</div>
-                <div style="font-size: 1.1rem; font-weight: 700; color: #dc2626;"><?php echo formatCurrency($totalOperationalExpense); ?></div>
+            <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, #ff3b30, #fb7185); opacity: 0; transition: opacity 0.3s ease;" class="card-top-bar"></div>
+                <div style="font-size: 0.7rem; color: #8b8b8f; font-weight: 700; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.4px;">Uang Keluar</div>
+                <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalExpense); ?></div>
             </div>
         </div>
         
