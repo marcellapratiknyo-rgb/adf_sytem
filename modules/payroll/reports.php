@@ -154,7 +154,8 @@ include '../../includes/header.php';
 .rp-tab.active {
     background: var(--rp-gradient-1);
     border-color: transparent;
-    color: #fff;
+    color: #fff !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 /* Filter Bar */
@@ -193,8 +194,8 @@ include '../../includes/header.php';
     padding: 0.5rem 1rem;
     border-radius: 8px;
     border: none;
-    background: var(--rp-gradient-1);
-    color: #fff;
+    background: #1e293b;
+    color: #fff !important;
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
@@ -439,17 +440,6 @@ include '../../includes/header.php';
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" style="text-align: right;">TOTAL</td>
-                        <td style="text-align: right;">Rp <?php echo number_format(array_sum(array_column($data, 'base_salary')), 0, ',', '.'); ?></td>
-                        <td style="text-align: right;">Rp <?php echo number_format(array_sum(array_column($data, 'overtime_amount')), 0, ',', '.'); ?></td>
-                        <td style="text-align: right;">Rp <?php echo number_format(array_sum(array_column($data, 'incentive')), 0, ',', '.'); ?></td>
-                        <td style="text-align: right;">Rp <?php echo number_format(array_sum(array_column($data, 'allowance')), 0, ',', '.'); ?></td>
-                        <td style="text-align: right;"><span class="negative">Rp <?php echo number_format(array_sum(array_column($data, 'total_deductions')), 0, ',', '.'); ?></span></td>
-                        <td style="text-align: right;"><span class="highlight">Rp <?php echo number_format($totalNet, 0, ',', '.'); ?></span></td>
-                    </tr>
-                </tfoot>
             </table>
             </div>
             
