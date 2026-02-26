@@ -480,6 +480,7 @@ $allBusinesses = $BUSINESSES;
             <button class="tab" onclick="showTab('settings')">⚙️ System Settings</button>
             <button class="tab" onclick="showTab('tools')">🛠️ Developer Tools</button>
             <a href="../modules/owner/dashboard.php" class="tab" style="text-decoration: none;">📊 Owner Dashboard</a>
+            <a href="../modules/payroll/process.php" class="tab" style="text-decoration: none;">💼 Payroll</a>
         </div>
         
         <!-- Tab: Owner Management -->
