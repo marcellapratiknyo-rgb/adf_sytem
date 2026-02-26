@@ -319,10 +319,13 @@ include '../../includes/header.php';
 
 .rp-grand-total span {
     font-weight: 600;
+    color: #fcd34d;
 }
 
 .rp-grand-total strong {
     font-size: 1.25rem;
+    color: #fbbf24;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 @media print {

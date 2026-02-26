@@ -239,7 +239,7 @@ include '../../includes/header.php';
    ══════════════════════════════════════════════════════════════════════════ */
 :root {
     --ps-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --ps-gradient-2: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --ps-gradient-2: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
     --ps-radius: 16px;
     --ps-radius-sm: 10px;
 }
@@ -488,10 +488,7 @@ include '../../includes/header.php';
 .ps-cell-net {
     font-weight: 700;
     font-size: 0.75rem;
-    background: var(--ps-gradient-2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #f59e0b;
 }
 
 /* Empty State */
