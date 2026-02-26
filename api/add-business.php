@@ -1,6 +1,7 @@
 <?php
 /**
- * API: Add Business with Auto Database Creation
+ * API: Add Business with Auto Database Creation & Schema Setup
+ * Handles both local (adf_*) and hosting (adfb2574_*) database naming
  */
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -18,28 +19,76 @@ if (!isset($input['name']) || !isset($input['database'])) {
 }
 
 try {
-    // 1. Create Database Automatically
-    $dbName = $input['database'];
-    $db = Database::getInstance();
+    // 1. Detect if Production (hosting) or Local
+    $isProduction = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false && 
+                    strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') === false);
     
-    // Create database
-    $db->getConnection()->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    $requestedDbName = $input['database'];
+    $actualDbName = $requestedDbName;
     
-    // 2. Add to businesses.php
-    $configFile = '../config/businesses.php';
+    // Map database name for hosting
+    if ($isProduction) {
+        // On hosting, prefix database correctly
+        if (strpos($requestedDbName, 'adfb2574_') === false) {
+            $actualDbName = 'adfb2574_' . str_replace('adf_', '', $requestedDbName);
+        }
+    }
+    
+    // 2. Get PDO Connection with correct credentials
+    if ($isProduction) {
+        $dbHost = 'localhost';
+        $dbUser = 'adfb2574_adfsystem';
+        $dbPass = '@Nnoc2025';
+    } else {
+        $dbHost = 'localhost';
+        $dbUser = 'root';
+        $dbPass = '';
+    }
+    
+    $pdo = new PDO("mysql:host=$dbHost", $dbUser, $dbPass);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // 3. Create Database
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$actualDbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    
+    // 4. Connect to new database and create basic tables
+    $bizPdo = new PDO("mysql:host=$dbHost;dbname=$actualDbName", $dbUser, $dbPass);
+    $bizPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Create users table (minimal setup)
+    $bizPdo->exec("
+        CREATE TABLE IF NOT EXISTS `users` (
+            `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            `username` varchar(100) UNIQUE,
+            `password` varchar(255),
+            `full_name` varchar(150),
+            `email` varchar(100),
+            `role` varchar(50),
+            `is_active` tinyint DEFAULT 1,
+            `created_at` timestamp DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+    
+    // 5. Add to businesses.php config
+    $configFile = __DIR__ . '/../config/businesses.php';
+    if (!file_exists($configFile)) {
+        // Create minimal config if doesn't exist
+        file_put_contents($configFile, "<?php\n\$BUSINESSES = [\n];\n");
+    }
+    
     $content = file_get_contents($configFile);
     
     // Get next ID
     preg_match_all("/'id' => (\d+)/", $content, $matches);
-    $maxId = max($matches[1]);
+    $maxId = !empty($matches[1]) ? max($matches[1]) : 0;
     $nextId = $maxId + 1;
     
     // Create new business array
     $newBusiness = "    [\n" .
                    "        'id' => {$nextId},\n" .
-                   "        'name' => '{$input['name']}',\n" .
-                   "        'database' => '{$input['database']}',\n" .
-                   "        'type' => '{$input['type']}',\n" .
+                   "        'name' => '" . addslashes($input['name']) . "',\n" .
+                   "        'database' => '{$actualDbName}',\n" .
+                   "        'type' => '" . ($input['type'] ?? 'other') . "',\n" .
                    "        'active' => true\n" .
                    "    ]\n";
     
@@ -55,10 +104,11 @@ try {
     echo json_encode([
         'success' => true,
         'business_id' => $nextId,
-        'database' => $dbName,
-        'message' => 'Business added and database created automatically! Now sync tables.'
+        'database' => $actualDbName,
+        'message' => 'Business added successfully! Database created with basic schema.'
     ]);
     
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 }
+
