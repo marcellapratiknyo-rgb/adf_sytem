@@ -117,22 +117,26 @@ function formatCurrency($amount) {
             --success: #34c759;
             --danger: #ff3b30;
             --gray: #6c757d;
+            --text-light: #8b8b8f;
             --border: #e5e7eb;
             --light: #f5f5f5;
+            --white: #ffffff;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: var(--light);
+            background: linear-gradient(135deg, #f5f7fa 0%, #eef2f8 100%);
+            min-height: 100vh;
         }
 
         .navbar-custom {
-            background: white;
+            background: var(--white);
             border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             position: sticky;
             top: 0;
             z-index: 100;
+            backdrop-filter: blur(10px);
         }
 
         .container-main {
@@ -151,15 +155,20 @@ function formatCurrency($amount) {
         }
 
         .header-title {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
             margin: 0;
+            background: linear-gradient(135deg, #0071e3 0%, #0055b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .header-subtitle {
             font-size: 14px;
-            color: var(--gray);
+            color: var(--text-light);
             margin: 0;
+            font-weight: 500;
         }
 
         .date-controls {
@@ -170,106 +179,165 @@ function formatCurrency($amount) {
 
         .date-controls input,
         .date-controls button {
-            padding: 8px 12px;
+            padding: 10px 14px;
             border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            background: white;
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--white);
             cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .date-controls input:hover,
+        .date-controls input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.08);
+            outline: none;
         }
 
         .date-controls button {
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, #0055b8 100%);
             color: white;
             border: none;
-            font-weight: 500;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .date-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 113, 227, 0.4);
         }
 
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
+            gap: 20px;
             margin-bottom: 32px;
         }
 
         .card-simple {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: var(--white);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-simple::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-simple:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            border-color: rgba(0, 113, 227, 0.1);
+        }
+
+        .card-simple:hover::before {
+            opacity: 1;
         }
 
         .card-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 8px;
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 12px;
-            font-size: 24px;
+            margin-bottom: 16px;
+            font-size: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .card-simple:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .card-icon.incoming {
-            background: rgba(52, 199, 89, 0.1);
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.15) 0%, rgba(52, 199, 89, 0.05) 100%);
         }
 
         .card-icon.outgoing {
-            background: rgba(255, 59, 48, 0.1);
+            background: linear-gradient(135deg, rgba(255, 59, 48, 0.15) 0%, rgba(255, 59, 48, 0.05) 100%);
         }
 
         .card-icon.balance {
-            background: rgba(0, 113, 227, 0.1);
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.15) 0%, rgba(0, 113, 227, 0.05) 100%);
         }
 
         .card-label {
-            font-size: 11px;
-            color: var(--gray);
+            font-size: 10px;
+            color: var(--text-light);
             text-transform: uppercase;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 8px;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.8px;
         }
 
         .card-value {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 32px;
+            font-weight: 800;
             margin-bottom: 8px;
-            font-family: monospace;
+            font-family: 'Monaco', 'Courier New', monospace;
+            color: #1a1a1a;
+            line-height: 1.2;
         }
 
         .card-description {
-            font-size: 12px;
-            color: var(--gray);
-            margin-bottom: 12px;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 16px;
+            font-weight: 500;
         }
 
         .breakdown {
-            font-size: 11px;
-            padding-top: 12px;
-            border-top: 1px solid var(--border);
+            font-size: 12px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(0, 0, 0, 0.04);
         }
 
         .breakdown-item {
             display: flex;
             justify-content: space-between;
-            padding: 4px 0;
-            color: var(--gray);
+            padding: 6px 0;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .breakdown-item strong {
+            color: #1a1a1a;
+            font-weight: 600;
         }
 
         .section-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .table-wrapper {
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 10px;
+            background: var(--white);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
         }
 
         .table-wrapper table {
@@ -278,19 +346,29 @@ function formatCurrency($amount) {
         }
 
         .table-wrapper th {
-            background: var(--light);
-            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.02) 0%, rgba(0, 113, 227, 0.01) 100%);
+            padding: 14px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border);
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            color: #1a1a1a;
         }
 
         .table-wrapper td {
-            padding: 12px;
-            border-bottom: 1px solid var(--border);
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
             font-size: 13px;
+            color: #1a1a1a;
+        }
+
+        .table-wrapper tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table-wrapper tbody tr:hover {
+            background: rgba(0, 113, 227, 0.02);
         }
 
         .table-wrapper tr:last-child td {
@@ -298,36 +376,45 @@ function formatCurrency($amount) {
         }
 
         .badge-debit {
-            background: rgba(52, 199, 89, 0.1);
-            color: var(--success);
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.15) 0%, rgba(52, 199, 89, 0.05) 100%);
+            color: #34c759;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid rgba(52, 199, 89, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .badge-credit {
-            background: rgba(255, 59, 48, 0.1);
-            color: var(--danger);
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
+            background: linear-gradient(135deg, rgba(255, 59, 48, 0.15) 0%, rgba(255, 59, 48, 0.05) 100%);
+            color: #ff3b30;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .error-box {
-            background: rgba(255, 59, 48, 0.1);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
+            background: linear-gradient(135deg, rgba(255, 59, 48, 0.08) 0%, rgba(255, 59, 48, 0.02) 100%);
+            border: 1px solid rgba(255, 59, 48, 0.2);
+            color: #c81a0f;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
         }
 
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: var(--gray);
+            color: var(--text-light);
         }
 
         @media (max-width: 768px) {
@@ -337,6 +424,9 @@ function formatCurrency($amount) {
             }
             .cards-grid {
                 grid-template-columns: 1fr;
+            }
+            .header-title {
+                font-size: 24px;
             }
         }
     </style>
@@ -460,10 +550,14 @@ function formatCurrency($amount) {
                 <?php endif; ?>
             </div>
 
-            <div style="text-align: center; margin-top: 32px; padding: 16px; color: var(--gray); font-size: 11px;">
-                <a href="kasbook-entry.php" style="color: var(--primary); text-decoration: none; margin-right: 12px; font-weight: 500;">+ Tambah Transaksi</a>
-                <span>|</span>
-                <a href="dashboard.php" style="color: var(--primary); text-decoration: none; margin-left: 12px; font-weight: 500;">Kembali ke Dashboard</a>
+            <div style="text-align: center; margin-top: 40px; padding: 24px; background: linear-gradient(135deg, rgba(0, 113, 227, 0.03) 0%, rgba(0, 113, 227, 0.01) 100%); border-radius: 12px; border: 1px solid rgba(0, 113, 227, 0.1);">
+                <a href="kasbook-entry.php" style="display: inline-flex; align-items: center; gap: 8px; color: white; text-decoration: none; background: linear-gradient(135deg, var(--primary) 0%, #0055b8 100%); padding: 10px 18px; border-radius: 8px; margin-right: 12px; font-weight: 600; font-size: 13px; box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3); transition: all 0.3s ease;">
+                    <span>+</span> Tambah Transaksi
+                </a>
+                <span style="color: #ccc; margin: 0 8px;">|</span>
+                <a href="dashboard.php" style="display: inline-flex; align-items: center; gap: 8px; color: var(--primary); text-decoration: none; margin-left: 12px; font-weight: 600; font-size: 13px; transition: all 0.3s ease;">
+                    ← Kembali ke Dashboard
+                </a>
             </div>
 
         <?php endif; ?>

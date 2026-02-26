@@ -719,36 +719,42 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         
         /* Operational Section */
         .operational-section {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border: 1px solid #bae6fd;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(240, 249, 255, 0.5) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 113, 227, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         }
         
         .operational-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: #0369a1;
-            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 4px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            letter-spacing: -0.3px;
         }
         
         .operational-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 12px;
+            margin-bottom: 16px;
         }
         
         .op-card {
             background: white;
-            border-radius: 10px;
-            padding: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             position: relative;
             overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .op-card::before {
@@ -757,47 +763,73 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             top: 0;
             left: 0;
             right: 0;
-            height: 2px;
+            height: 3px;
             background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        
+        .op-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            border-color: rgba(0, 113, 227, 0.2);
+        }
+        
+        .op-card:hover::before {
+            opacity: 1;
         }
         
         .op-card.modal-owner { --gradient-start: #10b981; --gradient-end: #34d399; }
         .op-card.petty-cash { --gradient-start: #f59e0b; --gradient-end: #fbbf24; }
         .op-card.digunakan { --gradient-start: #f43f5e; --gradient-end: #fb7185; }
-        .op-card.total-kas { --gradient-start: #6366f1; --gradient-end: #818cf8; }
+        .op-card.total-kas { --gradient-start: #0071e3; --gradient-end: #0055b8; }
         
         .op-label {
-            font-size: 9px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-            color: var(--gradient-start);
-            margin-bottom: 4px;
+            letter-spacing: 0.6px;
+            font-weight: 700;
+            color: #6c757d;
+            margin-bottom: 6px;
         }
         
         .op-value {
-            font-size: 13px;
-            font-weight: 700;
-            color: #1e293b;
+            font-size: 16px;
+            font-weight: 800;
+            color: #1a1a1a;
+            font-family: 'Monaco', 'Courier New', monospace;
+            line-height: 1.2;
         }
         
         .op-detail-btn {
-            display: block;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             width: 100%;
-            margin-top: 10px;
-            padding: 8px 12px;
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, #0055b8 100%);
             color: white;
             text-decoration: none;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
             text-align: center;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
+            cursor: pointer;
+            letter-spacing: -0.2px;
+        }
+        
+        .op-detail-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 113, 227, 0.35);
         }
         
         .op-detail-btn:active {
-            transform: scale(0.98);
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
         }
         
         /* AI Health Section */
@@ -1325,27 +1357,27 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         <!-- Operational Section - SAME DATA AS SYSTEM DASHBOARD -->
         <div class="operational-section">
             <div class="operational-title">💰 Daily Operational - <?= date('F Y') ?></div>
-            <div style="font-size: 9px; color: #0369a1; margin-top: -8px; margin-bottom: 10px;">📊 Daily Operational Cash (Petty Cash + Owner Capital)</div>
+            <div style="font-size: 12px; color: #6c757d; margin-top: 4px; margin-bottom: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px;">📊 <span>Daily Operational Cash (Petty Cash + Owner Capital)</span></div>
             <div class="operational-grid">
                 <div class="op-card modal-owner">
                     <div class="op-label">Owner Capital</div>
                     <div class="op-value"><?= rp($capitalStats['received']) ?></div>
-                    <div style="font-size: 8px; color: #059669; margin-top: 2px;">Owner deposit</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Owner deposit</div>
                 </div>
                 <div class="op-card petty-cash">
                     <div class="op-label">Petty Cash</div>
                     <div class="op-value"><?= rp($pettyCashStats['balance']) ?></div>
-                    <div style="font-size: 8px; color: #d97706; margin-top: 2px;">Cash from guests</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Cash from guests</div>
                 </div>
                 <div class="op-card digunakan">
                     <div class="op-label">Used</div>
                     <div class="op-value"><?= rp($totalOperationalExpense) ?></div>
-                    <div style="font-size: 8px; color: #dc2626; margin-top: 2px;">Total expenses</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Total expenses</div>
                 </div>
                 <div class="op-card total-kas">
                     <div class="op-label">Total Cash</div>
                     <div class="op-value"><?= rp($totalOperationalCash) ?></div>
-                    <div style="font-size: 8px; color: #4f46e5; margin-top: 2px;">Available cash</div>
+                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Available cash</div>
                 </div>
             </div>
             <a href="<?= $basePath ?>/modules/owner/owner-capital-monitor.php" class="op-detail-btn">
