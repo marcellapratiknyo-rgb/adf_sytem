@@ -10,16 +10,11 @@ if (!isset($_SESSION['user_id']) || $_SESSION['active_business_id'] !== 'cqc') {
     exit;
 }
 
-require_once '../../includes/config.php';
+require_once 'db-helper.php';
 
 // Database connection
 try {
-    $pdo = new PDO(
-        "mysql:host=" . DB_HOST . ";dbname=adf_cqc",
-        DB_USER,
-        DB_PASS,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
+    $pdo = getCQCDatabaseConnection();
 } catch (Exception $e) {
     die("Database error: " . $e->getMessage());
 }

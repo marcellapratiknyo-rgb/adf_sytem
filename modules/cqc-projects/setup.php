@@ -1,30 +1,39 @@
 <?php
 /**
- * CQC Projects Setup Script
- * Ini mengsetup database tables untuk project management CQC
- * 
- * Cara pakai:
- * 1. Buka: http://localhost/adf_system/modules/cqc-projects/setup.php
- * 2. Klik tombol Setup
+ * CQC Projects Setup Script - FIXED VERSION
+ * Dengan proper environment detection untuk localhost vs hosting
  */
 
 session_start();
 
-// Pastikan user admin
-$isAdmin = isset($_SESSION['user_id']); // Simplified check
 $setupMessage = '';
 $setupError = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    require_once '../../includes/config.php';
+function getDBConnection() {
+    // Detect environment
+    $isLocalhost = (strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false);
+    
+    $dbHost = 'localhost';
+    $dbUser = $isLocalhost ? 'root' : 'adfb2574_adfsystem';
+    $dbPass = $isLocalhost ? '' : '@Nnoc2025';
+    $dbName = $isLocalhost ? 'adf_cqc' : 'adfb2574_cqc';
     
     try {
         $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=adf_cqc",
-            DB_USER,
-            DB_PASS,
+            "mysql:host=" . $dbHost . ";dbname=" . $dbName,
+            $dbUser,
+            $dbPass,
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
+        return $pdo;
+    } catch (Exception $e) {
+        throw new Exception("Database connection failed: " . $e->getMessage());
+    }
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $pdo = getDBConnection();
         
         // Read SQL file
         $sqlFile = '../../database/migration-cqc-projects.sql';
@@ -40,13 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             function($q) { return !empty($q) && strpos($q, '--') !== 0; }
         );
         
+        $queryCount = 0;
         foreach ($queries as $query) {
             if (!empty(trim($query))) {
                 $pdo->exec($query);
+                $queryCount++;
             }
         }
         
-        $setupMessage = "✅ Database setup berhasil! Tables sudah dibuat dan initial data sudah diinsert.";
+        $setupMessage = "✅ Database setup berhasil! Dijalankan " . $queryCount . " queries. Tables sudah dibuat dan initial data sudah diinsert.";
         
     } catch (Exception $e) {
         $setupError = "❌ Error: " . $e->getMessage();
@@ -235,7 +246,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <div class="setup-card">
             <h1>☀️ CQC Projects Setup</h1>
-            <p>Silakan setup database untuk CQC Projects Management System</p>
+            <p>Setup database untuk CQC Solar Projects Management System</p>
+
+            <?php
+            $isLocalhost = (strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false);
+            $envLabel = $isLocalhost ? 'LOCAL DEVELOPMENT' : 'PRODUCTION';
+            $dbNameDisplay = $isLocalhost ? 'adf_cqc' : 'adfb2574_cqc';
+            ?>
+
+            <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 15px; margin: 20px 0; text-align: left; font-size: 13px;">
+                <strong style="color: #856404;">Environment Detected:</strong><br>
+                Environment: <strong><?php echo $envLabel; ?></strong><br>
+                Database Name: <strong><?php echo $dbNameDisplay; ?></strong><br>
+                Host: <strong><?php echo $_SERVER['HTTP_HOST']; ?></strong>
+            </div>
 
             <?php if ($setupMessage): ?>
                 <div class="alert success"><?php echo $setupMessage; ?></div>
@@ -246,41 +270,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="features">
                 <h3>📦 Yang akan dibuat:</h3>
                 <ul>
-                    <li>Tabel <strong>cqc_projects</strong> - Data proyekinstallasi panel surya</li>
+                    <li>Tabel <strong>cqc_projects</strong> - Data proyek instalasi panel surya</li>
                     <li>Tabel <strong>cqc_project_expenses</strong> - Tracking pengeluaran per proyek</li>
-                    <li>Tabel <strong>cqc_expense_categories</strong> - Kategori pengeluaran (Panel, Inverter, Labor, dll)</li>
+                    <li>Tabel <strong>cqc_expense_categories</strong> - 10 kategori pengeluaran standar</li>
                     <li>Tabel <strong>cqc_project_balances</strong> - Summary budget vs pengeluaran</li>
-                    <li>10 kategori pengeluaran standar dengan icon</li>
                 </ul>
             </div>
 
             <?php if (!$setupMessage): ?>
-                <p style="color: #999; font-size: 13px; margin-bottom: 20px;">
-                    Pastikan Anda sudah login dan memiliki akses admin.<br>
-                    Database adf_cqc harus sudah tersedia.
-                </p>
-
                 <form method="POST">
                     <button type="submit" class="btn-setup">🚀 Mulai Setup</button>
                 </form>
             <?php else: ?>
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                    <p style="color: #15803d; font-size: 14px; line-height: 1.6;">
-                        <strong>Setup berhasil!</strong> Anda sekarang bisa mengakses:<br>
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                    <p style="color: #155724; font-size: 14px; line-height: 1.6;">
+                        <strong>✅ Setup berhasil!</strong> Anda sekarang bisa mengakses project dashboard di:
                     </p>
                     <div class="code-box">
-http://localhost/adf_system/modules/cqc-projects/dashboard.php
+<?php echo $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST']; ?>/adf_system/modules/cqc-projects/dashboard.php
                     </div>
                 </div>
-            <?php endif; ?>
 
-            <div class="button-group">
-                <?php if ($setupMessage): ?>
-                    <a href="dashboard.php" style="flex: 1; padding: 14px; border-radius: 6px; background: linear-gradient(135deg, #0066CC 0%, #004499 100%); color: white; text-decoration: none; font-weight: 600; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;" onclick="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 16px rgba(0, 102, 204, 0.3)';">📊 Buka Dashboard</a>
-                <?php else: ?>
-                    <a href="../../index.php" class="btn-back" style="flex: 1; padding: 14px; border-radius: 6px; display: flex; align-items: center; justify-content: center; text-decoration: none;">← Kembali ke Menu Utama</a>
-                <?php endif; ?>
-            </div>
+                <a href="dashboard.php" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #0066CC 0%, #004499 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">📊 Buka Dashboard</a>
+            <?php endif; ?>
         </div>
     </div>
 </body>
