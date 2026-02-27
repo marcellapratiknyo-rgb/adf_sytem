@@ -40,7 +40,7 @@ try {
     echo "✅ Cleared\n";
     
     echo "<h3>Step 3: Assigning menus...</h3>\n";
-    $stmt = $pdo->prepare("INSERT INTO business_menu_config (business_id, menu_item_id) VALUES (?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO business_menu_config (business_id, menu_id) VALUES (?, ?)");
     $count = 0;
     foreach ($menus as $m) {
         $stmt->execute([$businessId, $m['id']]);

@@ -66,7 +66,7 @@ try {
     foreach ($menus as $menu) {
         try {
             $pdo->exec("
-                INSERT INTO business_menu_config (business_id, menu_item_id) 
+                INSERT INTO business_menu_config (business_id, menu_id) 
                 VALUES ($cqcId, " . $menu['id'] . ")
             ");
             $count++;
@@ -79,15 +79,15 @@ try {
     
     echo "\n<h3>4️⃣ Verifying assignments...</h3>\n";
     $assigned = $pdo->query("
-        SELECT m.id, m.name, m.code FROM menu_items m
-        JOIN business_menu_config bmc ON bmc.menu_item_id = m.id
+        SELECT m.id, m.menu_name, m.menu_code FROM menu_items m
+        JOIN business_menu_config bmc ON bmc.menu_id = m.id
         WHERE bmc.business_id = $cqcId
-        ORDER BY m.order
+        ORDER BY m.menu_order
     ")->fetchAll(PDO::FETCH_ASSOC);
     
     echo "✅ CQC now has " . count($assigned) . " menus:\n";
     foreach ($assigned as $menu) {
-        echo "   - " . $menu['name'] . " (" . $menu['code'] . ")\n";
+        echo "   - " . $menu['menu_name'] . " (" . $menu['menu_code'] . ")\n";
     }
     
     echo "\n<h3>✅ Complete!</h3>\n";

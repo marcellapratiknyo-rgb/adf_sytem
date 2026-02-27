@@ -115,7 +115,7 @@ try {
         $menus = $masterPdo->query("SELECT id FROM menu_items WHERE is_active = 1")->fetchAll(PDO::FETCH_COLUMN);
         
         // Assign all menus to new business
-        $stmt = $masterPdo->prepare("INSERT INTO business_menu_config (business_id, menu_item_id) VALUES (?, ?)");
+        $stmt = $masterPdo->prepare("INSERT INTO business_menu_config (business_id, menu_id) VALUES (?, ?)");
         foreach ($menus as $menuId) {
             try {
                 $stmt->execute([$nextId, $menuId]);

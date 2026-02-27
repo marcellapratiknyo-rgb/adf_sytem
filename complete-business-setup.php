@@ -52,7 +52,7 @@ try {
     
     // Step 3: Assign all menus to business
     echo "\n<h3>3️⃣ Assigning all menus to business...</h3>\n";
-    $stmt = $masterPdo->prepare("INSERT INTO business_menu_config (business_id, menu_item_id) VALUES (?, ?)");
+    $stmt = $masterPdo->prepare("INSERT INTO business_menu_config (business_id, menu_id) VALUES (?, ?)");
     
     $count = 0;
     foreach ($menus as $menu) {
@@ -78,7 +78,7 @@ try {
     echo "\n<h3>5️⃣ Assigned menus for this business:</h3>\n";
     $assigned = $masterPdo->query("
         SELECT m.menu_code, m.menu_name FROM menu_items m
-        JOIN business_menu_config bmc ON bmc.menu_item_id = m.id
+        JOIN business_menu_config bmc ON bmc.menu_id = m.id
         WHERE bmc.business_id = $businessId
         ORDER BY m.menu_order ASC
     ")->fetchAll(PDO::FETCH_ASSOC);
