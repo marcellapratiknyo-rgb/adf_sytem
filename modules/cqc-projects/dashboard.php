@@ -458,7 +458,7 @@ $currentUser = $_SESSION['user_name'] ?? 'User';
                 <p>Solar Panel Installation Project Management System</p>
             </div>
             <div class="header-actions">
-                <button onclick="location.href='cqc-projects-add.php'">➕ Proyek Baru</button>
+                <button onclick="location.href='add.php'">➕ Proyek Baru</button>
             </div>
         </div>
 
@@ -552,8 +552,8 @@ $currentUser = $_SESSION['user_name'] ?? 'User';
                                 </td>
                                 <td>
                                     <div class="action-links">
-                                        <a href="cqc-projects-detail.php?id=<?php echo $proj['id']; ?>">Lihat</a>
-                                        <a href="cqc-projects-edit.php?id=<?php echo $proj['id']; ?>">Edit</a>
+                                        <a href="detail.php?id=<?php echo $proj['id']; ?>">Lihat</a>
+                                        <a href="add.php?id=<?php echo $proj['id']; ?>">Edit</a>
                                     </div>
                                 </td>
                             </tr>
@@ -566,7 +566,7 @@ $currentUser = $_SESSION['user_name'] ?? 'User';
                 <div class="empty-state-icon">📭</div>
                 <h3>Tidak Ada Proyek Sedang Berjalan</h3>
                 <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
-                <button style="background: #0066CC; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 20px;" onclick="location.href='cqc-projects-add.php'">
+                <button style="background: #0066CC; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 20px;" onclick="location.href='add.php'">
                     ➕ Buat Proyek Baru
                 </button>
             </div>
