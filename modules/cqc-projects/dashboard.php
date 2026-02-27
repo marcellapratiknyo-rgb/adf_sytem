@@ -200,23 +200,51 @@ include '../../includes/header.php';
         }
 
         .cqc-chart-card {
-            background: var(--bg-secondary, white);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            background: var(--bg-secondary, rgba(255,255,255,0.85));
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 102, 204, 0.08), 0 0 0 1px rgba(0,102,204,0.06);
+            border: 1px solid rgba(0,102,204,0.08);
+            transition: all 0.4s cubic-bezier(.4,0,.2,1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cqc-chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00d4ff, #0066CC, #7c3aed, #f97316);
+            background-size: 300% 100%;
+            animation: cqcShimmer 4s ease infinite;
+        }
+
+        @keyframes cqcShimmer {
+            0%,100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .cqc-chart-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 102, 204, 0.15), 0 0 60px rgba(0,102,204,0.05);
         }
 
         .cqc-chart-title {
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 700;
             color: #0066CC;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        .cqc-chart-canvas { max-height: 250px; }
+        .cqc-chart-canvas { max-height: 260px; }
 
         .cqc-section-title {
             font-size: 20px;
@@ -402,64 +430,127 @@ include '../../includes/header.php';
     </div>
 
     <script>
-        // Status Chart
+        // === Center Text Plugin (futuristic doughnut center) ===
+        const centerTextPlugin = {
+            id: 'centerText',
+            afterDraw(chart) {
+                if (!chart.config.options.plugins.centerText) return;
+                const { text, subtext, color } = chart.config.options.plugins.centerText;
+                const { ctx, chartArea: { left, right, top, bottom } } = chart;
+                const cx = (left + right) / 2;
+                const cy = (top + bottom) / 2;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (text) {
+                    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
+                    ctx.fillStyle = color || '#0066CC';
+                    ctx.fillText(text, cx, subtext ? cy - 10 : cy);
+                }
+                if (subtext) {
+                    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.fillText(subtext, cx, cy + 16);
+                }
+                ctx.restore();
+            }
+        };
+        Chart.register(centerTextPlugin);
+
+        // === Shared tooltip style ===
+        const cqcTooltip = {
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            titleColor: '#e2e8f0',
+            bodyColor: '#fff',
+            borderColor: 'rgba(0, 180, 255, 0.3)',
+            borderWidth: 1,
+            cornerRadius: 10,
+            padding: 12,
+            titleFont: { size: 12, weight: '600' },
+            bodyFont: { size: 13, weight: '700' },
+            displayColors: true,
+            boxPadding: 4
+        };
+
+        // === Gradient helper ===
+        function cqcGrad(ctx, c1, c2) {
+            const g = ctx.createLinearGradient(0, 0, 0, 300);
+            g.addColorStop(0, c1);
+            g.addColorStop(1, c2);
+            return g;
+        }
+
+        // ── Status Chart (Neon Doughnut) ──
         const statusCtx = document.getElementById('statusChart');
         if (statusCtx) {
+            const sData = [
+                <?php echo $stats['by_status']['planning'] ?? 0; ?>,
+                <?php echo $stats['by_status']['procurement'] ?? 0; ?>,
+                <?php echo $stats['by_status']['installation'] ?? 0; ?>,
+                <?php echo $stats['by_status']['testing'] ?? 0; ?>,
+                <?php echo $stats['by_status']['completed'] ?? 0; ?>,
+                <?php echo $stats['by_status']['on_hold'] ?? 0; ?>
+            ];
+            const sTotal = sData.reduce((a,b) => a+b, 0);
+
             new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: [
-                        'Planning', 
-                        'Procurement', 
-                        'Installation', 
-                        'Testing', 
-                        'Completed', 
-                        'On Hold'
-                    ],
+                    labels: ['Planning', 'Procurement', 'Installation', 'Testing', 'Completed', 'On Hold'],
                     datasets: [{
-                        data: [
-                            <?php echo $stats['by_status']['planning'] ?? 0; ?>,
-                            <?php echo $stats['by_status']['procurement'] ?? 0; ?>,
-                            <?php echo $stats['by_status']['installation'] ?? 0; ?>,
-                            <?php echo $stats['by_status']['testing'] ?? 0; ?>,
-                            <?php echo $stats['by_status']['completed'] ?? 0; ?>,
-                            <?php echo $stats['by_status']['on_hold'] ?? 0; ?>
-                        ],
+                        data: sData,
                         backgroundColor: [
-                            '#e3f2fd',
-                            '#fff3cd',
-                            '#d1ecff',
-                            '#c8e6c9',
-                            '#a5d6a7',
-                            '#ffccbc'
+                            '#3b82f6',
+                            '#f59e0b',
+                            '#06b6d4',
+                            '#8b5cf6',
+                            '#10b981',
+                            '#ef4444'
                         ],
-                        borderColor: [
-                            '#0066CC',
-                            '#994500',
-                            '#0066CC',
-                            '#2e7d32',
-                            '#1b5e20',
-                            '#d84315'
+                        hoverBackgroundColor: [
+                            '#60a5fa',
+                            '#fbbf24',
+                            '#22d3ee',
+                            '#a78bfa',
+                            '#34d399',
+                            '#f87171'
                         ],
-                        borderWidth: 2
+                        borderWidth: 0,
+                        spacing: 3,
+                        borderRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    cutout: '72%',
                     plugins: {
+                        centerText: { text: sTotal.toString(), subtext: 'PROYEK', color: '#0066CC' },
                         legend: {
                             position: 'bottom',
-                            labels: { font: { size: 11 } }
-                        }
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded',
+                                padding: 14,
+                                font: { size: 11, weight: '600' },
+                                color: '#64748b'
+                            }
+                        },
+                        tooltip: cqcTooltip
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1200,
+                        easing: 'easeOutQuart'
                     }
                 }
             });
         }
 
-        // Budget Chart
+        // ── Budget Chart (Glassmorphic Bars) ──
         const budgetCtx = document.getElementById('budgetChart');
         if (budgetCtx) {
+            const ctx2d = budgetCtx.getContext('2d');
             new Chart(budgetCtx, {
                 type: 'bar',
                 data: {
@@ -472,10 +563,14 @@ include '../../includes/header.php';
                             <?php echo $stats['remaining']; ?>
                         ],
                         backgroundColor: [
-                            '#0066CC',
-                            '#FFD700',
-                            '#10b981'
-                        ]
+                            cqcGrad(ctx2d, '#3b82f6', '#1d4ed8'),
+                            cqcGrad(ctx2d, '#f59e0b', '#d97706'),
+                            cqcGrad(ctx2d, '#10b981', '#059669')
+                        ],
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.7
                     }]
                 },
                 options: {
@@ -483,48 +578,93 @@ include '../../includes/header.php';
                     responsive: true,
                     maintainAspectRatio: true,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            ...cqcTooltip,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(ctx.parsed.x);
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: {
                             beginAtZero: true,
+                            grid: { color: 'rgba(0,102,204,0.06)', drawBorder: false },
                             ticks: {
-                                callback: function(value) {
-                                    return 'Rp ' + (value / 1000000).toFixed(0) + 'M';
+                                color: '#94a3b8',
+                                font: { size: 11, weight: '500' },
+                                callback: function(v) {
+                                    if (v >= 1e9) return 'Rp ' + (v/1e9).toFixed(1) + 'B';
+                                    return 'Rp ' + (v/1e6).toFixed(0) + 'M';
                                 }
                             }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 12, weight: '600' } }
                         }
-                    }
+                    },
+                    animation: { duration: 1000, easing: 'easeOutQuart' }
                 }
             });
         }
 
-        // Progress Chart
+        // ── Progress Chart (Neon Ring with Center %) ──
         const progressCtx = document.getElementById('progressChart');
         if (progressCtx) {
+            const pVal = <?php echo $stats['avg_progress']; ?>;
             new Chart(progressCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Selesai', 'Proses'],
+                    labels: ['Selesai', 'Tersisa'],
                     datasets: [{
-                        data: [<?php echo $stats['avg_progress']; ?>, <?php echo 100 - $stats['avg_progress']; ?>],
-                        backgroundColor: ['#0066CC', '#e0e0e0'],
-                        borderColor: ['#004499', '#ffffff'],
-                        borderWidth: 2
+                        data: [pVal, 100 - pVal],
+                        backgroundColor: [
+                            (function(){
+                                const g = progressCtx.getContext('2d').createLinearGradient(0,0,300,300);
+                                g.addColorStop(0, '#06b6d4');
+                                g.addColorStop(0.5, '#3b82f6');
+                                g.addColorStop(1, '#7c3aed');
+                                return g;
+                            })(),
+                            'rgba(148, 163, 184, 0.12)'
+                        ],
+                        borderWidth: 0,
+                        spacing: 2,
+                        borderRadius: 20
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    cutout: '78%',
                     plugins: {
-                        legend: { position: 'bottom' },
+                        centerText: { text: pVal + '%', subtext: 'PROGRESS', color: '#3b82f6' },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'rectRounded',
+                                padding: 14,
+                                font: { size: 11, weight: '600' },
+                                color: '#64748b'
+                            }
+                        },
                         tooltip: {
+                            ...cqcTooltip,
                             callbacks: {
-                                label: function(context) {
-                                    return context.label + ': ' + context.parsed + '%';
+                                label: function(ctx) {
+                                    return ctx.label + ': ' + ctx.parsed + '%';
                                 }
                             }
                         }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1400,
+                        easing: 'easeOutBack'
                     }
                 }
             });
