@@ -6,6 +6,9 @@
 
 session_start();
 
+// Setup adalah public page, boleh diakses siapa saja tanpa login
+// Pastikan ini hanya diakses sekali di awal setup
+
 $setupMessage = '';
 $setupError = '';
 

@@ -6,9 +6,18 @@
 
 session_start();
 
-// Check user is logged in dan di CQC
-if (!isset($_SESSION['user_id']) || $_SESSION['active_business_id'] !== 'cqc') {
-    header('Location: ../index.php');
+// Check user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../../index.php');
+    exit;
+}
+
+// Jika belum di CQC business, redirect ke sistem untuk switch business
+if (($_SESSION['active_business_id'] ?? '') !== 'cqc') {
+    // Kalau di session ada active_business_id tapi bukan CQC, user perlu switch
+    // Redirect ke business switcher
+    $_SESSION['redirect_after_switch'] = 'cqc';
+    header('Location: ../../index.php?action=switch_business&business=cqc');
     exit;
 }
 

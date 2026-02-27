@@ -5,8 +5,14 @@
 
 session_start();
 
-if (!isset($_SESSION['user_id']) || $_SESSION['active_business_id'] !== 'cqc') {
+if (!isset($_SESSION['user_id'])) {
     header('Location: ../../index.php');
+    exit;
+}
+
+if (($_SESSION['active_business_id'] ?? '') !== 'cqc') {
+    $_SESSION['redirect_after_switch'] = 'cqc';
+    header('Location: ../../index.php?action=switch_business&business=cqc');
     exit;
 }
 
