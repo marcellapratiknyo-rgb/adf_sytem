@@ -122,8 +122,8 @@ if (isset($_SESSION['user_id'])) {
                     <?php if ($logoPath): ?>
                         <?php if (ACTIVE_BUSINESS_ID === 'cqc'): ?>
                         <!-- CQC: rectangular logo, no company name -->
-                        <div style="width: 100%; border-radius: var(--radius-md); background: #0f172a; padding: 6px 10px; display: flex; align-items: center; justify-content: center; border: 2px solid #1e293b;">
-                            <img src="<?php echo $logoPath; ?>" alt="CQC" style="width: 100%; max-height: 40px; border-radius: 4px; object-fit: contain;">
+                        <div style="width: 100%; border-radius: var(--radius-md); background: var(--bg-secondary, #fff); padding: 8px 10px; display: flex; align-items: center; justify-content: center;">
+                            <img src="<?php echo $logoPath; ?>" alt="CQC" style="width: 100%; max-height: 48px; border-radius: 4px; object-fit: contain;">
                         </div>
                         <?php else: ?>
                         <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: #0f172a; padding: 4px; display: flex; align-items: center; justify-content: center; border: 2px solid #1e293b;">
