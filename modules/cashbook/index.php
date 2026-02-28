@@ -243,14 +243,42 @@ try {
 // Load business configuration
 $businessConfig = require '../../config/businesses/' . ACTIVE_BUSINESS_ID . '.php';
 
+// CQC Detection
+$isCQC = (strtolower(ACTIVE_BUSINESS_ID) === 'cqc');
+
+// CQC: Load project names for mapping
+$cqcProjectMap = [];
+if ($isCQC) {
+    try {
+        require_once __DIR__ . '/../cqc-projects/db-helper.php';
+        $cqcPdo = getCQCDatabaseConnection();
+        $stmt = $cqcPdo->query("SELECT id, project_name, project_code, client_name, status, budget_idr, spent_idr FROM cqc_projects ORDER BY project_name");
+        $cqcAllProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($cqcAllProjects as $p) {
+            $cqcProjectMap[$p['id']] = $p;
+        }
+        
+        // Also load expense-to-project mapping
+        $cqcExpenseProjectMap = [];
+        $stmt2 = $cqcPdo->query("SELECT e.description, e.amount, e.expense_date, e.project_id, e.category_id, c.category_name, c.category_icon FROM cqc_project_expenses e LEFT JOIN cqc_expense_categories c ON e.category_id = c.id");
+        $cqcExpenseRows = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($cqcExpenseRows as $exp) {
+            $key = $exp['description'] . '|' . number_format($exp['amount'], 2, '.', '') . '|' . $exp['expense_date'];
+            $cqcExpenseProjectMap[$key] = $exp;
+        }
+    } catch (Exception $e) {
+        error_log('CQC project map error: ' . $e->getMessage());
+    }
+}
+
 // Get company name from settings
 $companyNameSetting = $db->fetchOne("SELECT setting_value FROM settings WHERE setting_key = 'company_name'");
 $displayCompanyName = ($companyNameSetting && $companyNameSetting['setting_value']) 
     ? $companyNameSetting['setting_value'] 
     : BUSINESS_NAME;
 
-$pageTitle = BUSINESS_ICON . ' ' . $displayCompanyName . ' - Buku Kas Besar';
-$pageSubtitle = 'Pencatatan Transaksi Keuangan';
+$pageTitle = ($isCQC ? '☀️ CQC' : BUSINESS_ICON . ' ' . $displayCompanyName) . ' - Buku Kas Besar';
+$pageSubtitle = $isCQC ? 'Pencatatan Keuangan Proyek Solar Panel' : 'Pencatatan Transaksi Keuangan';
 
 // Filtering - sanitize inputs (handle empty strings from form submission)
 $filterDate = trim(getGet('date', ''));
@@ -361,6 +389,41 @@ $balance = $totalIncome - $totalExpense;
 include '../../includes/header.php';
 echo getPrintCSS();
 ?>
+
+<?php if ($isCQC): ?>
+<style>
+:root, body, body[data-theme="light"], body[data-theme="dark"] {
+    --primary-color: #f0b429 !important;
+    --primary-dark: #d4960d !important;
+    --secondary-color: #0d1f3c !important;
+}
+.btn-primary { background: linear-gradient(135deg, #0d1f3c, #1a3a5c) !important; color: #f0b429 !important; border: none !important; }
+.btn-primary:hover { background: linear-gradient(135deg, #122a4e, #1f4570) !important; }
+.cb-table tbody tr:hover { background: rgba(240, 180, 41, 0.06) !important; }
+.cb-badge.income { background: rgba(16, 185, 129, 0.15); color: #059669; }
+.cb-badge.expense { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
+.cb-ref-tag { background: rgba(13, 31, 60, 0.12) !important; color: #0d1f3c !important; }
+.cqc-project-tag { display: inline-flex; align-items: center; gap: 0.25rem; background: linear-gradient(135deg, rgba(13,31,60,0.08), rgba(240,180,41,0.12)); color: #0d1f3c; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; border-left: 3px solid #f0b429; }
+.cqc-desc-detail { font-size: 0.72rem; color: #6b7280; line-height: 1.4; margin-top: 0.2rem; }
+.cqc-desc-detail span { display: inline-flex; align-items: center; gap: 0.2rem; margin-right: 0.5rem; }
+.cqc-payment-info { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
+.cqc-info-chip { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
+.cqc-info-chip.method { background: rgba(59,130,246,0.1); color: #2563eb; }
+.cqc-info-chip.account { background: rgba(139,92,246,0.1); color: #7c3aed; }
+.cqc-info-chip.category { background: rgba(240,180,41,0.15); color: #92400e; }
+.cqc-info-chip.user { background: rgba(107,114,128,0.1); color: #4b5563; }
+.table-header-cqc {
+    background: linear-gradient(135deg, #0d1f3c, #1a3a5c) !important;
+    border-radius: 12px !important;
+    padding: 1rem 1.25rem !important;
+    margin-bottom: 1rem !important;
+}
+.table-header-cqc h3, .table-header-cqc p { color: #f0b429 !important; }
+.table-header-cqc .btn-secondary { background: rgba(255,255,255,0.1) !important; color: #f0b429 !important; border: 1px solid rgba(240,180,41,0.3) !important; }
+.table-header-cqc .btn-secondary:hover { background: rgba(255,255,255,0.2) !important; }
+.cb-table th { background: linear-gradient(135deg, #0d1f3c, #122a4e) !important; color: #f0b429 !important; }
+</style>
+<?php endif; ?>
 
 <style>
 /* ===== COMPACT CASHBOOK TABLE STYLES ===== */
@@ -941,16 +1004,22 @@ echo getPrintCSS();
 
 <!-- Transactions Table -->
 <div class="table-container">
-    <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div class="table-header <?php echo $isCQC ? 'table-header-cqc' : ''; ?>" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <?php if ($isCQC): ?>
+            <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #f0b429, #d4960d); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                ☀️
+            </div>
+            <?php else: ?>
             <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); display: flex; align-items: center; justify-content: center;">
                 <i data-feather="book" style="width: 20px; height: 20px; color: white;"></i>
             </div>
+            <?php endif; ?>
             <div>
-                <h3 style="font-size: 1.125rem; font-weight: 700; color: var(--text-primary); margin: 0;">
-                    Daftar Transaksi
+                <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0;">
+                    <?php echo $isCQC ? 'Buku Kas Proyek CQC' : 'Daftar Transaksi'; ?>
                 </h3>
-                <p style="font-size: 0.813rem; color: var(--text-muted); margin: 0;">
+                <p style="font-size: 0.813rem; margin: 0;">
                     <?php echo count($transactions); ?> transaksi ditemukan
                 </p>
             </div>
@@ -1034,12 +1103,12 @@ echo getPrintCSS();
                 <tr>
                     <th style="width: 85px;">Tanggal</th>
                     <th style="width: 50px;">Waktu</th>
-                    <th style="width: 100px;">Divisi</th>
+                    <th style="width: 100px;"><?php echo $isCQC ? 'Proyek' : 'Divisi'; ?></th>
                     <th style="width: 110px;">Kategori/Nama</th>
                     <th style="width: 60px;">Tipe</th>
                     <th style="width: 70px;">Metode</th>
                     <th style="width: 100px; text-align: right;">Jumlah</th>
-                    <th style="text-align: center; padding-left: 1.5rem;">Deskripsi</th>
+                    <th style="text-align: center; padding-left: 1.5rem;">Keterangan</th>
                     <th style="width: 70px;">Aksi</th>
                 </tr>
             </thead>
@@ -1096,8 +1165,29 @@ echo getPrintCSS();
                             </td>
                             <td style="font-size: 0.8rem;"><?php echo date('H:i', strtotime($trans['transaction_time'])); ?></td>
                             <td style="font-size: 0.8rem;">
-                                <strong><?php echo $trans['division_name']; ?></strong>
-                                <div style="font-size: 0.7rem; color: var(--text-muted);"><?php echo $trans['division_code']; ?></div>
+                                <?php if ($isCQC): ?>
+                                    <?php 
+                                    // Try to find CQC project for this transaction
+                                    $cqcProjMatch = null;
+                                    $cqcCatMatch = null;
+                                    $lookupKey = ($trans['category_name'] ?? '') . '|' . number_format($trans['amount'], 2, '.', '') . '|' . $trans['transaction_date'];
+                                    if (isset($cqcExpenseProjectMap[$lookupKey])) {
+                                        $expMatch = $cqcExpenseProjectMap[$lookupKey];
+                                        $cqcProjMatch = $cqcProjectMap[$expMatch['project_id']] ?? null;
+                                        $cqcCatMatch = $expMatch;
+                                    }
+                                    ?>
+                                    <?php if ($cqcProjMatch): ?>
+                                    <span class="cqc-project-tag">☀️ <?php echo htmlspecialchars($cqcProjMatch['project_code']); ?></span>
+                                    <?php endif; ?>
+                                    <strong><?php echo $trans['division_name']; ?></strong>
+                                    <?php if ($cqcCatMatch && $cqcCatMatch['category_name']): ?>
+                                    <div style="font-size: 0.68rem; color: #92400e;"><?php echo $cqcCatMatch['category_icon'] . ' ' . htmlspecialchars($cqcCatMatch['category_name']); ?></div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <strong><?php echo $trans['division_name']; ?></strong>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);"><?php echo $trans['division_code']; ?></div>
+                                <?php endif; ?>
                             </td>
                             <td style="font-size: 0.8rem;">
                                 <?php 
@@ -1133,6 +1223,26 @@ echo getPrintCSS();
                                     </span>
                                 <?php endif; ?>
                                 <?php echo $trans['description'] ?: '-'; ?>
+                                
+                                <?php if ($isCQC): ?>
+                                <!-- CQC: Detailed payment info -->
+                                <div class="cqc-payment-info">
+                                    <?php if (!empty($trans['payment_method'])): ?>
+                                    <span class="cqc-info-chip method">
+                                        <?php 
+                                        $methodIcons = ['cash'=>'💵','transfer'=>'🏦','debit'=>'💳','qr'=>'📱','edc'=>'📟','other'=>'📦'];
+                                        echo ($methodIcons[strtolower($trans['payment_method'])] ?? '💳') . ' ' . strtoupper($trans['payment_method']);
+                                        ?>
+                                    </span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($trans['created_by_name'])): ?>
+                                    <span class="cqc-info-chip user">👤 <?php echo $trans['created_by_name']; ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($isCQC && isset($cqcProjMatch) && $cqcProjMatch): ?>
+                                    <span class="cqc-info-chip category">📊 <?php echo htmlspecialchars($cqcProjMatch['project_name']); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <div class="cb-actions">
