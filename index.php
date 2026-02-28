@@ -493,15 +493,15 @@ include 'includes/header.php';
 
 <?php if ($isCQC): ?>
 <style>
-/* CQC Theme - Navy & Gold Color Override */
+/* CQC Theme - Gold accent, navy text */
 :root,
 body,
 body[data-theme="light"],
 body[data-theme="dark"] {
-    --primary-color: #0d1f3c !important;
-    --primary-dark: #081428 !important;
-    --primary-light: #122a4e !important;
-    --secondary-color: #f0b429 !important;
+    --primary-color: #f0b429 !important;
+    --primary-dark: #d4960d !important;
+    --primary-light: #f5c842 !important;
+    --secondary-color: #0d1f3c !important;
     --accent-color: #f0b429 !important;
 }
 </style>
