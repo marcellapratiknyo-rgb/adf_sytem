@@ -263,58 +263,72 @@ if ($isCQC) {
     try {
         require_once __DIR__ . '/../cqc-projects/db-helper.php';
         $cqcPdo = getCQCDatabaseConnection();
+        
+        // Simple query - just get projects
         $stmt = $cqcPdo->query("
-            SELECT p.id, p.project_name, p.project_code, p.status, 
-                   p.progress_percentage, p.budget_idr, p.spent_idr,
-                   p.client_name, p.location, p.solar_capacity_kwp,
-                   p.start_date, p.estimated_completion, p.end_date,
-                   COALESCE(SUM(e.amount_idr), 0) as actual_spent
-            FROM cqc_projects p
-            LEFT JOIN cqc_project_expenses e ON p.id = e.project_id
-            GROUP BY p.id
-            ORDER BY p.status ASC, p.progress_percentage DESC
+            SELECT id, project_name, project_code, status, 
+                   progress_percentage, budget_idr, spent_idr,
+                   client_name, location, solar_capacity_kwp,
+                   start_date, estimated_completion, end_date
+            FROM cqc_projects 
+            ORDER BY status ASC, progress_percentage DESC
         ");
         $cqcProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Update spent_idr with actual expense totals
+        // Calculate actual spent from expenses for each project
         foreach ($cqcProjects as &$proj) {
-            if ($proj['actual_spent'] > 0) {
-                $proj['spent_idr'] = $proj['actual_spent'];
+            try {
+                // Try amount_idr first, then amount
+                $stmtSum = $cqcPdo->prepare("SELECT COALESCE(SUM(amount_idr), 0) as total FROM cqc_project_expenses WHERE project_id = ?");
+                $stmtSum->execute([$proj['id']]);
+                $sumResult = $stmtSum->fetch(PDO::FETCH_ASSOC);
+                if ($sumResult && $sumResult['total'] > 0) {
+                    $proj['spent_idr'] = $sumResult['total'];
+                }
+            } catch (Exception $e) {
+                // Try with 'amount' column if 'amount_idr' doesn't exist
+                try {
+                    $stmtSum = $cqcPdo->prepare("SELECT COALESCE(SUM(amount), 0) as total FROM cqc_project_expenses WHERE project_id = ?");
+                    $stmtSum->execute([$proj['id']]);
+                    $sumResult = $stmtSum->fetch(PDO::FETCH_ASSOC);
+                    if ($sumResult && $sumResult['total'] > 0) {
+                        $proj['spent_idr'] = $sumResult['total'];
+                    }
+                } catch (Exception $e2) {
+                    // Keep original spent_idr
+                }
             }
         }
         unset($proj);
         
-        // Get recent expenses per project - try cqc_project_expenses first, then cash_book
+        // Get recent expenses per project
         foreach ($cqcProjects as $proj) {
-            // Try from cqc_project_expenses
-            $stmt = $cqcPdo->prepare("
-                SELECT description, amount_idr as amount, expense_date, 
-                       COALESCE((SELECT category_name FROM cqc_expense_categories ec WHERE ec.id = cqc_project_expenses.expense_category_id), 'Lainnya') as category 
-                FROM cqc_project_expenses 
-                WHERE project_id = ? 
-                ORDER BY expense_date DESC, id DESC 
-                LIMIT 5
-            ");
-            $stmt->execute([$proj['id']]);
-            $expenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // If no expenses in cqc_project_expenses, try cash_book with project reference
-            if (empty($expenses)) {
+            $expenses = [];
+            try {
+                // Try amount_idr column first
+                $stmt = $cqcPdo->prepare("
+                    SELECT description, amount_idr as amount, expense_date
+                    FROM cqc_project_expenses 
+                    WHERE project_id = ? 
+                    ORDER BY expense_date DESC, id DESC 
+                    LIMIT 5
+                ");
+                $stmt->execute([$proj['id']]);
+                $expenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                // Try 'amount' column
                 try {
                     $stmt = $cqcPdo->prepare("
-                        SELECT cb.description, cb.amount, cb.transaction_date as expense_date, 
-                               COALESCE(c.category_name, 'Lainnya') as category
-                        FROM cash_book cb
-                        LEFT JOIN categories c ON cb.category_id = c.id
-                        WHERE cb.transaction_type = 'expense'
-                        AND (cb.description LIKE ? OR cb.description LIKE ?)
-                        ORDER BY cb.transaction_date DESC, cb.id DESC
+                        SELECT description, amount, expense_date
+                        FROM cqc_project_expenses 
+                        WHERE project_id = ? 
+                        ORDER BY expense_date DESC, id DESC 
                         LIMIT 5
                     ");
-                    $stmt->execute(['%' . $proj['project_code'] . '%', '%' . $proj['project_name'] . '%']);
+                    $stmt->execute([$proj['id']]);
                     $expenses = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                } catch (Exception $e) {
-                    // cash_book query failed, keep empty
+                } catch (Exception $e2) {
+                    // No expenses
                 }
             }
             
