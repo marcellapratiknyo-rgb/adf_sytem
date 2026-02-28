@@ -119,20 +119,20 @@ include '../../includes/header.php';
 
         /* Header */
         .cqc-header {
-            background: linear-gradient(135deg, #1a3a5c 0%, #0f2744 100%);
+            background: linear-gradient(135deg, #122a4e 0%, #0d1f3c 100%);
             padding: 10px 16px;
             border-radius: 6px;
             margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .cqc-header h1 { font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 1px; }
-        .cqc-header p { font-size: 10px; margin: 0; color: rgba(255,255,255,0.55); }
+        .cqc-header h1 { font-size: 14px; font-weight: 700; color: #f0b429; margin: 0 0 1px; }
+        .cqc-header p { font-size: 10px; margin: 0; color: rgba(255,255,255,0.8); }
         .cqc-header button {
-            background: #ffc312; color: #0f2744; border: none;
+            background: #f0b429; color: #0d1f3c; border: none;
             padding: 5px 14px; border-radius: 4px; font-weight: 700;
             font-size: 11px; cursor: pointer;
         }
-        .cqc-header button:hover { background: #f9ca24; }
+        .cqc-header button:hover { background: #f5c842; }
 
         /* Stats */
         .cqc-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
@@ -141,13 +141,13 @@ include '../../includes/header.php';
             border-left: 3px solid #e0e0e0;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
         }
-        .cqc-stat-card.yellow { border-left-color: #ffc312; }
+        .cqc-stat-card.yellow { border-left-color: #f0b429; }
         .cqc-stat-card.green { border-left-color: #27ae60; }
         .cqc-stat-card.red { border-left-color: #e74c3c; }
         .cqc-stat-icon { font-size: 15px; margin-bottom: 2px; }
         .cqc-stat-label { font-size: 9px; color: #888; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px; }
-        .cqc-stat-value { font-size: 18px; font-weight: 800; color: #1a3a5c; }
-        .cqc-stat-card.yellow .cqc-stat-value { color: #e67e22; }
+        .cqc-stat-value { font-size: 18px; font-weight: 800; color: #0d1f3c; }
+        .cqc-stat-card.yellow .cqc-stat-value { color: #d4960d; }
         .cqc-stat-card.green .cqc-stat-value { color: #27ae60; }
         .cqc-stat-card.red .cqc-stat-value { color: #e74c3c; }
         .cqc-stat-subtitle { font-size: 9px; color: #bbb; margin-top: 1px; }
@@ -157,10 +157,10 @@ include '../../includes/header.php';
         .cqc-chart-card {
             background: #fff; padding: 10px; border-radius: 5px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            border-top: 2px solid #ffc312;
+            border-top: 2px solid #f0b429;
         }
         .cqc-chart-title {
-            font-size: 10px; font-weight: 700; color: #1a3a5c;
+            font-size: 10px; font-weight: 700; color: #0d1f3c;
             margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;
             display: flex; align-items: center; gap: 4px;
         }
@@ -168,9 +168,9 @@ include '../../includes/header.php';
 
         /* Section title */
         .cqc-section-title {
-            font-size: 12px; font-weight: 700; color: #1a3a5c;
+            font-size: 12px; font-weight: 700; color: #0d1f3c;
             margin: 10px 0 6px; padding-bottom: 4px;
-            border-bottom: 2px solid #ffc312;
+            border-bottom: 2px solid #f0b429;
             text-transform: uppercase; letter-spacing: 0.4px;
         }
 
@@ -181,7 +181,7 @@ include '../../includes/header.php';
         }
         .cqc-projects-table table { width: 100%; border-collapse: collapse; }
         .cqc-projects-table th {
-            background: #1a3a5c; color: #ffc312;
+            background: #0d1f3c; color: #f0b429;
             padding: 7px 10px; text-align: left;
             font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
         }
@@ -193,22 +193,22 @@ include '../../includes/header.php';
 
         .status-badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 700; }
         .status-planning { background: #eef2ff; color: #4a6cf7; }
-        .status-procurement { background: #fff8e1; color: #e67e22; }
+        .status-procurement { background: #fef6e0; color: #d4960d; }
         .status-installation { background: #e8f5e9; color: #27ae60; }
         .status-testing { background: #e0f7fa; color: #0097a7; }
         .status-completed { background: #e8f5e9; color: #1b8a3e; }
         .status-on_hold { background: #fce4ec; color: #c62828; }
 
         .cqc-progress-bar { width: 100%; height: 3px; background: #eee; border-radius: 2px; overflow: hidden; margin-bottom: 1px; }
-        .cqc-progress-fill { height: 100%; background: linear-gradient(90deg, #ffc312, #f9ca24); border-radius: 2px; }
+        .cqc-progress-fill { height: 100%; background: linear-gradient(90deg, #f0b429, #f5c842); border-radius: 2px; }
         .cqc-progress-text { font-size: 10px; color: #888; }
 
         .cqc-action-links { display: flex; gap: 4px; }
         .cqc-action-links a {
-            padding: 3px 8px; background: #ffc312; color: #0f2744;
+            padding: 3px 8px; background: #f0b429; color: #0d1f3c;
             border-radius: 3px; text-decoration: none; font-size: 10px; font-weight: 700;
         }
-        .cqc-action-links a:hover { background: #f9ca24; }
+        .cqc-action-links a:hover { background: #f5c842; }
 
         .cqc-empty-state { text-align: center; padding: 24px 14px; color: #999; }
         .cqc-empty-state-icon { font-size: 28px; margin-bottom: 6px; }
@@ -323,7 +323,7 @@ include '../../includes/header.php';
                 <div class="cqc-empty-state-icon">📭</div>
                 <h3>Tidak Ada Proyek Sedang Berjalan</h3>
                 <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
-                <button style="background: #ffc312; color: #2d3436; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: 700; font-size: 10px;" onclick="location.href='add.php'">
+                <button style="background: #f0b429; color: #0d1f3c; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: 700; font-size: 10px;" onclick="location.href='add.php'">
                     ➕ Buat Proyek Baru
                 </button>
             </div>
@@ -360,10 +360,10 @@ include '../../includes/header.php';
 
         // === Shared tooltip style ===
         const cqcTooltip = {
-            backgroundColor: '#2d3436',
-            titleColor: '#ffc312',
+            backgroundColor: '#0d1f3c',
+            titleColor: '#f0b429',
             bodyColor: '#fff',
-            borderColor: 'rgba(255,195,18,0.4)',
+            borderColor: 'rgba(240,180,41,0.4)',
             borderWidth: 1,
             cornerRadius: 4,
             padding: 6,
@@ -400,8 +400,8 @@ include '../../includes/header.php';
                     labels: ['Planning', 'Procurement', 'Installation', 'Testing', 'Completed', 'On Hold'],
                     datasets: [{
                         data: sData,
-                        backgroundColor: ['#bbb','#ffc312','#ddd','#27ae60','#555','#e74c3c'],
-                        hoverBackgroundColor: ['#999','#f9ca24','#bbb','#2ecc71','#333','#ff6b6b'],
+                        backgroundColor: ['#1a3050','#f0b429','#8899aa','#27ae60','#0d1f3c','#e74c3c'],
+                        hoverBackgroundColor: ['#2a4060','#f5c842','#99aabb','#2ecc71','#1a3050','#ff6b6b'],
                         borderWidth: 0,
                         spacing: 2,
                         borderRadius: 3
@@ -412,7 +412,7 @@ include '../../includes/header.php';
                     maintainAspectRatio: true,
                     cutout: '70%',
                     plugins: {
-                        centerText: { text: sTotal.toString(), subtext: 'PROYEK', color: '#333' },
+                        centerText: { text: sTotal.toString(), subtext: 'PROYEK', color: '#0d1f3c' },
                         legend: {
                             position: 'bottom',
                             labels: { usePointStyle: true, pointStyle: 'circle', padding: 6, font: { size: 8, weight: '600' }, color: '#777' }
@@ -440,8 +440,8 @@ include '../../includes/header.php';
                             <?php echo $stats['remaining']; ?>
                         ],
                         backgroundColor: [
-                            cqcGrad(ctx2d, '#555', '#888'),
-                            cqcGrad(ctx2d, '#ffc312', '#f9ca24'),
+                            cqcGrad(ctx2d, '#0d1f3c', '#1a3050'),
+                            cqcGrad(ctx2d, '#f0b429', '#f5c842'),
                             cqcGrad(ctx2d, '#27ae60', '#2ecc71')
                         ],
                         borderRadius: 4,
@@ -470,7 +470,7 @@ include '../../includes/header.php';
                                 callback: function(v) { return v >= 1e9 ? 'Rp '+(v/1e9).toFixed(1)+'B' : 'Rp '+(v/1e6).toFixed(0)+'M'; }
                             }
                         },
-                        y: { grid: { display: false }, ticks: { color: '#555', font: { size: 9, weight: '600' } } }
+                        y: { grid: { display: false }, ticks: { color: '#0d1f3c', font: { size: 9, weight: '600' } } }
                     },
                     animation: { duration: 800, easing: 'easeOutQuart' }
                 }
@@ -490,8 +490,8 @@ include '../../includes/header.php';
                         backgroundColor: [
                             (function(){
                                 const g = progressCtx.getContext('2d').createLinearGradient(0,0,180,180);
-                                g.addColorStop(0, '#ffc312');
-                                g.addColorStop(1, '#f9ca24');
+                                g.addColorStop(0, '#f0b429');
+                                g.addColorStop(1, '#f5c842');
                                 return g;
                             })(),
                             'rgba(0,0,0,0.06)'
@@ -506,7 +506,7 @@ include '../../includes/header.php';
                     maintainAspectRatio: true,
                     cutout: '75%',
                     plugins: {
-                        centerText: { text: pVal + '%', subtext: 'PROGRESS', color: '#e67e22' },
+                        centerText: { text: pVal + '%', subtext: 'PROGRESS', color: '#d4960d' },
                         legend: {
                             position: 'bottom',
                             labels: { usePointStyle: true, pointStyle: 'circle', padding: 6, font: { size: 8, weight: '600' }, color: '#777' }
