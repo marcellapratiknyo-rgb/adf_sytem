@@ -1937,17 +1937,11 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             ctx.fill();
         }
 
-        // Income arc (green neon)
-        var gIncome = ctx.createLinearGradient(0, 0, size, size);
-        gIncome.addColorStop(0, '#10b981');
-        gIncome.addColorStop(1, '#6ee7b7');
-        drawArc(startAngle + gap/2, startAngle + incomeAngle - gap/2, gIncome);
+        // Income arc - SOLID GREEN (no gradient)
+        drawArc(startAngle + gap/2, startAngle + incomeAngle - gap/2, '#10b981');
 
-        // Expense arc (red)
-        var gExpense = ctx.createLinearGradient(size, 0, 0, size);
-        gExpense.addColorStop(0, '#ef4444');
-        gExpense.addColorStop(1, '#f87171');
-        drawArc(startAngle + incomeAngle + gap/2, startAngle + incomeAngle + expenseAngle - gap/2, gExpense);
+        // Expense arc - SOLID RED (no gradient)
+        drawArc(startAngle + incomeAngle + gap/2, startAngle + incomeAngle + expenseAngle - gap/2, '#ef4444');
 
         // Inner hole - dark glass
         ctx.beginPath();
