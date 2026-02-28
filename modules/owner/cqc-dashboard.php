@@ -779,68 +779,76 @@ $username = $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Owner';
             </div>
         </div>
         
-        <!-- Projects Grid -->
+        <!-- Projects Grid with Pie Charts - Same as Main Dashboard -->
         <div class="card" style="margin-bottom: 1.5rem;">
             <div class="card-header">
                 <div class="card-title">
-                    <i class="bi bi-grid-3x3-gap-fill"></i>
-                    Semua Proyek
+                    <i class="bi bi-pie-chart-fill" style="color: var(--gold);"></i>
+                    Pencapaian & Keuangan Per Proyek
                 </div>
             </div>
             <div class="card-body">
                 <?php if (!empty($cqcProjects)): ?>
-                <div class="project-grid">
-                    <?php foreach ($cqcProjects as $proj): 
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem;">
+                    <?php foreach ($cqcProjects as $idx => $proj): 
                         $budget = floatval($proj['budget_idr'] ?? 0);
                         $spent = floatval($proj['spent_idr'] ?? 0);
                         $remaining = $budget - $spent;
                         $progress = intval($proj['progress_percentage'] ?? 0);
                         $spentPct = $budget > 0 ? round(($spent / $budget) * 100, 1) : 0;
-                        $circumference = 2 * 3.14159 * 27;
-                        $dashoffset = $circumference - ($progress / 100 * $circumference);
                         $status = $proj['status'] ?? 'planning';
                         $statusLabels = ['planning'=>'Planning','procurement'=>'Procurement','installation'=>'Instalasi','testing'=>'Testing','completed'=>'Selesai','on_hold'=>'Ditunda'];
+                        $statusLabel = $statusLabels[$status] ?? ucfirst($status);
                     ?>
-                    <div class="project-card">
-                        <div class="project-header">
+                    <div class="project-pie-card" style="background: #fff; border-radius: 16px; border: 1px solid var(--border); padding: 1.25rem; transition: all 0.3s ease; box-shadow: var(--shadow-sm);">
+                        <!-- Header -->
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
                             <div>
-                                <div class="project-code"><?php echo htmlspecialchars($proj['project_code'] ?? ''); ?></div>
-                                <div class="project-name"><?php echo htmlspecialchars($proj['project_name']); ?></div>
-                                <?php if ($proj['client_name']): ?>
-                                <div class="project-client">👤 <?php echo htmlspecialchars($proj['client_name']); ?></div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;"><?php echo htmlspecialchars($proj['project_code'] ?? ''); ?></div>
+                                <div style="font-size: 0.95rem; font-weight: 700; color: var(--navy);"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                                <?php if (!empty($proj['client_name'])): ?>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">👤 <?php echo htmlspecialchars($proj['client_name']); ?></div>
                                 <?php endif; ?>
                             </div>
-                            <span class="status-badge status-<?php echo $status; ?>"><?php echo $statusLabels[$status] ?? ucfirst($status); ?></span>
+                            <span class="status-badge status-<?php echo $status; ?>"><?php echo $statusLabel; ?></span>
                         </div>
                         
-                        <div class="progress-container">
-                            <div class="progress-ring">
-                                <svg width="64" height="64">
-                                    <circle class="bg" cx="32" cy="32" r="27"/>
-                                    <circle class="progress" cx="32" cy="32" r="27" 
-                                            stroke-dasharray="<?php echo $circumference; ?>" 
-                                            stroke-dashoffset="<?php echo $dashoffset; ?>"/>
-                                </svg>
-                                <div class="progress-text">
-                                    <div class="progress-value"><?php echo $progress; ?>%</div>
-                                    <div class="progress-label">Progress</div>
-                                </div>
-                            </div>
-                            <div class="progress-stats">
-                                <div class="stat-row">
-                                    <span class="stat-label">Budget</span>
-                                    <span class="stat-value"><?php echo formatIDR($budget); ?></span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Terpakai</span>
-                                    <span class="stat-value danger"><?php echo formatIDR($spent); ?></span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">Sisa</span>
-                                    <span class="stat-value <?php echo $remaining >= 0 ? 'success' : 'danger'; ?>"><?php echo formatIDR($remaining); ?></span>
-                                </div>
+                        <!-- Pie Chart with Center Progress -->
+                        <div style="position: relative; width: 160px; height: 160px; margin: 0 auto 1rem;">
+                            <canvas id="ownerPie<?php echo $idx; ?>"></canvas>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                <div style="font-size: 1.5rem; font-weight: 800; color: var(--navy);"><?php echo $progress; ?>%</div>
+                                <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Progress</div>
                             </div>
                         </div>
+                        
+                        <!-- Financial Stats -->
+                        <div style="margin-top: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--bg-tertiary);">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem;">🔥 Budget</span>
+                                <span style="font-size: 0.85rem; font-weight: 700; font-family: 'Monaco', monospace; color: var(--navy);"><?php echo formatIDR($budget); ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--bg-tertiary);">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem;">📤 Uang Keluar</span>
+                                <span style="font-size: 0.85rem; font-weight: 700; font-family: 'Monaco', monospace; color: var(--danger);"><?php echo formatIDR($spent); ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--bg-tertiary);">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem;">💵 Sisa Budget</span>
+                                <span style="font-size: 0.85rem; font-weight: 700; font-family: 'Monaco', monospace; color: <?php echo $remaining >= 0 ? 'var(--success)' : 'var(--danger)'; ?>;"><?php echo formatIDR($remaining); ?></span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.35rem;">📊 Budget Terpakai</span>
+                                <span style="font-size: 0.85rem; font-weight: 700; color: <?php echo $spentPct > 90 ? 'var(--danger)' : ($spentPct > 70 ? 'var(--warning)' : 'var(--success)'); ?>;"><?php echo $spentPct; ?>%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Detail Button -->
+                        <a href="../cqc-projects/detail.php?id=<?php echo $proj['id']; ?>" 
+                           style="display: block; text-align: center; margin-top: 0.75rem; padding: 0.6rem; background: linear-gradient(135deg, var(--navy), #1a3a5c); color: var(--gold); border-radius: 10px; text-decoration: none; font-size: 0.8rem; font-weight: 700; transition: all 0.3s ease;"
+                           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(13,31,60,0.35)';"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                            Lihat Detail →
+                        </a>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -997,6 +1005,45 @@ $username = $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'Owner';
                 }
             });
         }
+        
+        // Per-Project Pie Charts
+        <?php foreach ($cqcProjects as $idx => $proj): 
+            $budget = floatval($proj['budget_idr'] ?? 0);
+            $spent = floatval($proj['spent_idr'] ?? 0);
+            $remaining = max(0, $budget - $spent);
+        ?>
+        (function() {
+            const ctx = document.getElementById('ownerPie<?php echo $idx; ?>');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Terpakai', 'Tersisa'],
+                        datasets: [{
+                            data: [<?php echo $spent; ?>, <?php echo $remaining; ?>],
+                            backgroundColor: ['#f0b429', '#e5e7eb'],
+                            borderWidth: 0,
+                            cutout: '70%'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ctx.label + ': Rp ' + ctx.parsed.toLocaleString('id-ID');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+        <?php endforeach; ?>
     </script>
 </body>
 </html>
