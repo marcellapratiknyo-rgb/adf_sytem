@@ -253,6 +253,39 @@ try {
     $error = $e->getMessage();
 }
 
+// Check if CQC business
+$isCQC = (strtolower($activeBusinessId) === 'cqc');
+
+// CQC PROJECT DATA
+$cqcProjects = [];
+if ($isCQC) {
+    try {
+        require_once __DIR__ . '/../cqc-projects/db-helper.php';
+        $cqcPdo = getCQCDatabaseConnection();
+        $stmt = $cqcPdo->query("
+            SELECT p.id, p.project_name, p.project_code, p.status, 
+                   p.progress_percentage, p.budget_idr, p.spent_idr,
+                   p.client_name, p.location, p.solar_capacity_kwp,
+                   COALESCE(SUM(e.amount), 0) as actual_spent
+            FROM cqc_projects p
+            LEFT JOIN cqc_project_expenses e ON p.id = e.project_id
+            GROUP BY p.id
+            ORDER BY p.status ASC, p.progress_percentage DESC
+        ");
+        $cqcProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Update spent_idr with actual expense totals
+        foreach ($cqcProjects as &$proj) {
+            if ($proj['actual_spent'] > 0) {
+                $proj['spent_idr'] = $proj['actual_spent'];
+            }
+        }
+        unset($proj);
+    } catch (Exception $e) {
+        error_log('CQC project data error: ' . $e->getMessage());
+    }
+}
+
 // Format rupiah
 function rp($num) {
     return 'Rp ' . number_format($num, 0, ',', '.');
@@ -1222,6 +1255,14 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 height: 200px;
             }
         }
+        
+        /* CQC Status Badges */
+        .cqc-status-planning { background: #eef2ff; color: #4a6cf7; }
+        .cqc-status-procurement { background: #fef3c7; color: #d97706; }
+        .cqc-status-installation { background: #dbeafe; color: #2563eb; }
+        .cqc-status-testing { background: #fce7f3; color: #db2777; }
+        .cqc-status-completed { background: #d1fae5; color: #059669; }
+        .cqc-status-on_hold { background: #f3f4f6; color: #6b7280; }
     </style>
 </head>
 <body>
@@ -1422,6 +1463,86 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <?php endif; ?>
             </div>
         </div>
+        
+        <?php if ($isCQC && !empty($cqcProjects)): ?>
+        <!-- CQC Project Section -->
+        <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(13, 31, 60, 0.03), rgba(240, 180, 41, 0.08)); border-radius: 16px; border: 1px solid rgba(240, 180, 41, 0.25);">
+            <h3 style="font-size: 14px; color: #0d1f3c; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 28px; height: 28px; background: linear-gradient(135deg, #f0b429, #d4960d); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px;">☀️</span>
+                CQC Project Monitoring
+            </h3>
+            
+            <!-- Summary Cards -->
+            <?php
+            $totalBudget = array_sum(array_column($cqcProjects, 'budget_idr'));
+            $totalSpent = array_sum(array_column($cqcProjects, 'spent_idr'));
+            $avgProgress = count($cqcProjects) > 0 ? round(array_sum(array_column($cqcProjects, 'progress_percentage')) / count($cqcProjects)) : 0;
+            ?>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
+                <div style="padding: 10px; background: #fff; border-radius: 10px; border-left: 3px solid #f0b429;">
+                    <div style="font-size: 10px; color: #6b7280; font-weight: 600;">TOTAL PROYEK</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #0d1f3c;"><?php echo count($cqcProjects); ?></div>
+                </div>
+                <div style="padding: 10px; background: #fff; border-radius: 10px; border-left: 3px solid #10b981;">
+                    <div style="font-size: 10px; color: #6b7280; font-weight: 600;">TOTAL BUDGET</div>
+                    <div style="font-size: 12px; font-weight: 700; color: #10b981;">Rp <?php echo number_format($totalBudget, 0, ',', '.'); ?></div>
+                </div>
+                <div style="padding: 10px; background: #fff; border-radius: 10px; border-left: 3px solid #3b82f6;">
+                    <div style="font-size: 10px; color: #6b7280; font-weight: 600;">AVG PROGRESS</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #3b82f6;"><?php echo $avgProgress; ?>%</div>
+                </div>
+            </div>
+            
+            <!-- Project Cards with Pie Charts -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+                <?php foreach ($cqcProjects as $idx => $proj): 
+                    $budget = floatval($proj['budget_idr'] ?? 0);
+                    $spent = floatval($proj['spent_idr'] ?? 0);
+                    $remaining = $budget - $spent;
+                    $progress = intval($proj['progress_percentage'] ?? 0);
+                    $spentPct = $budget > 0 ? round(($spent / $budget) * 100, 1) : 0;
+                    $statusClass = 'cqc-status-' . ($proj['status'] ?? 'planning');
+                    $statusLabels = ['planning'=>'Planning','procurement'=>'Procurement','installation'=>'Instalasi','testing'=>'Testing','completed'=>'Selesai','on_hold'=>'Ditunda'];
+                    $statusLabel = $statusLabels[$proj['status']] ?? ucfirst($proj['status']);
+                ?>
+                <div style="background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-size: 9px; color: #9ca3af; font-weight: 600;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
+                            <div style="font-size: 12px; font-weight: 700; color: #0d1f3c;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                        </div>
+                        <span class="<?php echo $statusClass; ?>" style="display:inline-block;padding:3px 8px;border-radius:12px;font-size:9px;font-weight:700;"><?php echo $statusLabel; ?></span>
+                    </div>
+                    
+                    <!-- Pie Chart -->
+                    <div style="position: relative; width: 120px; height: 120px; margin: 0 auto 8px;">
+                        <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                            <div style="font-size: 18px; font-weight: 800; color: #0d1f3c;"><?php echo $progress; ?>%</div>
+                            <div style="font-size: 8px; color: #6b7280;">Progress</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div style="font-size: 11px;">
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6;">
+                            <span style="color: #6b7280;">💰 Budget</span>
+                            <span style="font-weight: 700; color: #0d1f3c;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6;">
+                            <span style="color: #6b7280;">📤 Keluar</span>
+                            <span style="font-weight: 700; color: #ef4444;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+                            <span style="color: #6b7280;">💵 Sisa</span>
+                            <span style="font-weight: 700; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
         
         <!-- AI Health -->
         <div class="ai-card">
@@ -1705,6 +1826,45 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         ctx.lineWidth = 0.5;
         ctx.stroke();
     });
+    
+    <?php if ($isCQC && !empty($cqcProjects)): ?>
+    // CQC PROJECT PIE CHARTS
+    <?php foreach ($cqcProjects as $idx => $proj): 
+        $progress = intval($proj['progress_percentage'] ?? 0);
+    ?>
+    (function() {
+        const ctx = document.getElementById('cqcPie<?php echo $idx; ?>');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Selesai', 'Tersisa'],
+                datasets: [{
+                    data: [<?php echo $progress; ?>, <?php echo 100 - $progress; ?>],
+                    backgroundColor: [
+                        '<?php echo $progress >= 80 ? "#10b981" : ($progress >= 50 ? "#f0b429" : ($progress >= 25 ? "#3b82f6" : "#6b7280")); ?>',
+                        'rgba(229, 231, 235, 0.5)'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '70%',
+                plugins: { legend: { display: false }, tooltip: {
+                    backgroundColor: 'rgba(13,31,60,0.95)', titleColor: '#f0b429', bodyColor: '#fff',
+                    cornerRadius: 8, padding: 8,
+                    callbacks: {
+                        label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; }
+                    }
+                }},
+                animation: { animateRotate: true, duration: 1000 }
+            }
+        });
+    })();
+    <?php endforeach; ?>
+    <?php endif; ?>
     </script>
 </body>
 </html>
