@@ -1395,106 +1395,48 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             </div>
         </div>
         
-        <!-- Operational Section - SAME DATA AS SYSTEM DASHBOARD -->
-        <div class="operational-section">
-            <div class="operational-title">💰 Daily Operational - <?= date('F Y') ?></div>
-            <div style="font-size: 12px; color: #6c757d; margin-top: 4px; margin-bottom: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px;">📊 <span>Daily Operational Cash (Petty Cash + Owner Capital)</span></div>
-            <div class="operational-grid">
-                <div class="op-card modal-owner">
-                    <div class="op-label">Owner Capital</div>
-                    <div class="op-value"><?= rp($capitalStats['received']) ?></div>
-                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Owner deposit</div>
-                </div>
-                <div class="op-card petty-cash">
-                    <div class="op-label">Petty Cash</div>
-                    <div class="op-value"><?= rp($pettyCashStats['balance']) ?></div>
-                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Cash from guests</div>
-                </div>
-                <div class="op-card digunakan">
-                    <div class="op-label">Used</div>
-                    <div class="op-value"><?= rp($totalOperationalExpense) ?></div>
-                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Total expenses</div>
-                </div>
-                <div class="op-card total-kas">
-                    <div class="op-label">Total Cash</div>
-                    <div class="op-value"><?= rp($totalOperationalCash) ?></div>
-                    <div style="font-size: 11px; color: #6c757d; margin-top: 6px; font-weight: 500;">Available cash</div>
-                </div>
-            </div>
-            <a href="<?= $basePath ?>/modules/owner/owner-capital-monitor.php" class="op-detail-btn">
-                📋 Detail Monitor (Owner Capital & Petty Cash)
-            </a>
-
-            <!-- Pie Chart - Pengeluaran per Divisi -->
-            <div class="expense-division-card">
-                <div class="expense-division-header">
-                    <div class="expense-division-title">
-                        <span class="icon-circle">🥧</span>
-                        Expenses by Division
-                    </div>
-                    <input type="month" id="expenseDivisionMonth" class="expense-month-input" value="<?= $thisMonth ?>" onchange="updateExpenseDivisionChart(this.value)">
-                </div>
-                <div class="expense-division-body">
-                    <?php if (empty($expenseDivisionData)): ?>
-                        <div class="expense-division-empty">
-                            <span style="font-size:28px;margin-bottom:6px;">📭</span>
-                            No expense data available
-                        </div>
-                    <?php else: ?>
-                        <canvas id="expenseDivisionChart"></canvas>
-                    <?php endif; ?>
-                </div>
-                <?php if (!empty($expenseDivisionData)): ?>
-                <div class="expense-division-legend" id="expenseDivisionLegend">
-                    <?php 
-                    $divColors = [
-                        'rgba(239,68,68,0.85)', 'rgba(251,146,60,0.85)', 'rgba(245,158,11,0.85)',
-                        'rgba(234,179,8,0.85)', 'rgba(132,204,22,0.85)', 'rgba(34,197,94,0.85)',
-                        'rgba(20,184,166,0.85)', 'rgba(6,182,212,0.85)', 'rgba(59,130,246,0.85)',
-                        'rgba(99,102,241,0.85)', 'rgba(139,92,246,0.85)', 'rgba(168,85,247,0.85)'
-                    ];
-                    foreach ($expenseDivisionData as $i => $div): ?>
-                        <div class="edl-item">
-                            <span class="edl-dot" style="background:<?= $divColors[$i % count($divColors)] ?>"></span>
-                            <?= htmlspecialchars($div['division_name']) ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-        
         <?php if ($isCQC && !empty($cqcProjects)): ?>
-        <!-- CQC Project Section -->
-        <div style="margin-bottom: 16px; padding: 16px; background: linear-gradient(135deg, rgba(13, 31, 60, 0.03), rgba(240, 180, 41, 0.08)); border-radius: 16px; border: 1px solid rgba(240, 180, 41, 0.25);">
-            <h3 style="font-size: 14px; color: #0d1f3c; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
-                <span style="width: 28px; height: 28px; background: linear-gradient(135deg, #f0b429, #d4960d); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px;">☀️</span>
-                CQC Project Monitoring
-            </h3>
+        <!-- CQC Project Monitoring - Elegant Gold/Navy Theme -->
+        <div style="margin: 16px 0; padding: 20px; background: linear-gradient(135deg, #ffffff 0%, #fefdf8 100%); border-radius: 20px; border: 1px solid rgba(240, 180, 41, 0.3); box-shadow: 0 4px 24px rgba(13, 31, 60, 0.08);">
+            <!-- Header -->
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid rgba(240, 180, 41, 0.2);">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f0b429 0%, #d4960d 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(240, 180, 41, 0.4);">
+                    <span style="font-size: 20px;">☀️</span>
+                </div>
+                <div>
+                    <div style="font-size: 8px; color: #9ca3af; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;">CQC ENJINIRING</div>
+                    <div style="font-size: 16px; font-weight: 800; color: #0d1f3c;">Project Monitoring</div>
+                </div>
+            </div>
             
             <!-- Summary Cards -->
             <?php
             $totalBudget = array_sum(array_column($cqcProjects, 'budget_idr'));
             $totalSpent = array_sum(array_column($cqcProjects, 'spent_idr'));
+            $totalRemaining = $totalBudget - $totalSpent;
             $avgProgress = count($cqcProjects) > 0 ? round(array_sum(array_column($cqcProjects, 'progress_percentage')) / count($cqcProjects)) : 0;
             ?>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;">
-                <div style="padding: 10px; background: #fff; border-radius: 10px; border-left: 3px solid #f0b429;">
-                    <div style="font-size: 10px; color: #6b7280; font-weight: 600;">TOTAL PROYEK</div>
-                    <div style="font-size: 18px; font-weight: 800; color: #0d1f3c;"><?php echo count($cqcProjects); ?></div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+                <div style="padding: 12px; background: linear-gradient(135deg, #0d1f3c 0%, #1a3a5c 100%); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 9px; color: #f0b429; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Proyek</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #ffffff;"><?php echo count($cqcProjects); ?></div>
                 </div>
-                <div style="padding: 10px; background: #fff; border-radius: 10px; border-left: 3px solid #10b981;">
-                    <div style="font-size: 10px; color: #6b7280; font-weight: 600;">TOTAL BUDGET</div>
-                    <div style="font-size: 12px; font-weight: 700; color: #10b981;">Rp <?php echo number_format($totalBudget, 0, ',', '.'); ?></div>
+                <div style="padding: 12px; background: linear-gradient(135deg, #f0b429 0%, #d4960d 100%); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 9px; color: #0d1f3c; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Budget</div>
+                    <div style="font-size: 11px; font-weight: 800; color: #0d1f3c;">Rp <?php echo number_format($totalBudget/1000000, 0, ',', '.'); ?>jt</div>
                 </div>
-                <div style="padding: 10px; background: #fff; border-radius: 10px; border-left: 3px solid #3b82f6;">
-                    <div style="font-size: 10px; color: #6b7280; font-weight: 600;">AVG PROGRESS</div>
-                    <div style="font-size: 18px; font-weight: 800; color: #3b82f6;"><?php echo $avgProgress; ?>%</div>
+                <div style="padding: 12px; background: #fff; border-radius: 12px; text-align: center; border: 2px solid #0d1f3c;">
+                    <div style="font-size: 9px; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Terpakai</div>
+                    <div style="font-size: 11px; font-weight: 800; color: #0d1f3c;">Rp <?php echo number_format($totalSpent/1000000, 0, ',', '.'); ?>jt</div>
+                </div>
+                <div style="padding: 12px; background: linear-gradient(135deg, #0d1f3c 0%, #1a3a5c 100%); border-radius: 12px; text-align: center;">
+                    <div style="font-size: 9px; color: #f0b429; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Progress</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #f0b429;"><?php echo $avgProgress; ?>%</div>
                 </div>
             </div>
             
-            <!-- Project Cards with Pie Charts -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+            <!-- Project Cards Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px;">
                 <?php foreach ($cqcProjects as $idx => $proj): 
                     $budget = floatval($proj['budget_idr'] ?? 0);
                     $spent = floatval($proj['spent_idr'] ?? 0);
@@ -1505,37 +1447,38 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     $statusLabels = ['planning'=>'Planning','procurement'=>'Procurement','installation'=>'Instalasi','testing'=>'Testing','completed'=>'Selesai','on_hold'=>'Ditunda'];
                     $statusLabel = $statusLabels[$proj['status']] ?? ucfirst($proj['status']);
                 ?>
-                <div style="background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 2px 12px rgba(13,31,60,0.06); border: 1px solid rgba(13,31,60,0.08); transition: all 0.3s ease;" onmouseover="this.style.boxShadow='0 8px 24px rgba(13,31,60,0.12)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='0 2px 12px rgba(13,31,60,0.06)'; this.style.transform='translateY(0)';">
+                    <!-- Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                         <div>
-                            <div style="font-size: 9px; color: #9ca3af; font-weight: 600;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
-                            <div style="font-size: 12px; font-weight: 700; color: #0d1f3c;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                            <div style="font-size: 9px; color: #f0b429; font-weight: 700; letter-spacing: 0.5px;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
+                            <div style="font-size: 13px; font-weight: 700; color: #0d1f3c; margin-top: 2px;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
                         </div>
-                        <span class="<?php echo $statusClass; ?>" style="display:inline-block;padding:3px 8px;border-radius:12px;font-size:9px;font-weight:700;"><?php echo $statusLabel; ?></span>
+                        <span class="<?php echo $statusClass; ?>" style="display:inline-block;padding:4px 10px;border-radius:20px;font-size:9px;font-weight:700;"><?php echo $statusLabel; ?></span>
                     </div>
                     
-                    <!-- Pie Chart -->
-                    <div style="position: relative; width: 120px; height: 120px; margin: 0 auto 8px;">
+                    <!-- Elegant Pie Chart -->
+                    <div style="position: relative; width: 130px; height: 130px; margin: 0 auto 12px;">
                         <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                            <div style="font-size: 18px; font-weight: 800; color: #0d1f3c;"><?php echo $progress; ?>%</div>
-                            <div style="font-size: 8px; color: #6b7280;">Progress</div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(255,255,255,0.95); border-radius: 50%; width: 70px; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(13,31,60,0.1);">
+                            <div style="font-size: 20px; font-weight: 800; color: #0d1f3c; line-height: 1;"><?php echo $progress; ?>%</div>
+                            <div style="font-size: 8px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">Progress</div>
                         </div>
                     </div>
                     
-                    <!-- Stats -->
-                    <div style="font-size: 11px;">
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6;">
-                            <span style="color: #6b7280;">💰 Budget</span>
-                            <span style="font-weight: 700; color: #0d1f3c;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
+                    <!-- Financial Stats -->
+                    <div style="background: #fafafa; border-radius: 10px; padding: 10px;">
+                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span style="font-size: 11px; color: #6b7280;">💰 Budget</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #0d1f3c; font-family: Monaco, monospace;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #f3f4f6;">
-                            <span style="color: #6b7280;">📤 Keluar</span>
-                            <span style="font-weight: 700; color: #ef4444;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
+                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                            <span style="font-size: 11px; color: #6b7280;">📤 Terpakai</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #f0b429; font-family: Monaco, monospace;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 4px 0;">
-                            <span style="color: #6b7280;">💵 Sisa</span>
-                            <span style="font-weight: 700; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
+                        <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+                            <span style="font-size: 11px; color: #6b7280;">💵 Sisa</span>
+                            <span style="font-size: 11px; font-weight: 700; color: <?php echo $remaining >= 0 ? '#0d1f3c' : '#ef4444'; ?>; font-family: Monaco, monospace;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
                         </div>
                     </div>
                 </div>
@@ -1828,7 +1771,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
     });
     
     <?php if ($isCQC && !empty($cqcProjects)): ?>
-    // CQC PROJECT PIE CHARTS
+    // CQC PROJECT PIE CHARTS - Elegant Gold/Navy Theme
     <?php foreach ($cqcProjects as $idx => $proj): 
         $progress = intval($proj['progress_percentage'] ?? 0);
     ?>
@@ -1842,24 +1785,37 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 datasets: [{
                     data: [<?php echo $progress; ?>, <?php echo 100 - $progress; ?>],
                     backgroundColor: [
-                        '<?php echo $progress >= 80 ? "#10b981" : ($progress >= 50 ? "#f0b429" : ($progress >= 25 ? "#3b82f6" : "#6b7280")); ?>',
-                        'rgba(229, 231, 235, 0.5)'
+                        '#f0b429',  // Gold for completed
+                        'rgba(13, 31, 60, 0.15)'  // Navy transparent for remaining
                     ],
-                    borderWidth: 0
+                    borderWidth: 3,
+                    borderColor: ['#d4960d', 'rgba(13, 31, 60, 0.08)'],
+                    hoverBackgroundColor: ['#d4960d', 'rgba(13, 31, 60, 0.25)'],
+                    hoverBorderColor: ['#c4860d', 'rgba(13, 31, 60, 0.15)']
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: true,
-                cutout: '70%',
-                plugins: { legend: { display: false }, tooltip: {
-                    backgroundColor: 'rgba(13,31,60,0.95)', titleColor: '#f0b429', bodyColor: '#fff',
-                    cornerRadius: 8, padding: 8,
-                    callbacks: {
-                        label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; }
+                cutout: '65%',
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: {
+                        backgroundColor: 'rgba(13,31,60,0.95)', 
+                        titleColor: '#f0b429', 
+                        bodyColor: '#fff',
+                        borderColor: '#f0b429',
+                        borderWidth: 1,
+                        cornerRadius: 10, 
+                        padding: 12,
+                        titleFont: { weight: '700', size: 12 },
+                        bodyFont: { size: 11 },
+                        callbacks: {
+                            label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; }
+                        }
                     }
-                }},
-                animation: { animateRotate: true, duration: 1000 }
+                },
+                animation: { animateRotate: true, duration: 1200, easing: 'easeOutQuart' }
             }
         });
     })();
