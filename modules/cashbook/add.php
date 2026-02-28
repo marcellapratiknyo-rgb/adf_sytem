@@ -50,8 +50,8 @@ try {
     
     // Load cash accounts if we have a business ID
     if ($businessId) {
-        // Show all 3 account types: cash, bank, owner_capital
-        $stmt = $masterDb->prepare("SELECT id, account_name, account_type FROM cash_accounts WHERE business_id = ? AND account_type IN ('cash', 'bank', 'owner_capital') ORDER BY account_type = 'cash' DESC, account_type = 'bank' DESC, account_name");
+        // Show all account types
+        $stmt = $masterDb->prepare("SELECT id, account_name, account_type FROM cash_accounts WHERE business_id = ? AND is_active = 1 ORDER BY account_type = 'cash' DESC, account_type = 'bank' DESC, account_name");
         $stmt->execute([$businessId]);
         $cashAccounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -596,26 +596,24 @@ include '../../includes/header.php';
                 
                 <!-- Cash Account Selection -->
                 <div class="compact-form-group">
-                    <label class="form-label" style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.3rem;">Pilih Akun <span style="color: var(--danger);">*</span></label>
+                    <label class="form-label" style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.3rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>Pilih Akun <span style="color: var(--danger);">*</span></span>
+                        <a href="accounts.php" style="font-size: 0.7rem; font-weight: 600; color: <?php echo $isCQC ? '#0d1f3c' : 'var(--primary-color)'; ?>; text-decoration: none; display: flex; align-items: center; gap: 0.2rem;">
+                            <i data-feather="settings" style="width: 12px; height: 12px;"></i> Setup Rekening
+                        </a>
+                    </label>
                     <select name="cash_account_id" class="form-control" style="height: 34px; font-size: 0.813rem; font-weight: 600;" required>
                         <option value="">-- Pilih Akun --</option>
                         <?php if (empty($cashAccounts)): ?>
                             <option value="" disabled style="color: #dc2626;">⚠️ Tidak ada akun kas tersedia. Hubungi admin!</option>
                         <?php else: ?>
-                            <?php foreach ($cashAccounts as $acc): ?>
-                                <?php 
-                                // Add descriptive label based on account type
-                                $label = $acc['account_name'];
-                                if ($acc['account_type'] === 'cash') {
-                                    $label .= ' (Uang cash dari tamu)';
-                                } elseif ($acc['account_type'] === 'bank') {
-                                    $label .= ' (Hasil transfer dari tamu)';
-                                } elseif ($acc['account_type'] === 'owner_capital') {
-                                    $label .= ' (Modal operasional dari owner)';
-                                }
-                                ?>
+                            <?php 
+                            $accTypeIcons = ['cash'=>'💵','bank'=>'🏦','e-wallet'=>'📱','owner_capital'=>'👤','credit_card'=>'💳'];
+                            foreach ($cashAccounts as $acc): 
+                                $icon = $accTypeIcons[$acc['account_type']] ?? '💰';
+                            ?>
                                 <option value="<?php echo htmlspecialchars($acc['id']); ?>">
-                                    <?php echo htmlspecialchars($label); ?>
+                                    <?php echo $icon . ' ' . htmlspecialchars($acc['account_name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -625,8 +623,8 @@ include '../../includes/header.php';
                             <strong>⚠️ Error:</strong> Akun kas tidak ditemukan di database master. Pastikan cash_accounts sudah di-setup untuk bisnis ini.
                         </div>
                     <?php else: ?>
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; line-height: 1.4;">
-                            💡 <strong>Petty Cash:</strong> Cash tamu | <strong>Bank:</strong> Transfer tamu | <strong>Kas Modal:</strong> Modal owner
+                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.3rem; line-height: 1.4;">
+                            💡 Pilih rekening tujuan. <a href="accounts.php" style="color: <?php echo $isCQC ? '#0d1f3c' : 'var(--primary-color)'; ?>; font-weight: 600; text-decoration: none;">Tambah/edit rekening →</a>
                         </div>
                     <?php endif; ?>
                 </div>
