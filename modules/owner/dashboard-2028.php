@@ -732,7 +732,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         }
         
         #pieChart {
-            filter: drop-shadow(0 0 18px rgba(99,102,241,0.25)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            filter: drop-shadow(0 0 24px rgba(16, 185, 129, 0.3)) drop-shadow(0 8px 16px rgba(0,0,0,0.4));
         }
         
         .pie-center {
@@ -741,31 +741,45 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            background: rgba(255,255,255,0.06);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255,255,255,0.08);
             border-radius: 50%;
-            width: 72px;
-            height: 72px;
+            width: 80px;
+            height: 80px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
         }
         
         .pie-center-label {
-            font-size: 7px;
-            opacity: 0.6;
+            font-size: 8px;
+            opacity: 0.5;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 500;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            margin-bottom: 2px;
         }
         
         .pie-center-value {
-            font-size: 15px;
+            font-size: 22px;
             font-weight: 800;
-            color: #d97706;
+            font-family: 'Inter', system-ui, sans-serif;
+            letter-spacing: -1px;
+        }
+        .pie-center-value.positive {
+            color: #10b981;
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+        }
+        .pie-center-value.negative {
+            color: #ef4444;
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+        }
+        .pie-center-value.zero {
+            color: #9ca3af;
         }
         
         /* Legend - Glass Chips */
@@ -1348,10 +1362,10 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 height: 130px;
             }
             .pie-center {
-                width: 60px;
-                height: 60px;
+                width: 65px;
+                height: 65px;
             }
-            .pie-center-value { font-size: 13px; }
+            .pie-center-value { font-size: 18px; }
             .legend-item { padding: 5px 8px; }
             .legend-value { font-size: 11px; }
             .hero-today-value { font-size: 11px; }
@@ -1463,9 +1477,15 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     <!-- Pie Chart -->
                     <div class="pie-wrapper">
                         <canvas id="pieChart" width="160" height="160"></canvas>
+                        <?php 
+                        $profitMargin = $stats['month_income'] > 0 
+                            ? round((($stats['month_income'] - $stats['month_expense']) / $stats['month_income']) * 100) 
+                            : 0;
+                        $profitClass = $profitMargin > 0 ? 'positive' : ($profitMargin < 0 ? 'negative' : 'zero');
+                        ?>
                         <div class="pie-center">
-                            <div class="pie-center-label">NET</div>
-                            <div class="pie-center-value"><?= $netProfit >= 0 ? '+' : '' ?><?= number_format($netProfit/1000000, 1) ?>M</div>
+                            <div class="pie-center-label">Margin</div>
+                            <div class="pie-center-value <?= $profitClass ?>"><?= $profitMargin ?>%</div>
                         </div>
                     </div>
                     <!-- Legend -->
