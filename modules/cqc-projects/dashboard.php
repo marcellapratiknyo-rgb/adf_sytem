@@ -119,20 +119,22 @@ include '../../includes/header.php';
 
         /* Header */
         .cqc-header {
-            background: linear-gradient(135deg, #122a4e 0%, #0d1f3c 100%);
+            background: #fff;
             padding: 10px 16px;
             border-radius: 6px;
             margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #f0b429;
         }
-        .cqc-header h1 { font-size: 16px; font-weight: 700; color: #ffffff !important; margin: 0 0 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-        .cqc-header p { font-size: 11px; margin: 0; color: #ffffff !important; opacity: 0.9; }
+        .cqc-header h1 { font-size: 16px; font-weight: 700; color: #0d1f3c !important; margin: 0 0 2px; }
+        .cqc-header p { font-size: 11px; margin: 0; color: #64748b !important; }
         .cqc-header button {
-            background: #f0b429; color: #0d1f3c; border: none;
+            background: #0d1f3c; color: #fff; border: none;
             padding: 5px 14px; border-radius: 4px; font-weight: 700;
             font-size: 11px; cursor: pointer;
         }
-        .cqc-header button:hover { background: #f5c842; }
+        .cqc-header button:hover { background: #122a4e; }
 
         /* Stats */
         .cqc-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
