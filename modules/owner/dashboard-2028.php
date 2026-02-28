@@ -397,12 +397,14 @@ if ($isCQC) {
             $cqcExpenses[$proj['id']] = $expenses;
             
             // Get expenses grouped by category for pie chart
+            $cqcCategoryExpenses[$proj['id']] = [];
             try {
+                // First try with category join
                 $stmtCat = $cqcPdo->prepare("
                     SELECT 
                         COALESCE(c.category_name, 'Lainnya') as category_name,
                         COALESCE(c.category_icon, '📦') as category_icon,
-                        COALESCE(SUM(e.amount_idr), SUM(e.amount), 0) as total_amount
+                        SUM(e.amount) as total_amount
                     FROM cqc_project_expenses e
                     LEFT JOIN cqc_expense_categories c ON e.category_id = c.id
                     WHERE e.project_id = ?
@@ -411,9 +413,25 @@ if ($isCQC) {
                     LIMIT 6
                 ");
                 $stmtCat->execute([$proj['id']]);
-                $cqcCategoryExpenses[$proj['id']] = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+                $result = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($result)) {
+                    $cqcCategoryExpenses[$proj['id']] = $result;
+                }
             } catch (Exception $catEx) {
-                $cqcCategoryExpenses[$proj['id']] = [];
+                // If category table doesn't exist, just group as "Lainnya"
+                try {
+                    $stmtSimple = $cqcPdo->prepare("
+                        SELECT 'Lainnya' as category_name, '📦' as category_icon, SUM(amount) as total_amount
+                        FROM cqc_project_expenses WHERE project_id = ?
+                    ");
+                    $stmtSimple->execute([$proj['id']]);
+                    $result = $stmtSimple->fetchAll(PDO::FETCH_ASSOC);
+                    if (!empty($result) && floatval($result[0]['total_amount'] ?? 0) > 0) {
+                        $cqcCategoryExpenses[$proj['id']] = $result;
+                    }
+                } catch (Exception $e2) {
+                    // Ignore
+                }
             }
         }
     } catch (Exception $e) {
@@ -1655,7 +1673,8 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                         <!-- RIGHT: Category Expense Pie -->
                         <div style="text-align: center;">
                             <div style="font-size: 8px; color: #9ca3af; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">Per Kategori</div>
-                            <?php if (!empty($catExpenses)): ?>
+                            <!-- DEBUG: catExpenses count = <?php echo count($catExpenses); ?> -->
+                            <?php if (!empty($catExpenses) && floatval($catExpenses[0]['total_amount'] ?? 0) > 0): ?>
                             <div style="position: relative; width: 70px; height: 70px; margin: 0 auto;">
                                 <canvas id="cqcCatPie<?php echo $idx; ?>"></canvas>
                             </div>
