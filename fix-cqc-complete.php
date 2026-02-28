@@ -1,111 +1,186 @@
 <?php
 /**
- * Auto-Fix CQC Database Configuration
- * 1. Ensure adfb2574_cqc exists
- * 2. Add CQC to config/businesses.php with correct name
+ * Fix CQC slug + config + permissions on hosting
+ * Ensures ACTIVE_BUSINESS_ID = 'cqc' for all CQC users
  */
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
-header('Content-Type: text/html; charset=utf-8');
-echo "<h2>🔧 Fixing CQC Database & Config</h2>\n";
+$isHosting = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
+if ($isHosting) {
+    $dbHost = 'localhost';
+    $dbUser = 'adfb2574_adfsystem';
+    $dbPass = '@Nnoc2025';
+    $systemDb = 'adfb2574_adf';
+} else {
+    $dbHost = 'localhost';
+    $dbUser = 'root';
+    $dbPass = '';
+    $systemDb = 'adf_system';
+}
 
-// Detect environment
-$isHosting = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false && 
-              strpos($_SERVER['HTTP_HOST'] ?? '', '127.0.0.1') === false);
-
-echo "<p><strong>Environment:</strong> " . ($isHosting ? "🌐 HOSTING" : "💻 LOCAL") . "</p>\n";
-
-$dbHost = 'localhost';
-$dbUser = $isHosting ? 'adfb2574_adfsystem' : 'root';
-$dbPass = $isHosting ? '@Nnoc2025' : '';
-$dbName = $isHosting ? 'adfb2574_cqc' : 'adf_cqc';
-
-echo "<hr>\n";
+echo "<pre style='font-size:14px; line-height:1.8;'>\n";
+echo "=== FIX CQC COMPLETE ===\n";
+echo "Environment: " . ($isHosting ? 'HOSTING' : 'LOCAL') . "\n";
+echo "Date: " . date('Y-m-d H:i:s') . "\n\n";
 
 try {
-    // Step 1: Create/verify database
-    echo "<h3>1️⃣ Creating database: <code>$dbName</code></h3>\n";
-    
-    $pdo = new PDO("mysql:host=$dbHost", $dbUser, $dbPass);
+    $pdo = new PDO("mysql:host=$dbHost;dbname=$systemDb", $dbUser, $dbPass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Create database
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    echo "✅ Database created/exists\n\n";
+    // STEP 1: Check current CQC business state
+    echo "=== STEP 1: CHECK CQC BUSINESS ===\n";
+    $biz = $pdo->query("SELECT * FROM businesses WHERE business_code = 'CQC'")->fetch(PDO::FETCH_ASSOC);
     
-    // Connect to new database
-    $bizPdo = new PDO("mysql:host=$dbHost;dbname=$dbName", $dbUser, $dbPass);
-    $bizPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    if (!$biz) {
+        echo "❌ CQC business NOT FOUND!\n</pre>";
+        exit;
+    }
     
-    // Create essential tables
-    echo "<h3>2️⃣ Creating tables in database...</h3>\n";
+    echo "  ID: {$biz['id']}\n";
+    echo "  Code: {$biz['business_code']}\n";
+    echo "  Slug: " . ($biz['slug'] ?? 'NULL') . "\n";
+    echo "  Type: " . ($biz['business_type'] ?? 'NULL') . "\n";
+    echo "  Database: {$biz['database_name']}\n\n";
     
-    $bizPdo->exec("
-    CREATE TABLE IF NOT EXISTS `users` (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `business_id` int(11) DEFAULT NULL,
-        `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-        `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-        `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-        `full_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-        `role` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'user',
-        `status` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT 'active',
-        `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `username` (`username`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    echo "✅ Created: users table\n";
+    // STEP 2: Fix slug to 'cqc'
+    echo "=== STEP 2: FIX SLUG ===\n";
+    $currentSlug = $biz['slug'] ?? '';
+    if ($currentSlug !== 'cqc') {
+        $pdo->prepare("UPDATE businesses SET slug = 'cqc' WHERE id = ?")->execute([$biz['id']]);
+        echo "✅ Fixed slug: '$currentSlug' → 'cqc'\n";
+    } else {
+        echo "✅ Slug already 'cqc'\n";
+    }
     
-    $bizPdo->exec("
-    CREATE TABLE IF NOT EXISTS `settings` (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `key` varchar(255) NOT NULL,
-        `value` longtext,
-        `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        UNIQUE KEY `key` (`key`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    echo "✅ Created: settings table\n";
+    // STEP 3: Check/create cqc-projects menu
+    echo "\n=== STEP 3: MENU ITEM ===\n";
+    $menu = $pdo->query("SELECT id FROM menu_items WHERE menu_code = 'cqc-projects'")->fetch(PDO::FETCH_ASSOC);
+    if (!$menu) {
+        $pdo->exec("INSERT INTO menu_items (menu_code, menu_name, menu_icon, menu_url, menu_order, is_active, created_at) VALUES ('cqc-projects', 'CQC Projects', 'bi-sun', 'modules/cqc-projects/', 9, 1, NOW())");
+        $menuId = $pdo->lastInsertId();
+        echo "✅ Created cqc-projects menu (ID: $menuId)\n";
+    } else {
+        $menuId = $menu['id'];
+        echo "✅ cqc-projects menu exists (ID: $menuId)\n";
+    }
     
-    $bizPdo->exec("
-    CREATE TABLE IF NOT EXISTS `transactions` (
-        `id` int(11) NOT NULL AUTO_INCREMENT,
-        `type` varchar(50) NOT NULL,
-        `amount` decimal(15,2) NOT NULL,
-        `description` text,
-        `date` date NOT NULL,
-        `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        KEY `date` (`date`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
-    echo "✅ Created: transactions table\n";
+    // STEP 4: Assign to business
+    echo "\n=== STEP 4: BUSINESS MENU CONFIG ===\n";
+    $bmc = $pdo->prepare("SELECT id FROM business_menu_config WHERE business_id = ? AND menu_id = ?");
+    $bmc->execute([$biz['id'], $menuId]);
+    if (!$bmc->fetch()) {
+        $pdo->prepare("INSERT INTO business_menu_config (business_id, menu_id, is_enabled, created_at) VALUES (?, ?, 1, NOW())")->execute([$biz['id'], $menuId]);
+        echo "✅ Assigned to CQC business\n";
+    } else {
+        echo "✅ Already assigned\n";
+    }
     
-    echo "\n<h3>✅ Database Setup Complete!</h3>\n";
-    echo "<p>Database <strong><code>$dbName</code></strong> is ready with schema.</p>\n";
+    // STEP 5: Add permissions for ALL CQC users
+    echo "\n=== STEP 5: USER PERMISSIONS ===\n";
+    $users = $pdo->prepare("SELECT uba.user_id, u.username, r.role_code FROM user_business_assignment uba JOIN users u ON u.id = uba.user_id JOIN roles r ON r.id = u.role_id WHERE uba.business_id = ?");
+    $users->execute([$biz['id']]);
+    $cqcUsers = $users->fetchAll(PDO::FETCH_ASSOC);
     
-    // Step 2: Provide config update info
-    echo "\n<h3>3️⃣ Next: Update config/businesses.php</h3>\n";
-    echo "<p style='background: #f0f0f0; padding: 15px; border-radius: 5px; font-family: monospace;'>\n";
-    echo "Add this business entry to config/businesses.php inside \$BUSINESSES array:<br><br>\n";
-    echo "<pre style='background: white; padding: 10px; border-left: 3px solid green;'>\n";
-    echo htmlspecialchars("[\n    'id' => 7,\n    'name' => 'CQC',\n    'database' => '" . $dbName . "',\n    'type' => 'other',\n    'active' => true\n]") . "\n";
-    echo "</pre>\n";
-    echo "</p>\n";
+    foreach ($cqcUsers as $u) {
+        echo "\n  User: {$u['username']} (ID:{$u['user_id']}, role:{$u['role_code']})\n";
+        $check = $pdo->prepare("SELECT user_id FROM user_menu_permissions WHERE user_id = ? AND business_id = ? AND menu_code = 'cqc-projects'");
+        $check->execute([$u['user_id'], $biz['id']]);
+        if (!$check->fetch()) {
+            $pdo->prepare("INSERT INTO user_menu_permissions (user_id, business_id, menu_id, menu_code, can_view, can_create, can_edit, can_delete) VALUES (?, ?, ?, 'cqc-projects', 1, 1, 1, 1)")->execute([$u['user_id'], $biz['id'], $menuId]);
+            echo "  ✅ Added cqc-projects permission\n";
+        } else {
+            echo "  ✅ Already has cqc-projects\n";
+        }
+        
+        $fixed = $pdo->exec("UPDATE user_menu_permissions ump JOIN menu_items mi ON mi.menu_code = ump.menu_code SET ump.menu_id = mi.id WHERE ump.user_id = {$u['user_id']} AND ump.business_id = {$biz['id']} AND ump.menu_id IS NULL");
+        if ($fixed > 0) echo "  ✅ Fixed $fixed NULL menu_id entries\n";
+    }
     
-    echo "\n<p><a href='javascript:history.back()'>← Back</a></p>\n";
+    // STEP 6: Fix config file
+    echo "\n=== STEP 6: CONFIG FILE ===\n";
+    $configFile = __DIR__ . '/config/businesses/cqc.php';
+    $needsRewrite = false;
+    
+    if (file_exists($configFile)) {
+        $config = require $configFile;
+        echo "  Exists, business_id: " . ($config['business_id'] ?? 'N/A') . "\n";
+        echo "  business_type: " . ($config['business_type'] ?? 'N/A') . "\n";
+        echo "  has cqc-projects: " . (in_array('cqc-projects', $config['enabled_modules'] ?? []) ? 'YES' : 'NO') . "\n";
+        
+        if (!in_array('cqc-projects', $config['enabled_modules'] ?? [])) {
+            $needsRewrite = true;
+        }
+    } else {
+        echo "  ❌ NOT FOUND!\n";
+        $needsRewrite = true;
+    }
+    
+    if ($needsRewrite) {
+        $dbName = $isHosting ? 'adfb2574_cqc' : 'adf_cqc';
+        $configContent = <<<PHP
+<?php
+return [
+    'business_id' => 'cqc',
+    'name' => 'CQC Enjiniring',
+    'business_type' => 'contractor',
+    'database' => '$dbName',
+    'logo' => '',
+    'enabled_modules' => [
+        'cashbook',
+        'auth',
+        'settings',
+        'reports',
+        'divisions',
+        'procurement',
+        'sales',
+        'bills',
+        'payroll',
+        'cqc-projects'
+    ],
+    'theme' => [
+        'color_primary' => '#0066CC',
+        'color_secondary' => '#004499',
+        'icon' => '☀️'
+    ],
+    'cashbook_columns' => [],
+    'dashboard_widgets' => [],
+];
+PHP;
+        @mkdir(dirname($configFile), 0755, true);
+        file_put_contents($configFile, $configContent);
+        echo "  ✅ Config file written with cqc-projects!\n";
+    } else {
+        echo "  ✅ Config OK\n";
+    }
+    
+    // STEP 7: Remove duplicate configs pointing to CQC database
+    echo "\n=== STEP 7: CHECK DUPLICATES ===\n";
+    $configDir = __DIR__ . '/config/businesses/';
+    if (is_dir($configDir)) {
+        $allConfigs = glob($configDir . '*.php');
+        foreach ($allConfigs as $cf) {
+            if (basename($cf) === 'cqc.php') continue;
+            $cfg = @include $cf;
+            if (is_array($cfg)) {
+                $db = $cfg['database'] ?? '';
+                if ($db === 'adf_cqc' || $db === 'adfb2574_cqc') {
+                    echo "  ⚠️ Duplicate: " . basename($cf) . " (db=$db) → Removing\n";
+                    @unlink($cf);
+                }
+            }
+        }
+    }
+    echo "  ✅ Duplicates check done\n";
+    
+    echo "\n=== ALL FIXES APPLIED ===\n";
+    echo "\n⚠️  User 'ilham' MUST LOGOUT and LOGIN again!\n";
+    echo "   (Old session has wrong active_business_id)\n";
+    echo "\n   After re-login, the CQC gold theme + CQC Projects menu will appear.\n";
     
 } catch (Exception $e) {
-    echo "❌ <strong>Error:</strong> " . htmlspecialchars($e->getMessage()) . "\n";
-    echo "<p>User: <code>$dbUser</code></p>\n";
-    echo "<p>Database: <code>$dbName</code></p>\n";
+    echo "❌ Error: " . $e->getMessage() . "\n";
 }
-?>
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
-h2, h3 { color: #333; }
-code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
-pre { overflow-x: auto; }
-</style>
+
+echo "\n=== DONE ===\n";
+echo "</pre>";
