@@ -1717,6 +1717,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             </div>
         </div>
         
+        <?php if (!$isCQC): // Only show for non-CQC businesses ?>
         <!-- Summary -->
         <div class="summary-card">
             <div class="summary-title">Monthly Performance</div>
@@ -1763,6 +1764,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <?php endif; ?>
             </ul>
         </div>
+        <?php endif; // end if (!$isCQC) ?>
 
         <?php endif; // end if (!$error) ?>
 
