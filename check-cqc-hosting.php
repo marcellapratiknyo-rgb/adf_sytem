@@ -2,6 +2,9 @@
 /**
  * Diagnose CQC menu/dashboard issues on hosting
  */
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 $isHosting = (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') === false);
 if ($isHosting) {
     $dbHost = 'localhost';
@@ -15,111 +18,112 @@ if ($isHosting) {
     $systemDb = 'adf_system';
 }
 
-echo "<pre>\n";
+echo "<pre style='font-size:14px; line-height:1.6;'>\n";
 echo "=== CQC HOSTING DIAGNOSTIC ===\n";
 echo "Environment: " . ($isHosting ? 'HOSTING' : 'LOCAL') . "\n";
 echo "Date: " . date('Y-m-d H:i:s') . "\n\n";
 
-// Check 1: Git HEAD
-echo "=== 1. GIT HEAD ===\n";
-$gitHead = trim(shell_exec('git rev-parse --short HEAD 2>&1') ?? 'N/A');
-$gitLog = trim(shell_exec('git log --oneline -3 2>&1') ?? 'N/A');
-echo "HEAD: $gitHead\n";
-echo "Recent commits:\n$gitLog\n\n";
+// Check 1: Key file contents (is code deployed?)
+echo "=== 1. CODE DEPLOYMENT CHECK ===\n";
 
-// Check 2: header.php CQC line
-echo "=== 2. HEADER.PHP - CQC check ===\n";
-$headerFile = __DIR__ . '/includes/header.php';
-if (file_exists($headerFile)) {
-    $headerContent = file_get_contents($headerFile);
-    if (strpos($headerContent, "hasPermission('cqc-projects')") !== false) {
-        echo "✅ Uses hasPermission('cqc-projects') (NEW code)\n";
-    } elseif (strpos($headerContent, "isModuleEnabled('cqc-projects')") !== false) {
-        echo "⚠️ Uses isModuleEnabled('cqc-projects') (OLD code)\n";
-    } else {
-        echo "❌ No CQC check found in header!\n";
-    }
-    
-    // Check the exact line
-    $lines = explode("\n", $headerContent);
-    foreach ($lines as $i => $line) {
-        if (stripos($line, 'cqc-projects') !== false || stripos($line, 'cqc_projects') !== false) {
-            echo "  Line " . ($i+1) . ": " . trim($line) . "\n";
-        }
-    }
-} else {
-    echo "❌ header.php not found!\n";
-}
-
-// Check 3: index.php CQC check
-echo "\n=== 3. INDEX.PHP - isCQC check ===\n";
 $indexFile = __DIR__ . '/index.php';
-if (file_exists($indexFile)) {
-    $indexContent = file_get_contents($indexFile);
-    if (strpos($indexContent, '$isCQC') !== false) {
-        echo "✅ Has \$isCQC variable\n";
-    } else {
-        echo "❌ No \$isCQC in index.php!\n";
-    }
-    
-    if (strpos($indexContent, 'Semua Proyek') !== false) {
-        echo "✅ Has 'Semua Proyek' table\n";
-    } else {
-        echo "❌ No 'Semua Proyek' section in index.php!\n";
-    }
-    
-    if (strpos($indexContent, 'projectPieChart') !== false) {
-        echo "✅ Has project pie charts\n";
-    } else {
-        echo "❌ No project pie charts!\n";
+$indexContent = file_exists($indexFile) ? file_get_contents($indexFile) : '';
+$checks = [
+    'index.php has $isCQC' => strpos($indexContent, '$isCQC') !== false,
+    'index.php has Semua Proyek' => strpos($indexContent, 'Semua Proyek') !== false,
+    'index.php has projectPieChart' => strpos($indexContent, 'projectPieChart') !== false,
+];
+
+$headerFile = __DIR__ . '/includes/header.php';
+$headerContent = file_exists($headerFile) ? file_get_contents($headerFile) : '';
+$checks['header uses hasPermission for CQC'] = strpos($headerContent, "hasPermission('cqc-projects')") !== false;
+$checks['header uses OLD isModuleEnabled'] = strpos($headerContent, "isModuleEnabled('cqc-projects')") !== false;
+
+$permFile = __DIR__ . '/developer/permissions.php';
+$permContent = file_exists($permFile) ? file_get_contents($permFile) : '';
+$checks['permissions.php has menu_code fix'] = strpos($permContent, "code_' . \$menu['menu_code']") !== false;
+
+foreach ($checks as $label => $result) {
+    echo ($result ? "✅" : "❌") . " $label\n";
+}
+
+// Check 2: Config file
+echo "\n=== 2. CONFIG FILE ===\n";
+$cqcConfigFile = __DIR__ . '/config/businesses/cqc.php';
+if (file_exists($cqcConfigFile)) {
+    $cqcConfig = require $cqcConfigFile;
+    echo "✅ config/businesses/cqc.php exists\n";
+    echo "  business_id: " . ($cqcConfig['business_id'] ?? 'N/A') . "\n";
+    echo "  enabled_modules: " . implode(', ', $cqcConfig['enabled_modules'] ?? []) . "\n";
+} else {
+    echo "❌ config/businesses/cqc.php NOT FOUND!\n";
+    echo "  Available configs:\n";
+    foreach (glob(__DIR__ . '/config/businesses/*.php') as $f) {
+        echo "    - " . basename($f) . "\n";
     }
 }
 
-// Check 4: Database
-echo "\n=== 4. DATABASE - menu_items ===\n";
+// Check 3: Database
+echo "\n=== 3. DATABASE ===\n";
 try {
     $pdo = new PDO("mysql:host=$dbHost;dbname=$systemDb", $dbUser, $dbPass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    $menus = $pdo->query("SELECT id, menu_code, menu_name FROM menu_items ORDER BY menu_order")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($menus as $m) {
-        $mark = ($m['menu_code'] === 'cqc-projects') ? '👈 CQC' : '';
-        echo "  ID:{$m['id']} | {$m['menu_code']} | {$m['menu_name']} $mark\n";
+    $biz = $pdo->query("SELECT id, business_code, slug, database_name FROM businesses WHERE business_code = 'CQC'")->fetch(PDO::FETCH_ASSOC);
+    if ($biz) {
+        echo "✅ CQC business: ID={$biz['id']}, slug=" . ($biz['slug'] ?? 'NULL') . ", db={$biz['database_name']}\n";
+    } else {
+        echo "❌ CQC business NOT FOUND in DB!\n";
     }
     
-    echo "\n=== 5. CQC Business Menu Config ===\n";
-    $bmc = $pdo->query("SELECT bmc.menu_id, m.menu_code FROM business_menu_config bmc JOIN menu_items m ON m.id = bmc.menu_id WHERE bmc.business_id = 7")->fetchAll(PDO::FETCH_ASSOC);
-    foreach ($bmc as $b) {
-        echo "  menu_id:{$b['menu_id']} | {$b['menu_code']}\n";
+    $menu = $pdo->query("SELECT id, menu_code, menu_name FROM menu_items WHERE menu_code = 'cqc-projects'")->fetch(PDO::FETCH_ASSOC);
+    echo ($menu ? "✅ cqc-projects menu: ID={$menu['id']}" : "❌ cqc-projects NOT in menu_items!") . "\n";
+    
+    if ($biz && $menu) {
+        $bmc = $pdo->query("SELECT id FROM business_menu_config WHERE business_id = {$biz['id']} AND menu_id = {$menu['id']}")->fetch();
+        echo ($bmc ? "✅" : "❌") . " cqc-projects assigned to CQC business\n";
     }
     
-    echo "\n=== 6. User Permissions for CQC (business_id=7) ===\n";
-    $perms = $pdo->query("SELECT ump.user_id, u.username, ump.menu_code, ump.menu_id FROM user_menu_permissions ump JOIN users u ON u.id = ump.user_id WHERE ump.business_id = 7 ORDER BY u.username, ump.menu_code")->fetchAll(PDO::FETCH_ASSOC);
-    $currentUser = '';
-    foreach ($perms as $p) {
-        if ($p['username'] !== $currentUser) {
-            echo "\n  User: {$p['username']} (ID:{$p['user_id']})\n";
-            $currentUser = $p['username'];
-        }
-        $mark = ($p['menu_code'] === 'cqc-projects') ? ' 👈' : '';
-        echo "    - {$p['menu_code']} (menu_id:{$p['menu_id']})$mark\n";
+    echo "\n=== 4. USER PERMISSIONS (CQC) ===\n";
+    $bizId = $biz['id'] ?? 7;
+    $users = $pdo->query("
+        SELECT u.id, u.username, r.role_code,
+               GROUP_CONCAT(ump.menu_code ORDER BY ump.menu_code) as menus
+        FROM users u 
+        JOIN roles r ON r.id = u.role_id
+        JOIN user_business_assignment uba ON uba.user_id = u.id AND uba.business_id = $bizId
+        LEFT JOIN user_menu_permissions ump ON ump.user_id = u.id AND ump.business_id = $bizId
+        GROUP BY u.id, u.username, r.role_code
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($users as $u) {
+        $hasCqcPerm = strpos($u['menus'] ?? '', 'cqc-projects') !== false;
+        echo "\n  User: {$u['username']} (ID:{$u['id']}, role:{$u['role_code']})\n";
+        echo "  cqc-projects: " . ($hasCqcPerm ? '✅ YES' : '❌ NO') . "\n";
+        echo "  Menus: " . ($u['menus'] ?? 'NONE') . "\n";
     }
     
 } catch (Exception $e) {
     echo "❌ DB Error: " . $e->getMessage() . "\n";
 }
 
-// Check 5: Config file
-echo "\n=== 7. CONFIG FILE ===\n";
-$cqcConfigFile = __DIR__ . '/config/businesses/cqc.php';
-if (file_exists($cqcConfigFile)) {
-    $cqcConfig = require $cqcConfigFile;
-    echo "✅ cqc.php exists\n";
-    echo "  enabled_modules: " . implode(', ', $cqcConfig['enabled_modules'] ?? []) . "\n";
-} else {
-    echo "❌ config/businesses/cqc.php NOT FOUND!\n";
+// Check 5: Session
+echo "\n=== 5. CURRENT SESSION ===\n";
+if (session_status() === PHP_SESSION_NONE) session_start();
+echo "  active_business_id: " . ($_SESSION['active_business_id'] ?? 'NOT SET') . "\n";
+echo "  business_id: " . ($_SESSION['business_id'] ?? 'NOT SET') . "\n";
+echo "  username: " . ($_SESSION['username'] ?? 'NOT SET') . "\n";
+echo "  role: " . ($_SESSION['role'] ?? 'NOT SET') . "\n";
+
+// Check 6: File timestamps
+echo "\n=== 6. FILE TIMESTAMPS ===\n";
+$files = ['index.php', 'includes/header.php', 'developer/permissions.php', 'login.php'];
+foreach ($files as $f) {
+    $fullPath = __DIR__ . '/' . $f;
+    if (file_exists($fullPath)) {
+        echo "  $f: " . date('Y-m-d H:i:s', filemtime($fullPath)) . "\n";
+    }
 }
 
 echo "\n=== DONE ===\n";
 echo "</pre>";
-?>
