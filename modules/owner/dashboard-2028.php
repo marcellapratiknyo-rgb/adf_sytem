@@ -1523,16 +1523,16 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         </div>
         
         <?php if ($isCQC): ?>
-        <!-- CQC Project Monitoring - Modern 2027 Design -->
-        <div style="margin: 14px 0; padding: 18px; background: #ffffff; border-radius: 16px; box-shadow: 0 1px 12px rgba(0,0,0,0.04);">
+        <!-- CQC Project Monitoring - Elegant Minimal -->
+        <div style="margin: 12px 0; padding: 14px; background: #ffffff; border-radius: 14px; box-shadow: 0 1px 8px rgba(0,0,0,0.03);">
             <!-- Header -->
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
-                <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);">
-                    <span style="font-size: 18px;">☀️</span>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <div style="width: 28px; height: 28px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <span style="font-size: 14px;">☀️</span>
                 </div>
                 <div>
-                    <div style="font-size: 9px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px;">CQC Enjiniring</div>
-                    <div style="font-size: 15px; font-weight: 600; color: #374151; letter-spacing: -0.3px;">Project Monitoring</div>
+                    <div style="font-size: 7px; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">CQC Enjiniring</div>
+                    <div style="font-size: 12px; font-weight: 600; color: #374151; letter-spacing: -0.2px;">Project Monitoring</div>
                 </div>
             </div>
             
@@ -1543,29 +1543,29 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 <div style="font-size: 11px; margin-top: 4px;">Tambahkan proyek di menu CQC Projects</div>
             </div>
             <?php else: ?>
-            <!-- Summary Row - Modern 2027 Typography -->
+            <!-- Summary Row - Elegant Compact -->
             <?php
             $totalBudget = array_sum(array_column($cqcProjects, 'budget_idr'));
             $totalSpent = array_sum(array_column($cqcProjects, 'spent_idr'));
             $totalRemaining = $totalBudget - $totalSpent;
             $avgProgress = count($cqcProjects) > 0 ? round(array_sum(array_column($cqcProjects, 'progress_percentage')) / count($cqcProjects)) : 0;
             ?>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
-                <div style="text-align: center; padding: 14px 10px; background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 24px; font-weight: 800; color: #111827;"><?php echo count($cqcProjects); ?></div>
-                    <div style="font-size: 10px; color: #9ca3af; font-weight: 500; margin-top: 4px;">Proyek</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px;">
+                <div style="text-align: center; padding: 10px 6px; background: #f9fafb; border-radius: 10px;">
+                    <div style="font-size: 18px; font-weight: 700; color: #111827;"><?php echo count($cqcProjects); ?></div>
+                    <div style="font-size: 8px; color: #9ca3af; font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px;">Proyek</div>
                 </div>
-                <div style="text-align: center; padding: 14px 10px; background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 13px; font-weight: 700; color: #374151; font-family: 'Inter', system-ui;">Rp <?php echo number_format($totalBudget, 0, ',', '.'); ?></div>
-                    <div style="font-size: 10px; color: #9ca3af; font-weight: 500; margin-top: 4px;">Total Budget</div>
+                <div style="text-align: center; padding: 10px 6px; background: #f9fafb; border-radius: 10px;">
+                    <div style="font-size: 10px; font-weight: 600; color: #374151; font-family: system-ui;">Rp <?php echo number_format($totalBudget, 0, ',', '.'); ?></div>
+                    <div style="font-size: 8px; color: #9ca3af; font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px;">Total Budget</div>
                 </div>
-                <div style="text-align: center; padding: 14px 10px; background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 13px; font-weight: 700; color: #f59e0b; font-family: 'Inter', system-ui;">Rp <?php echo number_format($totalSpent, 0, ',', '.'); ?></div>
-                    <div style="font-size: 10px; color: #9ca3af; font-weight: 500; margin-top: 4px;">Terpakai</div>
+                <div style="text-align: center; padding: 10px 6px; background: #fef2f2; border-radius: 10px;">
+                    <div style="font-size: 10px; font-weight: 600; color: #ef4444; font-family: system-ui;">Rp <?php echo number_format($totalSpent, 0, ',', '.'); ?></div>
+                    <div style="font-size: 8px; color: #9ca3af; font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px;">Terpakai</div>
                 </div>
-                <div style="text-align: center; padding: 14px 10px; background: #fff; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
-                    <div style="font-size: 24px; font-weight: 800; color: #10b981;"><?php echo $avgProgress; ?>%</div>
-                    <div style="font-size: 10px; color: #9ca3af; font-weight: 500; margin-top: 4px;">Progress</div>
+                <div style="text-align: center; padding: 10px 6px; background: #f0fdf4; border-radius: 10px;">
+                    <div style="font-size: 18px; font-weight: 700; color: #10b981;"><?php echo $avgProgress; ?>%</div>
+                    <div style="font-size: 8px; color: #9ca3af; font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.3px;">Progress</div>
                 </div>
             </div>
             
