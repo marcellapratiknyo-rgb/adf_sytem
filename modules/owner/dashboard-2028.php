@@ -1673,7 +1673,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                         <!-- RIGHT: Category Expense Pie -->
                         <div style="text-align: center;">
                             <div style="font-size: 8px; color: #9ca3af; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">Per Kategori</div>
-                            <!-- DEBUG: catExpenses count = <?php echo count($catExpenses); ?> -->
+                            <!-- DEBUG: proj_id=<?php echo $proj['id']; ?> catExpenses=<?php echo json_encode($catExpenses); ?> -->
                             <?php if (!empty($catExpenses) && floatval($catExpenses[0]['total_amount'] ?? 0) > 0): ?>
                             <div style="position: relative; width: 70px; height: 70px; margin: 0 auto;">
                                 <canvas id="cqcCatPie<?php echo $idx; ?>"></canvas>
