@@ -300,37 +300,28 @@ if ($isCQC) {
             }
         }
         
-        // Also add project expenses to stats
+        // Also add project expenses to stats - use spent_idr directly from projects
         try {
-            // Today expense from cqc_project_expenses
-            $stmt = $cqcPdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cqc_project_expenses WHERE expense_date = ?");
-            $stmt->execute([$today]);
-            $projectExpenseToday = (float)$stmt->fetchColumn();
-            $stats['today_expense'] += $projectExpenseToday;
+            // Get total spent from all projects for this month (using spent_idr directly)
+            $stmt = $cqcPdo->query("SELECT COALESCE(SUM(spent_idr), 0) as total_spent, COALESCE(SUM(budget_idr), 0) as total_budget FROM cqc_projects WHERE status != 'completed'");
+            $projTotals = $stmt->fetch(PDO::FETCH_ASSOC);
+            $totalProjectSpent = (float)($projTotals['total_spent'] ?? 0);
+            $totalProjectBudget = (float)($projTotals['total_budget'] ?? 0);
             
-            // Month expense from cqc_project_expenses
-            $stmt = $cqcPdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cqc_project_expenses WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?");
-            $stmt->execute([$thisMonth]);
-            $projectExpenseMonth = (float)$stmt->fetchColumn();
-            $stats['month_expense'] += $projectExpenseMonth;
-            
-            // Total budget as "income" (representing project values)
-            $stmt = $cqcPdo->query("SELECT COALESCE(SUM(budget_idr), 0) FROM cqc_projects WHERE status != 'completed'");
-            $totalBudget = (float)$stmt->fetchColumn();
+            // For CQC: Income = Total Budget, Expense = Total Spent
             if ($stats['month_income'] == 0) {
-                $stats['month_income'] = $totalBudget;
+                $stats['month_income'] = $totalProjectBudget;
             }
-        } catch (Exception $e) {
-            // amount_idr not found, try amount
+            $stats['month_expense'] += $totalProjectSpent;
+            
+            // Also try from cqc_project_expenses table
             try {
                 $stmt = $cqcPdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cqc_project_expenses WHERE expense_date = ?");
                 $stmt->execute([$today]);
                 $stats['today_expense'] += (float)$stmt->fetchColumn();
-                
-                $stmt = $cqcPdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cqc_project_expenses WHERE DATE_FORMAT(expense_date, '%Y-%m') = ?");
-                $stmt->execute([$thisMonth]);
-                $stats['month_expense'] += (float)$stmt->fetchColumn();
-            } catch (Exception $e2) {}
+            } catch (Exception $e) {}
+        } catch (Exception $e) {
+            error_log('CQC stats error: ' . $e->getMessage());
         }
         
         // Simple query - just get projects
@@ -814,8 +805,8 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             flex-shrink: 0;
         }
         
-        .legend-dot.income { background: #34d399; box-shadow: 0 0 8px rgba(52,211,153,0.5); }
-        .legend-dot.expense { background: #fb7185; box-shadow: 0 0 8px rgba(251,113,133,0.5); }
+        .legend-dot.income { background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+        .legend-dot.expense { background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 0 10px rgba(245,158,11,0.4); }
         
         .legend-text {
             display: flex;
@@ -824,20 +815,21 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         }
         
         .legend-label {
-            font-size: 8px;
-            opacity: 0.5;
+            font-size: 9px;
+            color: #9ca3af;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             font-weight: 500;
         }
         
         .legend-value {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
             letter-spacing: -0.3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #e5e7eb;
         }
         
         /* Stats Grid */
@@ -1494,21 +1486,21 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                             <span class="legend-dot income"></span>
                             <div class="legend-text">
                                 <span class="legend-label">Income</span>
-                                <span class="legend-value"><?= rp($stats['month_income']) ?></span>
+                                <span class="legend-value" style="color: #6ee7b7;"><?= rp($stats['month_income']) ?></span>
                             </div>
                         </div>
                         <div class="legend-item">
                             <span class="legend-dot expense"></span>
                             <div class="legend-text">
                                 <span class="legend-label">Expense</span>
-                                <span class="legend-value"><?= rp($stats['month_expense']) ?></span>
+                                <span class="legend-value" style="color: #fbbf24;"><?= rp($stats['month_expense']) ?></span>
                             </div>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-dot" style="background:linear-gradient(135deg,#a78bfa,#60a5fa);box-shadow:0 0 8px rgba(167,139,250,0.5)"></span>
+                            <span class="legend-dot" style="background:linear-gradient(135deg,#10b981,#6ee7b7);box-shadow:0 0 10px rgba(16,185,129,0.4)"></span>
                             <div class="legend-text">
                                 <span class="legend-label">Profit</span>
-                                <span class="legend-value" style="color:<?= $netProfit >= 0 ? '#34d399' : '#fb7185' ?>"><?= $netProfit >= 0 ? '+' : '' ?><?= rp($netProfit) ?></span>
+                                <span class="legend-value" style="color:<?= $netProfit >= 0 ? '#6ee7b7' : '#fb7185' ?>"><?= $netProfit >= 0 ? '+' : '' ?><?= rp($netProfit) ?></span>
                             </div>
                         </div>
                     </div>
@@ -1599,13 +1591,26 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     $kwp = floatval($proj['solar_capacity_kwp'] ?? 0);
                     $startDate = $proj['start_date'] ?? null;
                     $estCompletion = $proj['estimated_completion'] ?? null;
+                    // Varied colors per project
+                    $projectColorPalette = [
+                        ['#10b981', '#6ee7b7'], // Green
+                        ['#f59e0b', '#fcd34d'], // Yellow/Orange
+                        ['#3b82f6', '#93c5fd'], // Blue
+                        ['#8b5cf6', '#c4b5fd'], // Purple
+                        ['#ec4899', '#f9a8d4'], // Pink
+                        ['#06b6d4', '#67e8f9'], // Cyan
+                        ['#84cc16', '#bef264'], // Lime
+                        ['#f97316', '#fdba74'], // Orange
+                    ];
+                    $projColorIdx = $idx % count($projectColorPalette);
+                    $projColor = $projectColorPalette[$projColorIdx][0];
                 ?>
                 <div class="cqc-project-card" onclick="toggleExpenseDetail(<?php echo $idx; ?>)" style="background: #fff; border-radius: 16px; padding: 18px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.06); cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 32px rgba(245,158,11,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)';">
                     <!-- Header -->
                     <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 14px;">
                         <div>
-                            <div style="font-size: 10px; color: #f59e0b; font-weight: 700; letter-spacing: 1px; font-family: system-ui;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
-                            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 3px; line-height: 1.3;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                            <div style="font-size: 10px; color: #9ca3af; font-weight: 600; letter-spacing: 1px; font-family: system-ui;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
+                            <div style="font-size: 14px; font-weight: 600; color: #4b5563; margin-top: 3px; line-height: 1.3;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
                         </div>
                         <span style="display:inline-block; padding:5px 12px; border-radius:20px; font-size:10px; font-weight:600; background: <?php echo $statusColor; ?>15; color: <?php echo $statusColor; ?>; letter-spacing: 0.3px;"><?php echo $statusLabel; ?></span>
                     </div>
@@ -1636,7 +1641,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 14px;">
                         <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                            <div style="font-size: 20px; font-weight: 800; color: #111827; line-height: 1; letter-spacing: -1px;"><?php echo $progress; ?>%</div>
+                            <div style="font-size: 22px; font-weight: 800; color: <?php echo $projColor; ?>; line-height: 1; letter-spacing: -1px; text-shadow: 0 2px 8px <?php echo $projColor; ?>33;"><?php echo $progress; ?>%</div>
                         </div>
                     </div>
                     
@@ -1942,10 +1947,10 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         gIncome.addColorStop(1, '#6ee7b7');
         drawArc(startAngle + gap/2, startAngle + incomeAngle - gap/2, gIncome);
 
-        // Expense arc (red/coral)
+        // Expense arc (yellow/orange)
         var gExpense = ctx.createLinearGradient(size, 0, 0, size);
-        gExpense.addColorStop(0, '#f43f5e');
-        gExpense.addColorStop(1, '#fda4af');
+        gExpense.addColorStop(0, '#f59e0b');
+        gExpense.addColorStop(1, '#fcd34d');
         drawArc(startAngle + incomeAngle + gap/2, startAngle + incomeAngle + expenseAngle - gap/2, gExpense);
 
         // Inner hole - dark glass
@@ -1973,19 +1978,33 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
     });
     
     <?php if ($isCQC && !empty($cqcProjects)): ?>
-    // CQC PROJECT PIE CHARTS - Attractive gradient colors
-    <?php foreach ($cqcProjects as $idx => $proj): 
+    // CQC PROJECT PIE CHARTS - Varied gradient colors per project
+    <?php 
+    $projectColors = [
+        ['#10b981', '#6ee7b7'], // Green
+        ['#f59e0b', '#fcd34d'], // Yellow/Orange
+        ['#3b82f6', '#93c5fd'], // Blue
+        ['#8b5cf6', '#c4b5fd'], // Purple
+        ['#ec4899', '#f9a8d4'], // Pink
+        ['#06b6d4', '#67e8f9'], // Cyan
+        ['#84cc16', '#bef264'], // Lime
+        ['#f97316', '#fdba74'], // Orange
+    ];
+    foreach ($cqcProjects as $idx => $proj): 
         $progress = intval($proj['progress_percentage'] ?? 0);
+        $colorIdx = $idx % count($projectColors);
+        $color1 = $projectColors[$colorIdx][0];
+        $color2 = $projectColors[$colorIdx][1];
     ?>
     (function() {
         const ctx = document.getElementById('cqcPie<?php echo $idx; ?>');
         if (!ctx) return;
         
-        // Create gradient
+        // Create gradient with varied colors
         const chartCtx = ctx.getContext('2d');
         const gradient = chartCtx.createLinearGradient(0, 0, 0, 110);
-        gradient.addColorStop(0, '#f59e0b');
-        gradient.addColorStop(1, '#d97706');
+        gradient.addColorStop(0, '<?php echo $color1; ?>');
+        gradient.addColorStop(1, '<?php echo $color2; ?>');
         
         new Chart(chartCtx, {
             type: 'doughnut',
@@ -1995,10 +2014,10 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     data: [<?php echo $progress; ?>, <?php echo 100 - $progress; ?>],
                     backgroundColor: [
                         gradient,
-                        '#f3f4f6'
+                        '#e5e7eb'
                     ],
                     borderWidth: 0,
-                    hoverBackgroundColor: ['#d97706', '#e5e7eb']
+                    hoverBackgroundColor: ['<?php echo $color1; ?>', '#d1d5db']
                 }]
             },
             options: {
@@ -2008,11 +2027,12 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 plugins: { 
                     legend: { display: false }, 
                     tooltip: {
-                        backgroundColor: '#1f2937', 
-                        titleColor: '#f59e0b', 
-                        bodyColor: '#fff',
-                        cornerRadius: 8, 
-                        padding: 10,
+                        backgroundColor: '#374151', 
+                        titleColor: '<?php echo $color2; ?>', 
+                        bodyColor: '#e5e7eb',
+                        cornerRadius: 10, 
+                        padding: 12,
+                        displayColors: false,
                         callbacks: {
                             label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; }
                         }
