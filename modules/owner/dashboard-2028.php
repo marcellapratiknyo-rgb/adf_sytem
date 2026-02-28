@@ -398,6 +398,7 @@ if ($isCQC) {
             
             // Get expenses grouped by category for pie chart
             $cqcCategoryExpenses[$proj['id']] = [];
+            error_log("CQC Category Query: Starting for project_id=" . $proj['id']);
             try {
                 // First try with category join
                 $stmtCat = $cqcPdo->prepare("
@@ -414,10 +415,12 @@ if ($isCQC) {
                 ");
                 $stmtCat->execute([$proj['id']]);
                 $result = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+                error_log("CQC Category Query: project_id=" . $proj['id'] . " result=" . json_encode($result));
                 if (!empty($result)) {
                     $cqcCategoryExpenses[$proj['id']] = $result;
                 }
             } catch (Exception $catEx) {
+                error_log("CQC Category Query Error: " . $catEx->getMessage());
                 // If category table doesn't exist, just group as "Lainnya"
                 try {
                     $stmtSimple = $cqcPdo->prepare("
@@ -1651,7 +1654,11 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     </div>
                     
                     <!-- Two Column Layout: Status/Progress + Category Pie -->
-                    <?php $catExpenses = $cqcCategoryExpenses[$proj['id']] ?? []; ?>
+                    <?php 
+                    $catExpenses = $cqcCategoryExpenses[$proj['id']] ?? []; 
+                    // DEBUG: output to JS console
+                    echo "<script>console.log('Project ID: " . $proj['id'] . "', 'catExpenses:', " . json_encode($catExpenses) . ");</script>";
+                    ?>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                         <!-- LEFT: Status & Progress -->
                         <div style="text-align: center;">
