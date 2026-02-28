@@ -777,7 +777,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         .legend {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             flex: 1;
             min-width: 0;
         }
@@ -785,22 +785,23 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 5px;
-            background: transparent;
-            border: none;
-            border-radius: 6px;
-            padding: 3px 6px;
+            gap: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 6px 10px;
         }
         
         .legend-dot {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             flex-shrink: 0;
         }
         
         .legend-dot.income { background: #10b981; }
-        .legend-dot.expense { background: #f59e0b; }
+        .legend-dot.expense { background: #ef4444; }
+        .legend-dot.profit { background: #f59e0b; }
         
         .legend-text {
             display: flex;
@@ -810,21 +811,21 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         }
         
         .legend-label {
-            font-size: 8px;
-            color: #6b7280;
+            font-size: 10px;
+            color: #9ca3af;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 500;
         }
         
         .legend-value {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: -0.2px;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: #d1d5db;
+            color: #1f2937;
             text-decoration: none;
         }
         
@@ -1205,16 +1206,16 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             margin-bottom: 2px;
         }
         
-        /* Hero Today Row - Minimal */
+        /* Hero Today Row - Clean */
         .hero-today-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255,255,255,0.03);
-            border-radius: 10px;
-            padding: 8px 10px;
-            margin-top: 12px;
-            gap: 4px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-top: 14px;
+            gap: 8px;
         }
         .hero-today-item {
             display: flex;
@@ -1223,25 +1224,25 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             flex: 1;
         }
         .hero-today-label {
-            font-size: 7px;
-            color: #6b7280;
+            font-size: 9px;
+            color: #9ca3af;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
             font-weight: 500;
         }
         .hero-today-value {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: -0.2px;
-            color: #d1d5db;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: #e5e7eb;
         }
         .hero-today-value.income { color: #10b981; }
-        .hero-today-value.expense { color: #f59e0b; }
+        .hero-today-value.expense { color: #ef4444; }
         .hero-today-divider {
             width: 1px;
-            height: 20px;
-            background: rgba(255,255,255,0.08);
+            height: 28px;
+            background: rgba(255,255,255,0.1);
         }
 
         /* Dev Badge */
@@ -1491,7 +1492,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                             </div>
                         </div>
                         <div class="legend-item">
-                            <span class="legend-dot" style="background:<?= $netProfit >= 0 ? '#10b981' : '#ef4444' ?>"></span>
+                            <span class="legend-dot profit"></span>
                             <div class="legend-text">
                                 <span class="legend-label">Profit</span>
                                 <span class="legend-value"><?= $netProfit >= 0 ? '+' : '' ?><?= rp($netProfit) ?></span>
@@ -1599,87 +1600,87 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     $projColorIdx = $idx % count($projectColorPalette);
                     $projColor = $projectColorPalette[$projColorIdx][0];
                 ?>
-                <div class="cqc-project-card" onclick="toggleExpenseDetail(<?php echo $idx; ?>)" style="background: #fff; border-radius: 16px; padding: 18px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.06); cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1);" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 32px rgba(245,158,11,0.15)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0,0,0,0.06)';">
+                <div class="cqc-project-card" onclick="toggleExpenseDetail(<?php echo $idx; ?>)" style="background: #fff; border-radius: 14px; padding: 14px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.08)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';">
                     <!-- Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                         <div>
-                            <div style="font-size: 10px; color: #9ca3af; font-weight: 600; letter-spacing: 1px; font-family: system-ui;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
-                            <div style="font-size: 14px; font-weight: 600; color: #4b5563; margin-top: 3px; line-height: 1.3;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                            <div style="font-size: 8px; color: #9ca3af; font-weight: 600; letter-spacing: 0.8px; font-family: system-ui;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
+                            <div style="font-size: 12px; font-weight: 600; color: #374151; margin-top: 2px; line-height: 1.25;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
                         </div>
-                        <span style="display:inline-block; padding:5px 12px; border-radius:20px; font-size:10px; font-weight:600; background: <?php echo $statusColor; ?>15; color: <?php echo $statusColor; ?>; letter-spacing: 0.3px;"><?php echo $statusLabel; ?></span>
+                        <span style="display:inline-block; padding:3px 8px; border-radius:12px; font-size:8px; font-weight:600; background: <?php echo $statusColor; ?>12; color: <?php echo $statusColor; ?>; letter-spacing: 0.2px;"><?php echo $statusLabel; ?></span>
                     </div>
                     
                     <!-- Project Info - KVA, Dates -->
-                    <div style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">
                         <?php if ($kwp > 0): ?>
-                        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 8px;">
-                            <span style="font-size: 12px;">⚡</span>
-                            <span style="font-size: 11px; font-weight: 600; color: #92400e;"><?php echo number_format($kwp, 1); ?> kWp</span>
+                        <div style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 6px;">
+                            <span style="font-size: 9px;">⚡</span>
+                            <span style="font-size: 9px; font-weight: 600; color: #92400e;"><?php echo number_format($kwp, 1); ?> kWp</span>
                         </div>
                         <?php endif; ?>
                         <?php if ($startDate): ?>
-                        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: #f0fdf4; border-radius: 8px;">
-                            <span style="font-size: 10px;">🚀</span>
-                            <span style="font-size: 10px; font-weight: 500; color: #166534;"><?php echo date('d M Y', strtotime($startDate)); ?></span>
+                        <div style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; background: #f0fdf4; border-radius: 6px;">
+                            <span style="font-size: 8px;">🚀</span>
+                            <span style="font-size: 8px; font-weight: 500; color: #166534;"><?php echo date('d M Y', strtotime($startDate)); ?></span>
                         </div>
                         <?php endif; ?>
                         <?php if ($estCompletion): ?>
-                        <div style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; background: #eff6ff; border-radius: 8px;">
-                            <span style="font-size: 10px;">🎯</span>
-                            <span style="font-size: 10px; font-weight: 500; color: #1e40af;"><?php echo date('d M Y', strtotime($estCompletion)); ?></span>
+                        <div style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; background: #eff6ff; border-radius: 6px;">
+                            <span style="font-size: 8px;">🎯</span>
+                            <span style="font-size: 8px; font-weight: 500; color: #1e40af;"><?php echo date('d M Y', strtotime($estCompletion)); ?></span>
                         </div>
                         <?php endif; ?>
                     </div>
                     
                     <!-- Pie Chart - Compact -->
-                    <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 14px;">
+                    <div style="position: relative; width: 80px; height: 80px; margin: 0 auto 10px;">
                         <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                            <div style="font-size: 22px; font-weight: 800; color: <?php echo $projColor; ?>; line-height: 1; letter-spacing: -1px; text-shadow: 0 2px 8px <?php echo $projColor; ?>33;"><?php echo $progress; ?>%</div>
+                            <div style="font-size: 16px; font-weight: 700; color: <?php echo $projColor; ?>; line-height: 1; letter-spacing: -0.5px;"><?php echo $progress; ?>%</div>
                         </div>
                     </div>
                     
                     <!-- Financial Stats - Elegant minimal -->
-                    <div style="background: linear-gradient(135deg, #f9fafb, #f3f4f6); border-radius: 12px; padding: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 4px;">
-                            <span style="font-size: 11px; color: #6b7280; font-weight: 500;">Budget</span>
-                            <span style="font-size: 12px; font-weight: 700; color: #374151; font-family: 'Inter', system-ui, sans-serif;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
+                    <div style="background: #f9fafb; border-radius: 10px; padding: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 4px;">
+                            <span style="font-size: 9px; color: #6b7280; font-weight: 500;">Budget</span>
+                            <span style="font-size: 10px; font-weight: 600; color: #374151; font-family: 'Inter', system-ui;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
                         </div>
-                        <div style="height: 1px; background: linear-gradient(90deg, transparent, #e5e7eb, transparent); margin: 0 10px;"></div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 4px;">
-                            <span style="font-size: 11px; color: #6b7280; font-weight: 500;">Terpakai</span>
-                            <span style="font-size: 12px; font-weight: 700; color: #f59e0b; font-family: 'Inter', system-ui, sans-serif;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
+                        <div style="height: 1px; background: #e5e7eb; margin: 0 8px;"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 4px;">
+                            <span style="font-size: 9px; color: #6b7280; font-weight: 500;">Terpakai</span>
+                            <span style="font-size: 10px; font-weight: 600; color: #ef4444; font-family: 'Inter', system-ui;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
                         </div>
-                        <div style="height: 1px; background: linear-gradient(90deg, transparent, #e5e7eb, transparent); margin: 0 10px;"></div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 4px;">
-                            <span style="font-size: 11px; color: #6b7280; font-weight: 500;">Sisa</span>
-                            <span style="font-size: 12px; font-weight: 700; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>; font-family: 'Inter', system-ui, sans-serif;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
+                        <div style="height: 1px; background: #e5e7eb; margin: 0 8px;"></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 4px;">
+                            <span style="font-size: 9px; color: #6b7280; font-weight: 500;">Sisa</span>
+                            <span style="font-size: 10px; font-weight: 600; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>; font-family: 'Inter', system-ui;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
                         </div>
                     </div>
                     
                     <!-- Expense Detail (hidden by default) -->
-                    <div id="expenseDetail<?php echo $idx; ?>" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0f0f0;">
-                        <div style="font-size: 10px; font-weight: 600; color: #4b5563; margin-bottom: 10px;">Pengeluaran Terbaru</div>
+                    <div id="expenseDetail<?php echo $idx; ?>" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0;">
+                        <div style="font-size: 8px; font-weight: 600; color: #6b7280; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Pengeluaran Terbaru</div>
                         <?php if (empty($expenses)): ?>
-                        <div style="text-align: center; padding: 16px; color: #9ca3af; font-size: 11px; background: #fafafa; border-radius: 10px;">
-                            Belum ada pengeluaran tercatat
+                        <div style="text-align: center; padding: 10px; color: #9ca3af; font-size: 9px; background: #fafafa; border-radius: 8px;">
+                            Belum ada pengeluaran
                         </div>
                         <?php else: ?>
                         <?php foreach ($expenses as $exp): ?>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 6px; background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                            <div style="flex: 1;">
-                                <div style="font-size: 11px; font-weight: 500; color: #1f2937;"><?php echo htmlspecialchars($exp['description'] ?? 'Pengeluaran'); ?></div>
-                                <div style="font-size: 10px; color: #9ca3af; margin-top: 3px;"><?php echo $exp['expense_date'] ? date('d M Y', strtotime($exp['expense_date'])) : '-'; ?></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; margin-bottom: 4px; background: #fff; border-radius: 6px; border: 1px solid #f0f0f0;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-size: 9px; font-weight: 500; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($exp['description'] ?? 'Pengeluaran'); ?></div>
+                                <div style="font-size: 8px; color: #9ca3af; margin-top: 1px;"><?php echo $exp['expense_date'] ? date('d M Y', strtotime($exp['expense_date'])) : '-'; ?></div>
                             </div>
-                            <div style="font-size: 12px; font-weight: 700; color: #dc2626; font-family: 'Inter', system-ui, sans-serif;">-Rp <?php echo number_format(floatval($exp['amount'] ?? 0), 0, ',', '.'); ?></div>
+                            <div style="font-size: 9px; font-weight: 600; color: #ef4444; font-family: system-ui; white-space: nowrap; margin-left: 8px;">-Rp <?php echo number_format(floatval($exp['amount'] ?? 0), 0, ',', '.'); ?></div>
                         </div>
                         <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                     
                     <!-- Click indicator -->
-                    <div style="text-align: center; margin-top: 12px;">
-                        <span id="clickHint<?php echo $idx; ?>" style="font-size: 9px; color: #c0c0c0; font-weight: 500;">tap untuk detail</span>
+                    <div style="text-align: center; margin-top: 8px;">
+                        <span id="clickHint<?php echo $idx; ?>" style="font-size: 8px; color: #c0c0c0; font-weight: 500;">tap untuk detail</span>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -1941,10 +1942,10 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         gIncome.addColorStop(1, '#6ee7b7');
         drawArc(startAngle + gap/2, startAngle + incomeAngle - gap/2, gIncome);
 
-        // Expense arc (yellow/orange)
+        // Expense arc (red)
         var gExpense = ctx.createLinearGradient(size, 0, 0, size);
-        gExpense.addColorStop(0, '#f59e0b');
-        gExpense.addColorStop(1, '#fcd34d');
+        gExpense.addColorStop(0, '#ef4444');
+        gExpense.addColorStop(1, '#f87171');
         drawArc(startAngle + incomeAngle + gap/2, startAngle + incomeAngle + expenseAngle - gap/2, gExpense);
 
         // Inner hole - dark glass
