@@ -59,8 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'inverter_type' => trim($_POST['inverter_type'] ?? ''),
         'budget_idr' => floatval(str_replace(['.', ','], '', $_POST['budget_idr'] ?? '0')),
         'progress_percentage' => intval($_POST['progress_percentage'] ?? 0),
-        'start_date' => $_POST['start_date'] ?? null,
-        'estimated_completion' => $_POST['estimated_completion'] ?? null,
+        'start_date' => !empty($_POST['start_date']) ? $_POST['start_date'] : null,
+        'estimated_completion' => !empty($_POST['estimated_completion']) ? $_POST['estimated_completion'] : null,
     ];
 
     if (empty($data['project_name']) || empty($data['project_code'])) {
@@ -84,19 +84,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $editId
                 ]);
             } else {
+                $currentUserId = $_SESSION['user_id'] ?? 1;
                 $sql = "INSERT INTO cqc_projects (
                     project_name, project_code, location, status, description,
                     client_name, client_phone, client_email,
                     solar_capacity_kwp, panel_count, panel_type, inverter_type,
                     budget_idr, progress_percentage, start_date, estimated_completion,
-                    created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+                    created_by, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
                 $stmt = $pdo->prepare($sql);
                 $stmt->execute([
                     $data['project_name'], $data['project_code'], $data['location'], $data['status'],
                     $data['description'], $data['client_name'], $data['client_phone'], $data['client_email'],
                     $data['solar_capacity_kwp'], $data['panel_count'], $data['panel_type'], $data['inverter_type'],
-                    $data['budget_idr'], $data['progress_percentage'], $data['start_date'], $data['estimated_completion']
+                    $data['budget_idr'], $data['progress_percentage'], $data['start_date'], $data['estimated_completion'],
+                    $currentUserId
                 ]);
                 $editId = $pdo->lastInsertId();
             }
