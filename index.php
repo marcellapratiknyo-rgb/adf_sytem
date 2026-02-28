@@ -48,6 +48,22 @@ $displayCompanyName = ($companyNameSetting && $companyNameSetting['setting_value
 $pageTitle = BUSINESS_ICON . ' ' . $displayCompanyName;
 $pageSubtitle = 'Dashboard & Monitoring Real-time';
 
+// ============================================
+// CQC-SPECIFIC COLOR PALETTE
+// ============================================
+$isCQC = (strtolower(ACTIVE_BUSINESS_ID) === 'cqc');
+// Primary glow/tint color (replaces purple rgba(99,102,241,...))
+$cPrimaryRgb = $isCQC ? '240, 180, 41' : '99, 102, 241';
+// Secondary tint (replaces secondary purple rgba(139,92,246,...))
+$cSecondaryRgb = $isCQC ? '13, 31, 60' : '139, 92, 246';
+// Action button color (replaces blue #0071e3)
+$cAccent = $isCQC ? '#0d1f3c' : '#0071e3';
+$cAccentDark = $isCQC ? '#122a4e' : '#0055b8';
+// Action button rgb (replaces blue rgba(0,113,227,...))
+$cAccentRgb = $isCQC ? '13, 31, 60' : '0, 113, 227';
+// Kas tersedia highlight color
+$cKasColor = $isCQC ? '#f0b429' : '#0071e3';
+
 // Get date range (today, this month, this year)
 $today = date('Y-m-d');
 $thisMonth = date('Y-m');
@@ -475,6 +491,22 @@ $topCategories = $db->fetchAll(
 include 'includes/header.php';
 ?>
 
+<?php if ($isCQC): ?>
+<style>
+/* CQC Theme - Navy & Gold Color Override */
+:root,
+body,
+body[data-theme="light"],
+body[data-theme="dark"] {
+    --primary-color: #0d1f3c !important;
+    --primary-dark: #081428 !important;
+    --primary-light: #122a4e !important;
+    --secondary-color: #f0b429 !important;
+    --accent-color: #f0b429 !important;
+}
+</style>
+<?php endif; ?>
+
 <?php 
 // Show trial notification if applicable
 if ($trialStatus) {
@@ -483,12 +515,12 @@ if ($trialStatus) {
 ?>
 
 <!-- PREMIUM TRADING CHART - PALING ATAS -->
-<div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05)); border: 2px solid rgba(99, 102, 241, 0.2); box-shadow: 0 10px 40px rgba(99, 102, 241, 0.15);">
-    <div style="padding: 0.75rem; border-bottom: 1px solid rgba(99, 102, 241, 0.15); background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent);">
+<div class="card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(<?php echo $cPrimaryRgb; ?>, 0.08), rgba(<?php echo $cSecondaryRgb; ?>, 0.05)); border: 2px solid rgba(<?php echo $cPrimaryRgb; ?>, 0.2); box-shadow: 0 10px 40px rgba(<?php echo $cPrimaryRgb; ?>, 0.15);">
+    <div style="padding: 0.75rem; border-bottom: 1px solid rgba(<?php echo $cPrimaryRgb; ?>, 0.15); background: linear-gradient(90deg, rgba(<?php echo $cPrimaryRgb; ?>, 0.1), transparent);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h3 style="font-size: 0.95rem; color: var(--text-primary); font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0;">
-                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
+                    <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(<?php echo $cPrimaryRgb; ?>, 0.3);">
                         <i data-feather="trending-up" style="width: 20px; height: 20px; color: white;"></i>
                     </div>
                     <div>
@@ -546,9 +578,9 @@ if ($trialStatus) {
     <div style="position: relative; height: 320px; padding: 1rem;">
         <canvas id="tradingChart"></canvas>
     </div>
-    <div style="padding: 1rem; border-top: 1px solid rgba(99, 102, 241, 0.15); background: var(--bg-secondary);">
+    <div style="padding: 1rem; border-top: 1px solid rgba(<?php echo $cPrimaryRgb; ?>, 0.15); background: var(--bg-secondary);">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;">
-            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.05)); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(<?php echo $cPrimaryRgb; ?>, 0.12), rgba(<?php echo $cSecondaryRgb; ?>, 0.05)); border-radius: 8px; border-left: 4px solid var(--primary-color);">
                 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Periode</div>
                 <div id="periodDisplay" style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">
                     1 - <?php echo date('t', strtotime($firstDay)); ?> <?php echo date('M Y', strtotime($firstDay)); ?>
@@ -572,7 +604,7 @@ if ($trialStatus) {
                     ?>
                 </div>
             </div>
-            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.05)); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(<?php echo $cPrimaryRgb; ?>, 0.12), rgba(<?php echo $cSecondaryRgb; ?>, 0.05)); border-radius: 8px; border-left: 4px solid var(--primary-color);">
                 <div style="font-size: 0.75rem; color: var(--primary-color); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Net Balance</div>
                 <div id="netBalance" style="font-size: 1.5rem; font-weight: 800; color: <?php echo ($totalIncome - $totalExpense) >= 0 ? 'var(--success)' : 'var(--danger)'; ?>;">
                     <?php echo formatCurrency($totalIncome - $totalExpense); ?>
@@ -596,7 +628,7 @@ div[style*="grid-template-columns: repeat(4"] > div {
 div[style*="grid-template-columns: repeat(4"] > div:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
-    border-color: rgba(0, 113, 227, 0.15) !important;
+    border-color: rgba(<?php echo $cAccentRgb; ?>, 0.15) !important;
 }
 
 div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
@@ -612,21 +644,21 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                 Kas Operasional Harian
                 <span style="font-size: 0.75rem; color: #9ca3af; font-weight: 400; margin-left: 0.5rem;"><?php echo date('F Y'); ?></span>
             </h3>
-            <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.55rem 1rem; background: linear-gradient(135deg, #0071e3 0%, #0055b8 100%); color: white; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 113, 227, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 113, 227, 0.3)'">
+            <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.55rem 1rem; background: linear-gradient(135deg, <?php echo $cAccent; ?> 0%, <?php echo $cAccentDark; ?> 100%); color: white; border-radius: 8px; text-decoration: none; font-size: 0.85rem; font-weight: 700; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(<?php echo $cAccentRgb; ?>, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(<?php echo $cAccentRgb; ?>, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(<?php echo $cAccentRgb; ?>, 0.3)'">
                 📋 Detail Monitor
             </a>
         </div>
         
         <!-- START KAS + KAS TERSEDIA -->
-        <div style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 249, 255, 0.5) 100%); backdrop-filter: blur(10px); padding: 1.25rem 1.5rem; border-radius: 14px; border: 1px solid rgba(0, 113, 227, 0.1); display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transition: all 0.3s ease;">
+        <div style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 249, 255, 0.5) 100%); backdrop-filter: blur(10px); padding: 1.25rem 1.5rem; border-radius: 14px; border: 1px solid rgba(<?php echo $cAccentRgb; ?>, 0.1); display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); transition: all 0.3s ease;">
             <div>
                 <div style="font-size: 0.75rem; color: #6b7280; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Start Kas Hari Ini (<?php echo date('d M'); ?>)</div>
                 <div style="font-size: 1.625rem; font-weight: 800; color: #1a1a1a; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($startKasHariIni); ?></div>
             </div>
-            <div style="width: 1.5px; height: 56px; background: linear-gradient(180deg, transparent, rgba(0, 113, 227, 0.1), transparent);"></div>
+            <div style="width: 1.5px; height: 56px; background: linear-gradient(180deg, transparent, rgba(<?php echo $cAccentRgb; ?>, 0.1), transparent);"></div>
             <div style="text-align: right;">
                 <div style="font-size: 0.75rem; color: #6b7280; font-weight: 700; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">Kas Tersedia Sekarang</div>
-                <div style="font-size: 1.625rem; font-weight: 800; color: #0071e3; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalCash); ?></div>
+                <div style="font-size: 1.625rem; font-weight: 800; color: <?php echo $cKasColor; ?>; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalCash); ?></div>
             </div>
         </div>
         
@@ -1136,9 +1168,9 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     
     // Create gradient for net balance line
     const netGradient = tradingCtx.createLinearGradient(0, 0, 0, 400);
-    netGradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
-    netGradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.15)');
-    netGradient.addColorStop(1, 'rgba(99, 102, 241, 0.02)');
+    netGradient.addColorStop(0, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.3)');
+    netGradient.addColorStop(0.5, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.15)');
+    netGradient.addColorStop(1, 'rgba(<?php echo $cPrimaryRgb; ?>, 0.02)');
     
     let tradingChart = new Chart(tradingCtx, {
         type: 'line',
@@ -1196,16 +1228,16 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                 {
                     label: 'Net Balance (Kumulatif)',
                     data: cumulativeBalance,
-                    borderColor: 'rgb(99, 102, 241)',
+                    borderColor: 'rgb(<?php echo $cPrimaryRgb; ?>)',
                     backgroundColor: netGradient,
                     borderWidth: 4,
                     pointRadius: 5,
                     pointHoverRadius: 8,
-                    pointBackgroundColor: 'rgb(99, 102, 241)',
+                    pointBackgroundColor: 'rgb(<?php echo $cPrimaryRgb; ?>)',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 3,
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: 'rgb(99, 102, 241)',
+                    pointHoverBorderColor: 'rgb(<?php echo $cPrimaryRgb; ?>)',
                     pointHoverBorderWidth: 3,
                     fill: true,
                     tension: 0.4,
@@ -1248,7 +1280,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                     backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     titleColor: 'rgba(255, 255, 255, 0.9)',
                     bodyColor: 'rgba(255, 255, 255, 0.85)',
-                    borderColor: 'rgba(99, 102, 241, 0.3)',
+                    borderColor: 'rgba(<?php echo $cPrimaryRgb; ?>, 0.3)',
                     borderWidth: 1,
                     padding: 12,
                     titleFont: { 
