@@ -37,7 +37,7 @@ $pdo->exec("UPDATE businesses SET business_type = 'contractor' WHERE id = $busin
 echo "✅ business_type set to 'contractor'\n\n";
 
 // Get user ilham
-$stmt = $pdo->prepare("SELECT id, username, role_code FROM users WHERE username = 'ilham'");
+$stmt = $pdo->prepare("SELECT id, username FROM users WHERE username = 'ilham'");
 $stmt->execute();
 $ilham = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -47,12 +47,11 @@ if (!$ilham) {
 
 echo "=== STEP 2: USER INFO ===\n";
 echo "  User ID: {$ilham['id']}\n";
-echo "  Username: {$ilham['username']}\n";
-echo "  Role: {$ilham['role_code']}\n\n";
+echo "  Username: {$ilham['username']}\n\n";
 
 // Get ALL menu items that should be visible
 echo "=== STEP 3: GET ALL MENUS ===\n";
-$stmt = $pdo->query("SELECT id, menu_code, menu_name FROM menu_items ORDER BY id");
+$stmt = $pdo->query("SELECT id, menu_code FROM menu_items ORDER BY id");
 $menus = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 echo "Found " . count($menus) . " menus:\n";
@@ -63,7 +62,7 @@ foreach ($menus as $menu) {
 // Check business_menu_config - which menus are enabled for CQC
 echo "\n=== STEP 4: ENABLED MENUS FOR CQC ===\n";
 $stmt = $pdo->prepare("
-    SELECT mi.id, mi.menu_code, mi.menu_name 
+    SELECT mi.id, mi.menu_code 
     FROM menu_items mi
     LEFT JOIN business_menu_config bmc ON mi.id = bmc.menu_id AND bmc.business_id = ?
     WHERE bmc.is_enabled = 1 OR bmc.is_enabled IS NULL
@@ -99,10 +98,9 @@ foreach ($menusToEnable as $menuCode) {
     $menu = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$menu) {
-        // Create the menu if it doesn't exist
-        $stmt = $pdo->prepare("INSERT INTO menu_items (menu_code, menu_name, menu_order, icon, is_active) VALUES (?, ?, 10, 'fas fa-folder', 1)");
-        $menuName = ucwords(str_replace('-', ' ', $menuCode));
-        $stmt->execute([$menuCode, $menuName]);
+        // Create the menu if it doesn't exist - use only basic columns
+        $stmt = $pdo->prepare("INSERT INTO menu_items (menu_code) VALUES (?)");
+        $stmt->execute([$menuCode]);
         $menuId = $pdo->lastInsertId();
         echo "  Created menu: $menuCode (ID:$menuId)\n";
     } else {
@@ -150,9 +148,8 @@ foreach ($menusToEnable as $menuCode) {
 // List final permissions
 echo "\n=== STEP 6: FINAL PERMISSIONS ===\n";
 $stmt = $pdo->prepare("
-    SELECT ump.*, mi.menu_name 
+    SELECT ump.* 
     FROM user_menu_permissions ump
-    LEFT JOIN menu_items mi ON ump.menu_id = mi.id
     WHERE ump.user_id = ? AND ump.business_id = ?
 ");
 $stmt->execute([$userId, $businessId]);
