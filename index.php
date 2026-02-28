@@ -488,6 +488,38 @@ $topCategories = $db->fetchAll(
     ['month' => $thisMonth]
 );
 
+// ============================================
+// CQC PROJECT DATA (if CQC business)
+// ============================================
+$cqcProjects = [];
+if ($isCQC) {
+    try {
+        require_once __DIR__ . '/modules/cqc-projects/db-helper.php';
+        $cqcPdo = getCQCDatabaseConnection();
+        $stmt = $cqcPdo->query("
+            SELECT p.id, p.project_name, p.project_code, p.status, 
+                   p.progress_percentage, p.budget_idr, p.spent_idr,
+                   p.client_name, p.location, p.solar_capacity_kwp,
+                   COALESCE(SUM(e.amount), 0) as actual_spent
+            FROM cqc_projects p
+            LEFT JOIN cqc_project_expenses e ON p.id = e.project_id
+            GROUP BY p.id
+            ORDER BY p.status ASC, p.progress_percentage DESC
+        ");
+        $cqcProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Update spent_idr with actual expense totals
+        foreach ($cqcProjects as &$proj) {
+            if ($proj['actual_spent'] > 0) {
+                $proj['spent_idr'] = $proj['actual_spent'];
+            }
+        }
+        unset($proj);
+    } catch (Exception $e) {
+        error_log('CQC project data error: ' . $e->getMessage());
+    }
+}
+
 include 'includes/header.php';
 ?>
 
@@ -636,6 +668,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
 }
 </style>
 
+<?php if (!$isCQC): ?>
 <!-- KAS OPERASIONAL HARIAN Widget -->
 <div class="card fade-in" style="margin-bottom: 1rem; background: #fff; border: 1px solid #e5e7eb;">
     <div style="padding: 1rem 1.25rem;">
@@ -702,6 +735,157 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
 </div>
 
 <!-- Charts & Data - 3 Pie Charts -->
+<?php endif; // !$isCQC - end kas operasional + charts hide ?>
+
+<?php if ($isCQC): ?>
+<!-- ============================================ -->
+<!-- CQC PROJECT OVERVIEW - PIE CHARTS -->
+<!-- ============================================ -->
+<style>
+.cqc-project-card { background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 1.25rem; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.cqc-project-card:hover { box-shadow: 0 8px 24px rgba(13,31,60,0.12); transform: translateY(-2px); }
+.cqc-chart-container { position: relative; width: 160px; height: 160px; margin: 0 auto 1rem; }
+.cqc-center-pct { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+.cqc-center-pct .pct-value { font-size: 1.5rem; font-weight: 800; color: #0d1f3c; }
+.cqc-center-pct .pct-label { font-size: 0.65rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+.cqc-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6; }
+.cqc-stat-row:last-child { border-bottom: none; }
+.cqc-stat-label { font-size: 0.75rem; color: #6b7280; display: flex; align-items: center; gap: 0.35rem; }
+.cqc-stat-value { font-size: 0.85rem; font-weight: 700; font-family: 'Monaco', 'Courier New', monospace; }
+.cqc-status-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+.cqc-status-planning { background: #eef2ff; color: #4a6cf7; }
+.cqc-status-procurement { background: #fef3c7; color: #d97706; }
+.cqc-status-installation { background: #dbeafe; color: #2563eb; }
+.cqc-status-testing { background: #fce7f3; color: #db2777; }
+.cqc-status-completed { background: #d1fae5; color: #059669; }
+.cqc-status-on_hold { background: #f3f4f6; color: #6b7280; }
+</style>
+
+<?php if (!empty($cqcProjects)): ?>
+<!-- Summary Cards -->
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.25rem;">
+    <?php
+    $totalBudget = array_sum(array_column($cqcProjects, 'budget_idr'));
+    $totalSpent = array_sum(array_column($cqcProjects, 'spent_idr'));
+    $totalRemaining = $totalBudget - $totalSpent;
+    $avgProgress = count($cqcProjects) > 0 ? round(array_sum(array_column($cqcProjects, 'progress_percentage')) / count($cqcProjects)) : 0;
+    ?>
+    <div class="card fade-in" style="padding: 1rem; border-left: 4px solid #f0b429;">
+        <div style="font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Total Proyek</div>
+        <div style="font-size: 1.5rem; font-weight: 800; color: #0d1f3c;"><?php echo count($cqcProjects); ?></div>
+    </div>
+    <div class="card fade-in" style="padding: 1rem; border-left: 4px solid #10b981;">
+        <div style="font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Total Budget</div>
+        <div style="font-size: 1.1rem; font-weight: 800; color: #10b981; font-family: 'Monaco', monospace;">Rp <?php echo number_format($totalBudget, 0, ',', '.'); ?></div>
+    </div>
+    <div class="card fade-in" style="padding: 1rem; border-left: 4px solid #ef4444;">
+        <div style="font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Total Pengeluaran</div>
+        <div style="font-size: 1.1rem; font-weight: 800; color: #ef4444; font-family: 'Monaco', monospace;">Rp <?php echo number_format($totalSpent, 0, ',', '.'); ?></div>
+    </div>
+    <div class="card fade-in" style="padding: 1rem; border-left: 4px solid #3b82f6;">
+        <div style="font-size: 0.7rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;">Rata-rata Progress</div>
+        <div style="font-size: 1.5rem; font-weight: 800; color: #3b82f6;"><?php echo $avgProgress; ?>%</div>
+    </div>
+</div>
+
+<!-- Project Pie Charts Grid -->
+<div class="card fade-in" style="margin-bottom: 1.25rem; padding: 1.25rem;">
+    <h3 style="font-size: 1rem; font-weight: 700; color: #0d1f3c; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <span style="width: 32px; height: 32px; background: linear-gradient(135deg, #f0b429, #d4960d); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">📊</span>
+        Pencapaian & Keuangan Per Proyek
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem;">
+        <?php foreach ($cqcProjects as $idx => $proj): 
+            $budget = floatval($proj['budget_idr'] ?? 0);
+            $spent = floatval($proj['spent_idr'] ?? 0);
+            $remaining = $budget - $spent;
+            $progress = intval($proj['progress_percentage'] ?? 0);
+            $spentPct = $budget > 0 ? round(($spent / $budget) * 100, 1) : 0;
+            $statusClass = 'cqc-status-' . ($proj['status'] ?? 'planning');
+            $statusLabels = ['planning'=>'Planning','procurement'=>'Procurement','installation'=>'Instalasi','testing'=>'Testing','completed'=>'Selesai','on_hold'=>'Ditunda'];
+            $statusLabel = $statusLabels[$proj['status']] ?? ucfirst($proj['status']);
+        ?>
+        <div class="cqc-project-card">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                <div>
+                    <div style="font-size: 0.65rem; color: #9ca3af; font-weight: 600;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #0d1f3c;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                    <?php if ($proj['client_name']): ?>
+                    <div style="font-size: 0.7rem; color: #6b7280;">👤 <?php echo htmlspecialchars($proj['client_name']); ?></div>
+                    <?php endif; ?>
+                </div>
+                <span class="cqc-status-badge <?php echo $statusClass; ?>"><?php echo $statusLabel; ?></span>
+            </div>
+            
+            <!-- Pie Chart -->
+            <div class="cqc-chart-container">
+                <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
+                <div class="cqc-center-pct">
+                    <div class="pct-value"><?php echo $progress; ?>%</div>
+                    <div class="pct-label">Progress</div>
+                </div>
+            </div>
+            
+            <!-- Financial Stats -->
+            <div style="margin-top: 0.5rem;">
+                <div class="cqc-stat-row">
+                    <span class="cqc-stat-label">💰 Budget</span>
+                    <span class="cqc-stat-value" style="color: #0d1f3c;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
+                </div>
+                <div class="cqc-stat-row">
+                    <span class="cqc-stat-label">📤 Uang Keluar</span>
+                    <span class="cqc-stat-value" style="color: #ef4444;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
+                </div>
+                <div class="cqc-stat-row">
+                    <span class="cqc-stat-label">💵 Sisa Budget</span>
+                    <span class="cqc-stat-value" style="color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
+                </div>
+                <div class="cqc-stat-row">
+                    <span class="cqc-stat-label">📊 Budget Terpakai</span>
+                    <span class="cqc-stat-value" style="color: <?php echo $spentPct > 90 ? '#ef4444' : ($spentPct > 70 ? '#f59e0b' : '#10b981'); ?>;"><?php echo $spentPct; ?>%</span>
+                </div>
+            </div>
+            
+            <a href="modules/cqc-projects/detail.php?id=<?php echo $proj['id']; ?>" 
+               style="display: block; text-align: center; margin-top: 0.75rem; padding: 0.5rem; background: linear-gradient(135deg, #0d1f3c, #1a3a5c); color: #f0b429; border-radius: 8px; text-decoration: none; font-size: 0.75rem; font-weight: 700; transition: all 0.3s ease;"
+               onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(13,31,60,0.3)';"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                Lihat Detail →
+            </a>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Overall Budget Pie Chart -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+    <div class="card fade-in" style="padding: 1.25rem;">
+        <h3 style="font-size: 0.9rem; font-weight: 700; color: #0d1f3c; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+            💰 Distribusi Budget per Proyek
+        </h3>
+        <div style="position: relative; height: 280px;">
+            <canvas id="cqcBudgetPie"></canvas>
+        </div>
+    </div>
+    <div class="card fade-in" style="padding: 1.25rem;">
+        <h3 style="font-size: 0.9rem; font-weight: 700; color: #0d1f3c; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+            📊 Budget vs Pengeluaran Semua Proyek
+        </h3>
+        <div style="position: relative; height: 280px;">
+            <canvas id="cqcBudgetVsSpentChart"></canvas>
+        </div>
+    </div>
+</div>
+<?php else: ?>
+<div class="card fade-in" style="padding: 2rem; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 0.75rem;">☀️</div>
+    <h3 style="font-size: 1rem; color: #0d1f3c; font-weight: 700; margin-bottom: 0.5rem;">Belum Ada Proyek</h3>
+    <p style="color: #6b7280; font-size: 0.85rem; margin-bottom: 1rem;">Tambahkan proyek pertama Anda untuk melihat grafik pencapaian.</p>
+    <a href="modules/cqc-projects/add.php" style="padding: 0.6rem 1.5rem; background: linear-gradient(135deg, #0d1f3c, #1a3a5c); color: #f0b429; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.85rem;">+ Tambah Proyek</a>
+</div>
+<?php endif; ?>
+<?php else: // not CQC ?>
+
 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
     
     <!-- Pie Chart 1 - Income per Division -->
@@ -791,7 +975,9 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         </div>
     </div>
 </div>
+<?php endif; // else not CQC - end charts section ?>
 
+<?php if (!$isCQC): ?>
 <!-- Top Categories & Top Divisions - Compact -->
 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem;">
     
@@ -851,6 +1037,9 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     </div>
 </div>
 
+<?php endif; // !$isCQC top categories ?>
+
+<?php if (!$isCQC): ?>
 <!-- Recent Transactions - Full Width -->
 <div class="card">
     <div style="padding: 0.65rem 0 0.4rem 0; border-bottom: 1px solid var(--bg-tertiary); margin-bottom: 0.5rem;">
@@ -890,6 +1079,8 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         </a>
     </div>
 </div>
+
+<?php endif; // !$isCQC recent transactions ?>
 
 <!-- Chart.js Library -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -1656,6 +1847,135 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     // ============================================
     // HORIZONTAL BAR CHART - Top Categories
     // ============================================
+    // ============================================
+    // CQC PROJECT PIE CHARTS
+    // ============================================
+    <?php if ($isCQC && !empty($cqcProjects)): ?>
+    const cqcColors = ['#f0b429', '#0d1f3c', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6', '#6366f1'];
+    
+    // Individual project doughnut charts
+    <?php foreach ($cqcProjects as $idx => $proj): 
+        $progress = intval($proj['progress_percentage'] ?? 0);
+        $budget = floatval($proj['budget_idr'] ?? 0);
+        $spent = floatval($proj['spent_idr'] ?? 0);
+    ?>
+    (function() {
+        const ctx = document.getElementById('cqcPie<?php echo $idx; ?>');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Selesai', 'Tersisa'],
+                datasets: [{
+                    data: [<?php echo $progress; ?>, <?php echo 100 - $progress; ?>],
+                    backgroundColor: [
+                        '<?php echo $progress >= 80 ? "#10b981" : ($progress >= 50 ? "#f0b429" : ($progress >= 25 ? "#3b82f6" : "#6b7280")); ?>',
+                        'rgba(229, 231, 235, 0.5)'
+                    ],
+                    borderWidth: 0,
+                    cutout: '75%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false }, tooltip: {
+                    backgroundColor: 'rgba(13,31,60,0.95)', titleColor: '#f0b429', bodyColor: '#fff',
+                    cornerRadius: 8, padding: 10,
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.label + ': ' + ctx.parsed + '%';
+                        }
+                    }
+                }},
+                animation: { animateRotate: true, duration: 1200 }
+            }
+        });
+    })();
+    <?php endforeach; ?>
+    
+    // Budget Distribution Pie
+    (function() {
+        const ctx = document.getElementById('cqcBudgetPie');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: [<?php echo implode(',', array_map(function($p) { return "'" . addslashes($p['project_name']) . "'"; }, $cqcProjects)); ?>],
+                datasets: [{
+                    data: [<?php echo implode(',', array_column($cqcProjects, 'budget_idr')); ?>],
+                    backgroundColor: cqcColors.slice(0, <?php echo count($cqcProjects); ?>),
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '55%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 12, font: { size: 11, weight: '500' }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+                    tooltip: {
+                        backgroundColor: 'rgba(13,31,60,0.95)', titleColor: '#f0b429', bodyColor: '#fff', cornerRadius: 8, padding: 12,
+                        callbacks: {
+                            label: function(ctx) {
+                                let total = ctx.dataset.data.reduce((a,b) => a+b, 0);
+                                let pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                return ctx.label + ': Rp ' + ctx.parsed.toLocaleString('id-ID') + ' (' + pct + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    })();
+    
+    // Budget vs Spent Bar Chart
+    (function() {
+        const ctx = document.getElementById('cqcBudgetVsSpentChart');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: [<?php echo implode(',', array_map(function($p) { return "'" . addslashes($p['project_code']) . "'"; }, $cqcProjects)); ?>],
+                datasets: [
+                    {
+                        label: 'Budget',
+                        data: [<?php echo implode(',', array_column($cqcProjects, 'budget_idr')); ?>],
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Pengeluaran',
+                        data: [<?php echo implode(',', array_column($cqcProjects, 'spent_idr')); ?>],
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { padding: 12, font: { size: 11, weight: '500' }, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+                    tooltip: {
+                        backgroundColor: 'rgba(13,31,60,0.95)', titleColor: '#f0b429', bodyColor: '#fff', cornerRadius: 8, padding: 12,
+                        callbacks: {
+                            label: function(ctx) { return ctx.dataset.label + ': Rp ' + ctx.parsed.y.toLocaleString('id-ID'); }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { callback: function(v) { return v >= 1000000 ? 'Rp ' + (v/1000000).toFixed(1) + 'jt' : 'Rp ' + (v/1000).toFixed(0) + 'rb'; }, font: { size: 10 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                }
+            }
+        });
+    })();
+    <?php endif; ?>
+    
     <?php if (!empty($topCategories)): ?>
     const topCategoriesCtx = document.getElementById('topCategoriesChart').getContext('2d');
     new Chart(topCategoriesCtx, {
