@@ -102,6 +102,29 @@ try {
     // Table doesn't exist
 }
 
+// Get ALL projects (including planning, on_hold, completed)
+$all_projects = [];
+try {
+    $stmt = $pdo->query("
+        SELECT id, project_name, project_code, client_name, status, progress_percentage, 
+               budget_idr, spent_idr, start_date, estimated_completion, location
+        FROM cqc_projects
+        ORDER BY 
+            CASE status 
+                WHEN 'installation' THEN 1
+                WHEN 'testing' THEN 2
+                WHEN 'procurement' THEN 3
+                WHEN 'planning' THEN 4
+                WHEN 'on_hold' THEN 5
+                WHEN 'completed' THEN 6
+            END,
+            updated_at DESC
+    ");
+    $all_projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Table doesn't exist
+}
+
 $pageTitle = "CQC Projects Dashboard";
 $pageSubtitle = "Solar Panel Installation Project Management";
 
@@ -324,6 +347,69 @@ include '../../includes/header.php';
             <div class="cqc-empty-state">
                 <div class="cqc-empty-state-icon">📭</div>
                 <h3>Tidak Ada Proyek Sedang Berjalan</h3>
+                <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
+                <button style="background: #f0b429; color: #0d1f3c; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: 700; font-size: 10px;" onclick="location.href='add.php'">
+                    ➕ Buat Proyek Baru
+                </button>
+            </div>
+        <?php endif; ?>
+
+        <!-- ALL PROJECTS TABLE -->
+        <div class="cqc-section-title" style="margin-top: 1.5rem;">📋 Semua Proyek</div>
+        
+        <?php if (!empty($all_projects)): ?>
+            <div class="cqc-projects-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Proyek</th>
+                            <th>Lokasi</th>
+                            <th>Klien</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Budget</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($all_projects as $proj): ?>
+                            <tr>
+                                <td><code style="font-size: 10px; background: rgba(240,180,41,0.15); padding: 2px 6px; border-radius: 3px; color: #0d1f3c;"><?php echo htmlspecialchars($proj['project_code']); ?></code></td>
+                                <td><strong><?php echo htmlspecialchars($proj['project_name']); ?></strong></td>
+                                <td style="font-size: 11px; color: #666;"><?php echo htmlspecialchars($proj['location'] ?? '-'); ?></td>
+                                <td><?php echo htmlspecialchars($proj['client_name'] ?? '-'); ?></td>
+                                <td>
+                                    <span class="status-badge status-<?php echo $proj['status']; ?>">
+                                        <?php echo ucfirst(str_replace('_', ' ', $proj['status'])); ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="cqc-progress-bar">
+                                        <div class="cqc-progress-fill" style="width: <?php echo $proj['progress_percentage']; ?>%"></div>
+                                    </div>
+                                    <div class="cqc-progress-text"><?php echo $proj['progress_percentage']; ?>%</div>
+                                </td>
+                                <td>
+                                    <div style="font-size: 10px; color: #888;">
+                                        Rp <?php echo number_format($proj['budget_idr'] ?? 0, 0, ',', '.'); ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="cqc-action-links">
+                                        <a href="detail.php?id=<?php echo $proj['id']; ?>">Lihat</a>
+                                        <a href="add.php?id=<?php echo $proj['id']; ?>">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div class="cqc-empty-state">
+                <div class="cqc-empty-state-icon">📭</div>
+                <h3>Belum Ada Proyek</h3>
                 <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
                 <button style="background: #f0b429; color: #0d1f3c; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: 700; font-size: 10px;" onclick="location.href='add.php'">
                     ➕ Buat Proyek Baru
