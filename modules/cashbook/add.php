@@ -99,6 +99,12 @@ if (isPost()) {
                 $categoryId = $db->getConnection()->lastInsertId();
             }
             
+            // CQC: Embed project reference in description for list page lookup
+            if ($isCQC && !empty(getPost('cqc_project_id'))) {
+                $cqcProjId = intval(getPost('cqc_project_id'));
+                $description = '[CQC_PROJECT:' . $cqcProjId . '] ' . $description;
+            }
+
             $data = [
                 'transaction_date' => $transactionDate,
                 'transaction_time' => $transactionTime ?: date('H:i:s'),
@@ -248,7 +254,7 @@ if (isPost()) {
                         error_log("WARNING: cash_account_id is empty, skipping cash account transaction");
                     }
                     
-                    // CQC: Also save to cqc_project_expenses if expense + project selected
+                    // CQC: Also save to cqc_project_expenses if project selected (expense only)
                     if ($isCQC && !empty(getPost('cqc_project_id'))) {
                         try {
                             require_once __DIR__ . '/../cqc-projects/db-helper.php';
@@ -259,11 +265,11 @@ if (isPost()) {
                             if ($transactionType === 'expense') {
                                 $stmtExp = $cqcPdo->prepare("INSERT INTO cqc_project_expenses (project_id, category_id, description, amount, expense_date, notes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)");
                                 $stmtExp->execute([$cqcProjectId, $cqcCategoryId, $categoryName, $amount, $transactionDate, $description, $_SESSION['user_id']]);
+                                
+                                // Update spent_idr on the project
+                                $stmtUpd = $cqcPdo->prepare("UPDATE cqc_projects SET spent_idr = (SELECT COALESCE(SUM(amount),0) FROM cqc_project_expenses WHERE project_id = ?) WHERE id = ?");
+                                $stmtUpd->execute([$cqcProjectId, $cqcProjectId]);
                             }
-                            
-                            // Update spent_idr on the project
-                            $stmtUpd = $cqcPdo->prepare("UPDATE cqc_projects SET spent_idr = (SELECT COALESCE(SUM(amount),0) FROM cqc_project_expenses WHERE project_id = ?) WHERE id = ?");
-                            $stmtUpd->execute([$cqcProjectId, $cqcProjectId]);
                         } catch (Exception $e) {
                             error_log('CQC expense save error: ' . $e->getMessage());
                         }
@@ -314,8 +320,8 @@ include '../../includes/header.php';
 .btn-primary { background: linear-gradient(135deg, #0d1f3c, #1a3a5c) !important; color: #f0b429 !important; border: none !important; }
 .btn-primary:hover { background: linear-gradient(135deg, #122a4e, #1f4570) !important; }
 .cqc-project-option { display: flex; justify-content: space-between; }
-.cqc-form-header { background: linear-gradient(135deg, #0d1f3c, #1a3a5c) !important; border-bottom: 2px solid #f0b429 !important; }
-.cqc-form-header h3 { color: #f0b429 !important; }
+.cqc-form-header { background: #ffffff !important; border-bottom: none !important; border-left: 4px solid #f0b429 !important; }
+.cqc-form-header h3 { color: #0d1f3c !important; }
 .cqc-form-header i { color: #f0b429 !important; }
 .cqc-select-project { border: 2px solid rgba(13,31,60,0.15) !important; font-weight: 600 !important; }
 .cqc-select-project:focus { border-color: #f0b429 !important; box-shadow: 0 0 0 3px rgba(240,180,41,0.2) !important; }
@@ -506,7 +512,7 @@ include '../../includes/header.php';
                 </div>
                 
                 <!-- CQC: Expense Category -->
-                <div class="compact-form-group">
+                <div class="compact-form-group" id="cqcExpenseSection">
                     <label class="form-label" style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.3rem; color: #0d1f3c;">📦 Kategori Biaya <span style="color: var(--danger);">*</span></label>
                     <select name="cqc_category_id" id="cqc_category_id" class="form-control" style="height: 34px; font-size: 0.813rem;" onchange="document.querySelector('[name=category_name]').value = this.options[this.selectedIndex].text">
                         <option value="">-- Pilih Kategori --</option>
@@ -518,6 +524,19 @@ include '../../includes/header.php';
                         <option value="custom">✏️ Tulis Manual</option>
                     </select>
                     <input type="text" name="category_name" class="form-control" style="height: 34px; font-size: 0.813rem; margin-top: 0.3rem;" placeholder="Nama item / deskripsi biaya" required>
+                </div>
+                <!-- CQC: Income Type -->
+                <div class="compact-form-group" id="cqcIncomeSection" style="display: none;">
+                    <label class="form-label" style="font-size: 0.813rem; font-weight: 600; margin-bottom: 0.3rem; color: #0d1f3c;">💰 Jenis Pemasukan <span style="color: var(--danger);">*</span></label>
+                    <select name="cqc_income_type" id="cqc_income_type" class="form-control" style="height: 34px; font-size: 0.813rem;" onchange="updateCQCIncomeCategory(this)">
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="dp">💵 DP Masuk</option>
+                        <option value="termin">📄 Pembayaran Termin</option>
+                        <option value="pelunasan">✅ Pelunasan</option>
+                        <option value="retensi">🔒 Retensi / Garansi</option>
+                        <option value="manual">✏️ Tulis Manual</option>
+                    </select>
+                    <input type="text" name="cqc_income_desc" id="cqc_income_desc" class="form-control" style="height: 34px; font-size: 0.813rem; margin-top: 0.3rem;" placeholder="Keterangan pemasukan" readonly>
                 </div>
                 <?php else: ?>
                 <!-- Division -->
@@ -705,7 +724,86 @@ function updateCQCProjectInfo(select) {
     document.getElementById('cqcRemainingDisplay').textContent = 'Rp ' + remaining.toLocaleString('id-ID');
     document.getElementById('cqcRemainingDisplay').style.color = remaining >= 0 ? '#10b981' : '#ef4444';
     info.style.display = 'block';
+    
+    // Update income description if income is selected
+    updateCQCIncomeCategory(document.getElementById('cqc_income_type'));
 }
+
+// Toggle expense/income sections based on transaction type
+function toggleCQCSections() {
+    const type = document.querySelector('input[name="transaction_type"]:checked')?.value;
+    const expSection = document.getElementById('cqcExpenseSection');
+    const incSection = document.getElementById('cqcIncomeSection');
+    const catInput = document.querySelector('[name=category_name]');
+    
+    if (type === 'expense') {
+        expSection.style.display = 'block';
+        incSection.style.display = 'none';
+        catInput.setAttribute('required', 'required');
+        catInput.value = '';
+    } else {
+        expSection.style.display = 'none';
+        incSection.style.display = 'block';
+        catInput.removeAttribute('required');
+        // Reset income type
+        document.getElementById('cqc_income_type').value = '';
+        document.getElementById('cqc_income_desc').value = '';
+    }
+}
+
+// Update category_name based on income type + selected project
+function updateCQCIncomeCategory(select) {
+    if (!select) return;
+    const type = select.value;
+    const projSelect = document.getElementById('cqc_project_id');
+    const projOpt = projSelect.options[projSelect.selectedIndex];
+    const projName = projOpt && projOpt.value ? projOpt.textContent.trim().split(' [')[0] : '';
+    const descInput = document.getElementById('cqc_income_desc');
+    const catInput = document.querySelector('[name=category_name]');
+    
+    const labels = {
+        'dp': 'DP Masuk',
+        'termin': 'Pembayaran Termin',
+        'pelunasan': 'Pelunasan',
+        'retensi': 'Retensi / Garansi'
+    };
+    
+    if (type === 'manual') {
+        descInput.removeAttribute('readonly');
+        descInput.placeholder = 'Tulis keterangan pemasukan...';
+        descInput.value = '';
+        descInput.focus();
+        // category_name will be set on form submit
+    } else if (type && labels[type]) {
+        descInput.setAttribute('readonly', 'readonly');
+        const desc = projName ? labels[type] + ' - ' + projName : labels[type];
+        descInput.value = desc;
+        catInput.value = desc;
+    } else {
+        descInput.setAttribute('readonly', 'readonly');
+        descInput.value = '';
+        catInput.value = '';
+    }
+}
+
+// Listen for transaction type changes
+document.querySelectorAll('input[name="transaction_type"]').forEach(radio => {
+    radio.addEventListener('change', toggleCQCSections);
+});
+
+// Handle form submit - sync income desc to category_name
+document.getElementById('transactionForm').addEventListener('submit', function() {
+    const type = document.querySelector('input[name="transaction_type"]:checked')?.value;
+    if (type === 'income') {
+        const desc = document.getElementById('cqc_income_desc').value;
+        if (desc) {
+            document.querySelector('[name=category_name]').value = desc;
+        }
+    }
+});
+
+// Initialize on load
+toggleCQCSections();
 <?php endif; ?>
 </script>
 

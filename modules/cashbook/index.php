@@ -413,11 +413,15 @@ echo getPrintCSS();
 .cqc-info-chip.category { background: rgba(240,180,41,0.15); color: #92400e; }
 .cqc-info-chip.user { background: rgba(107,114,128,0.1); color: #4b5563; }
 .table-header-cqc {
-    background: linear-gradient(135deg, #0d1f3c, #1a3a5c) !important;
+    background: #ffffff !important;
     border-radius: 12px !important;
     padding: 1rem 1.25rem !important;
     margin-bottom: 1rem !important;
+    border: 1px solid #e5e7eb !important;
+    border-left: 4px solid #f0b429 !important;
 }
+.table-header-cqc h3 { color: #0d1f3c !important; }
+.table-header-cqc p { color: #6b7280 !important; }
 .table-header-cqc h3, .table-header-cqc p { color: #f0b429 !important; }
 .table-header-cqc .btn-secondary { background: rgba(255,255,255,0.1) !important; color: #f0b429 !important; border: 1px solid rgba(240,180,41,0.3) !important; }
 .table-header-cqc .btn-secondary:hover { background: rgba(255,255,255,0.2) !important; }
@@ -1167,22 +1171,26 @@ echo getPrintCSS();
                             <td style="font-size: 0.8rem;">
                                 <?php if ($isCQC): ?>
                                     <?php 
-                                    // Try to find CQC project for this transaction
+                                    // Parse [CQC_PROJECT:id] from description
                                     $cqcProjMatch = null;
-                                    $cqcCatMatch = null;
-                                    $lookupKey = ($trans['category_name'] ?? '') . '|' . number_format($trans['amount'], 2, '.', '') . '|' . $trans['transaction_date'];
-                                    if (isset($cqcExpenseProjectMap[$lookupKey])) {
-                                        $expMatch = $cqcExpenseProjectMap[$lookupKey];
-                                        $cqcProjMatch = $cqcProjectMap[$expMatch['project_id']] ?? null;
-                                        $cqcCatMatch = $expMatch;
+                                    $descForParse = $trans['description'] ?? '';
+                                    if (preg_match('/\[CQC_PROJECT:(\d+)\]/', $descForParse, $pidMatch)) {
+                                        $cqcProjMatch = $cqcProjectMap[intval($pidMatch[1])] ?? null;
+                                    }
+                                    // Fallback: try expense mapping
+                                    if (!$cqcProjMatch) {
+                                        $lookupKey = ($trans['category_name'] ?? '') . '|' . number_format($trans['amount'], 2, '.', '') . '|' . $trans['transaction_date'];
+                                        if (isset($cqcExpenseProjectMap[$lookupKey])) {
+                                            $expMatch = $cqcExpenseProjectMap[$lookupKey];
+                                            $cqcProjMatch = $cqcProjectMap[$expMatch['project_id']] ?? null;
+                                        }
                                     }
                                     ?>
                                     <?php if ($cqcProjMatch): ?>
                                     <span class="cqc-project-tag">☀️ <?php echo htmlspecialchars($cqcProjMatch['project_code']); ?></span>
-                                    <?php endif; ?>
-                                    <strong><?php echo $trans['division_name']; ?></strong>
-                                    <?php if ($cqcCatMatch && $cqcCatMatch['category_name']): ?>
-                                    <div style="font-size: 0.68rem; color: #92400e;"><?php echo $cqcCatMatch['category_icon'] . ' ' . htmlspecialchars($cqcCatMatch['category_name']); ?></div>
+                                    <div style="font-size: 0.7rem; color: #475569; margin-top: 0.15rem;"><?php echo htmlspecialchars($cqcProjMatch['project_name']); ?></div>
+                                    <?php else: ?>
+                                    <span style="font-size: 0.75rem; color: #9ca3af;">—</span>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <strong><?php echo $trans['division_name']; ?></strong>
@@ -1222,7 +1230,15 @@ echo getPrintCSS();
                                         <?php echo isset($trans['reference_no']) ? $trans['reference_no'] : 'REF'; ?>
                                     </span>
                                 <?php endif; ?>
-                                <?php echo $trans['description'] ?: '-'; ?>
+                                <?php 
+                                    $descDisplay = $trans['description'] ?: '-';
+                                    // Strip CQC project tag from display
+                                    if ($isCQC) {
+                                        $descDisplay = trim(preg_replace('/\[CQC_PROJECT:\d+\]\s*/', '', $descDisplay));
+                                        if (empty($descDisplay)) $descDisplay = '-';
+                                    }
+                                    echo $descDisplay;
+                                ?>
                                 
                                 <?php if ($isCQC): ?>
                                 <!-- CQC: Detailed payment info -->
