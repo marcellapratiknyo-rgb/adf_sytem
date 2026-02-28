@@ -18,6 +18,7 @@ function getBusinessCodeToSlugMap($pdo = null) {
     $map = [
         'BENSCAFE' => 'bens-cafe',
         'NARAYANAHOTEL' => 'narayana-hotel',
+        'CQC' => 'cqc',
         'DEMO' => 'demo'
     ];
     

@@ -11,6 +11,7 @@ function businessCodeToSlug($code) {
     $knownSlugs = [
         'BENSCAFE' => 'bens-cafe',
         'NARAYANAHOTEL' => 'narayana-hotel',
+        'CQC' => 'cqc',
         'DEMO' => 'demo'
     ];
     if (isset($knownSlugs[$code])) return $knownSlugs[$code];
@@ -124,6 +125,29 @@ function getAvailableBusinesses() {
                 $config['id'] = $businessId;
                 $businesses[$businessId] = $config;
             }
+        }
+    }
+    
+    // Deduplicate by database name (keep config with custom data over auto-generated)
+    $seen = [];
+    foreach ($businesses as $bizId => $config) {
+        $db = $config['database'] ?? '';
+        if (isset($seen[$db])) {
+            $existingId = $seen[$db];
+            // Keep the one with a customized icon (not default auto-generated)
+            $defaultIcons = ['🏨', '🍽️', '☕', '🏪', '🏭', '🏝️', '🏢'];
+            $existingIcon = $businesses[$existingId]['theme']['icon'] ?? '';
+            $currentIcon = $config['theme']['icon'] ?? '';
+            if (in_array($existingIcon, $defaultIcons) && !in_array($currentIcon, $defaultIcons)) {
+                // Current has custom icon, remove existing
+                unset($businesses[$existingId]);
+                $seen[$db] = $bizId;
+            } else {
+                // Keep existing, remove current
+                unset($businesses[$bizId]);
+            }
+        } else {
+            $seen[$db] = $bizId;
         }
     }
     
