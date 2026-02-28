@@ -125,8 +125,8 @@ include '../../includes/header.php';
             margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .cqc-header h1 { font-size: 14px; font-weight: 700; color: #f0b429; margin: 0 0 1px; }
-        .cqc-header p { font-size: 10px; margin: 0; color: rgba(255,255,255,0.8); }
+        .cqc-header h1 { font-size: 14px; font-weight: 700; color: #fff; margin: 0 0 1px; }
+        .cqc-header p { font-size: 10px; margin: 0; color: rgba(255,255,255,0.85); }
         .cqc-header button {
             background: #f0b429; color: #0d1f3c; border: none;
             padding: 5px 14px; border-radius: 4px; font-weight: 700;
