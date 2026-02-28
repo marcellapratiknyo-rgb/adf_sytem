@@ -262,6 +262,7 @@ $isCQC = (strtolower($activeBusinessId) === 'cqc') ||
 // CQC PROJECT DATA
 $cqcProjects = [];
 $cqcExpenses = []; // Recent expenses per project
+$cqcCategoryExpenses = []; // Expenses per category per project (for pie chart)
 if ($isCQC) {
     try {
         require_once __DIR__ . '/../cqc-projects/db-helper.php';
@@ -394,6 +395,26 @@ if ($isCQC) {
             }
             
             $cqcExpenses[$proj['id']] = $expenses;
+            
+            // Get expenses grouped by category for pie chart
+            try {
+                $stmtCat = $cqcPdo->prepare("
+                    SELECT 
+                        COALESCE(c.category_name, 'Lainnya') as category_name,
+                        COALESCE(c.category_icon, '📦') as category_icon,
+                        COALESCE(SUM(e.amount_idr), SUM(e.amount), 0) as total_amount
+                    FROM cqc_project_expenses e
+                    LEFT JOIN cqc_expense_categories c ON e.category_id = c.id
+                    WHERE e.project_id = ?
+                    GROUP BY COALESCE(c.category_name, 'Lainnya'), COALESCE(c.category_icon, '📦')
+                    ORDER BY total_amount DESC
+                    LIMIT 6
+                ");
+                $stmtCat->execute([$proj['id']]);
+                $cqcCategoryExpenses[$proj['id']] = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $catEx) {
+                $cqcCategoryExpenses[$proj['id']] = [];
+            }
         }
     } catch (Exception $e) {
         error_log('CQC project data error: ' . $e->getMessage());
@@ -1611,52 +1632,80 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                         <span style="display:inline-block; padding:3px 8px; border-radius:12px; font-size:8px; font-weight:600; background: <?php echo $statusColor; ?>12; color: <?php echo $statusColor; ?>; letter-spacing: 0.2px;"><?php echo $statusLabel; ?></span>
                     </div>
                     
-                    <!-- Project Info - KVA, Dates -->
-                    <div style="display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap;">
-                        <?php if ($kwp > 0): ?>
-                        <div style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 6px;">
-                            <span style="font-size: 9px;">⚡</span>
-                            <span style="font-size: 9px; font-weight: 600; color: #92400e;"><?php echo number_format($kwp, 1); ?> kWp</span>
+                    <!-- Two Column Layout: Status/Progress + Category Pie -->
+                    <?php $catExpenses = $cqcCategoryExpenses[$proj['id']] ?? []; ?>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <!-- LEFT: Status & Progress -->
+                        <div style="text-align: center;">
+                            <div style="font-size: 8px; color: #9ca3af; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">Progress</div>
+                            <div style="position: relative; width: 70px; height: 70px; margin: 0 auto;">
+                                <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
+                                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                                    <div style="font-size: 14px; font-weight: 700; color: <?php echo $projColor; ?>; line-height: 1;"><?php echo $progress; ?>%</div>
+                                </div>
+                            </div>
+                            <!-- Project Info Tags -->
+                            <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: center; flex-wrap: wrap;">
+                                <?php if ($kwp > 0): ?>
+                                <span style="padding: 2px 5px; background: #fef3c7; border-radius: 4px; font-size: 8px; font-weight: 600; color: #92400e;">⚡<?php echo number_format($kwp, 1); ?> kWp</span>
+                                <?php endif; ?>
+                            </div>
                         </div>
-                        <?php endif; ?>
-                        <?php if ($startDate): ?>
-                        <div style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; background: #f0fdf4; border-radius: 6px;">
-                            <span style="font-size: 8px;">🚀</span>
-                            <span style="font-size: 8px; font-weight: 500; color: #166534;"><?php echo date('d M Y', strtotime($startDate)); ?></span>
+                        
+                        <!-- RIGHT: Category Expense Pie -->
+                        <div style="text-align: center;">
+                            <div style="font-size: 8px; color: #9ca3af; font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px;">Per Kategori</div>
+                            <?php if (!empty($catExpenses)): ?>
+                            <div style="position: relative; width: 70px; height: 70px; margin: 0 auto;">
+                                <canvas id="cqcCatPie<?php echo $idx; ?>"></canvas>
+                            </div>
+                            <!-- Category Legend -->
+                            <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 3px; justify-content: center;">
+                                <?php 
+                                $catColors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
+                                foreach (array_slice($catExpenses, 0, 3) as $ci => $catExp): 
+                                ?>
+                                <span style="display: inline-flex; align-items: center; gap: 2px; font-size: 7px; color: #6b7280;">
+                                    <span style="width: 6px; height: 6px; border-radius: 50%; background: <?php echo $catColors[$ci % count($catColors)]; ?>;"></span>
+                                    <?php echo mb_substr($catExp['category_name'], 0, 6); ?>
+                                </span>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php else: ?>
+                            <div style="width: 70px; height: 70px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 50%; color: #9ca3af; font-size: 9px;">No data</div>
+                            <?php endif; ?>
                         </div>
-                        <?php endif; ?>
-                        <?php if ($estCompletion): ?>
-                        <div style="display: inline-flex; align-items: center; gap: 3px; padding: 3px 7px; background: #eff6ff; border-radius: 6px;">
-                            <span style="font-size: 8px;">🎯</span>
-                            <span style="font-size: 8px; font-weight: 500; color: #1e40af;"><?php echo date('d M Y', strtotime($estCompletion)); ?></span>
-                        </div>
-                        <?php endif; ?>
                     </div>
                     
-                    <!-- Pie Chart - Compact -->
-                    <div style="position: relative; width: 80px; height: 80px; margin: 0 auto 10px;">
-                        <canvas id="cqcPie<?php echo $idx; ?>"></canvas>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                            <div style="font-size: 16px; font-weight: 700; color: <?php echo $projColor; ?>; line-height: 1; letter-spacing: -0.5px;"><?php echo $progress; ?>%</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Financial Stats - Elegant minimal -->
+                    <!-- Project Details Below -->
                     <div style="background: #f9fafb; border-radius: 10px; padding: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 4px;">
-                            <span style="font-size: 9px; color: #6b7280; font-weight: 500;">Budget</span>
-                            <span style="font-size: 10px; font-weight: 600; color: #374151; font-family: 'Inter', system-ui;">Rp <?php echo number_format($budget, 0, ',', '.'); ?></span>
+                        <!-- Financial Summary -->
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center;">
+                            <div>
+                                <div style="font-size: 10px; font-weight: 600; color: #374151;">Rp <?php echo number_format($budget/1000000, 1); ?>jt</div>
+                                <div style="font-size: 7px; color: #9ca3af; text-transform: uppercase;">Budget</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; font-weight: 600; color: #ef4444;">Rp <?php echo number_format($spent/1000000, 1); ?>jt</div>
+                                <div style="font-size: 7px; color: #9ca3af; text-transform: uppercase;">Terpakai</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; font-weight: 600; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>;">Rp <?php echo number_format($remaining/1000000, 1); ?>jt</div>
+                                <div style="font-size: 7px; color: #9ca3af; text-transform: uppercase;">Sisa</div>
+                            </div>
                         </div>
-                        <div style="height: 1px; background: #e5e7eb; margin: 0 8px;"></div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 4px;">
-                            <span style="font-size: 9px; color: #6b7280; font-weight: 500;">Terpakai</span>
-                            <span style="font-size: 10px; font-weight: 600; color: #ef4444; font-family: 'Inter', system-ui;">Rp <?php echo number_format($spent, 0, ',', '.'); ?></span>
+                        
+                        <!-- Timeline -->
+                        <?php if ($startDate || $estCompletion): ?>
+                        <div style="display: flex; justify-content: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
+                            <?php if ($startDate): ?>
+                            <span style="font-size: 7px; color: #166534; background: #f0fdf4; padding: 2px 6px; border-radius: 4px;">🚀 <?php echo date('d M Y', strtotime($startDate)); ?></span>
+                            <?php endif; ?>
+                            <?php if ($estCompletion): ?>
+                            <span style="font-size: 7px; color: #1e40af; background: #eff6ff; padding: 2px 6px; border-radius: 4px;">🎯 <?php echo date('d M Y', strtotime($estCompletion)); ?></span>
+                            <?php endif; ?>
                         </div>
-                        <div style="height: 1px; background: #e5e7eb; margin: 0 8px;"></div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 4px;">
-                            <span style="font-size: 9px; color: #6b7280; font-weight: 500;">Sisa</span>
-                            <span style="font-size: 10px; font-weight: 600; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>; font-family: 'Inter', system-ui;">Rp <?php echo number_format($remaining, 0, ',', '.'); ?></span>
-                        </div>
+                        <?php endif; ?>
                     </div>
                     
                     <!-- Expense Detail (hidden by default) -->
@@ -2049,6 +2098,52 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 animation: { animateRotate: true, duration: 800 }
             }
         });
+        
+        // Category Expense Pie Chart
+        <?php 
+        $catExpenses = $cqcCategoryExpenses[$proj['id']] ?? [];
+        if (!empty($catExpenses)):
+            $catColors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4'];
+            $catLabels = array_map(function($c) { return $c['category_name']; }, $catExpenses);
+            $catValues = array_map(function($c) { return floatval($c['total_amount']); }, $catExpenses);
+            $catColorsJson = array_slice($catColors, 0, count($catExpenses));
+        ?>
+        const catCtx<?php echo $idx; ?> = document.getElementById('cqcCatPie<?php echo $idx; ?>');
+        if (catCtx<?php echo $idx; ?>) {
+            new Chart(catCtx<?php echo $idx; ?>.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: <?php echo json_encode($catLabels); ?>,
+                    datasets: [{
+                        data: <?php echo json_encode($catValues); ?>,
+                        backgroundColor: <?php echo json_encode($catColorsJson); ?>,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '55%',
+                    plugins: { 
+                        legend: { display: false }, 
+                        tooltip: {
+                            backgroundColor: '#374151', 
+                            bodyColor: '#e5e7eb',
+                            cornerRadius: 8, 
+                            padding: 8,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(ctx) { 
+                                    return ctx.label + ': Rp ' + ctx.parsed.toLocaleString(); 
+                                }
+                            }
+                        }
+                    },
+                    animation: { animateRotate: true, duration: 600 }
+                }
+            });
+        }
+        <?php endif; ?>
     })();
     <?php endforeach; ?>
     <?php endif; ?>
