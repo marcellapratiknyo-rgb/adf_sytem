@@ -254,7 +254,9 @@ try {
 }
 
 // Check if CQC business
-$isCQC = (strtolower($activeBusinessId) === 'cqc');
+$isCQC = (strtolower($activeBusinessId) === 'cqc') || 
+         (stripos($activeBusinessId, 'cqc') !== false) ||
+         (stripos($businessName ?? '', 'cqc') !== false);
 
 // CQC PROJECT DATA
 $cqcProjects = [];
@@ -696,10 +698,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         .pie-center-value {
             font-size: 15px;
             font-weight: 800;
-            background: linear-gradient(135deg, #34d399, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #d97706;
         }
         
         /* Legend - Glass Chips */
@@ -1448,7 +1447,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             </div>
         </div>
         
-        <?php if ($isCQC && !empty($cqcProjects)): ?>
+        <?php if ($isCQC): ?>
         <!-- CQC Project Monitoring - Modern 2027 Design -->
         <div style="margin: 14px 0; padding: 18px; background: #ffffff; border-radius: 16px; box-shadow: 0 1px 12px rgba(0,0,0,0.04);">
             <!-- Header -->
@@ -1462,6 +1461,13 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 </div>
             </div>
             
+            <?php if (empty($cqcProjects)): ?>
+            <div style="text-align: center; padding: 30px; color: #9ca3af;">
+                <div style="font-size: 32px; margin-bottom: 10px;">📋</div>
+                <div style="font-size: 14px; font-weight: 500;">Belum ada proyek</div>
+                <div style="font-size: 11px; margin-top: 4px;">Tambahkan proyek di menu CQC Projects</div>
+            </div>
+            <?php else: ?>
             <!-- Summary Row - Modern 2027 Typography -->
             <?php
             $totalBudget = array_sum(array_column($cqcProjects, 'budget_idr'));
@@ -1592,8 +1598,9 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 </div>
                 <?php endforeach; ?>
             </div>
+            <?php endif; // end of else (has projects) ?>
         </div>
-        <?php endif; ?>
+        <?php endif; // end of isCQC ?>
         
         <!-- AI Health -->
         <div class="ai-card">
