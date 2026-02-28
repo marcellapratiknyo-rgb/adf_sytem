@@ -115,233 +115,178 @@ include '../../includes/header.php';
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <style>
-        .cqc-container {
-            max-width: 1400px;
-        }
+        .cqc-container { max-width: 1400px; }
 
-        /* Header */
+        /* Header - compact dark gray */
         .cqc-header {
-            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 16px rgba(0, 102, 204, 0.2);
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: #f7fafc;
+            padding: 16px 24px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .cqc-header h1 {
-            font-size: 24px;
-            margin-bottom: 8px;
-        }
-
-        .cqc-header p {
-            opacity: 0.9;
-            font-size: 14px;
-        }
-
+        .cqc-header h1 { font-size: 17px; margin-bottom: 2px; font-weight: 700; color: #f7fafc; }
+        .cqc-header p { opacity: 0.65; font-size: 12px; margin: 0; }
         .cqc-header button {
-            background: #FFD700;
-            color: #0066CC;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
+            background: #e2e8f0; color: #1a202c; border: none;
+            padding: 8px 18px; border-radius: 6px; font-weight: 600;
+            cursor: pointer; font-size: 12px; transition: all 0.2s;
         }
+        .cqc-header button:hover { background: #cbd5e0; }
 
-        .cqc-header button:hover {
-            background: #FFC700;
-            transform: translateY(-2px);
-        }
-
+        /* Stats - compact */
         .cqc-stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
         }
-
         .cqc-stat-card {
             background: var(--bg-secondary, white);
-            padding: 20px;
+            padding: 14px 16px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            border-top: 4px solid #0066CC;
-            transition: all 0.3s ease;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+            border-left: 3px solid #4a5568;
+            transition: all 0.2s ease;
         }
+        .cqc-stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .cqc-stat-card.yellow { border-left-color: #d69e2e; }
+        .cqc-stat-card.green { border-left-color: #38a169; }
+        .cqc-stat-card.red { border-left-color: #e53e3e; }
 
-        .cqc-stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
+        .cqc-stat-icon { font-size: 20px; margin-bottom: 6px; }
+        .cqc-stat-label { font-size: 10px; color: var(--text-muted, #a0aec0); margin-bottom: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+        .cqc-stat-value { font-size: 22px; font-weight: 800; color: #2d3748; }
+        .cqc-stat-card.yellow .cqc-stat-value { color: #b7791f; }
+        .cqc-stat-card.green .cqc-stat-value { color: #276749; }
+        .cqc-stat-card.red .cqc-stat-value { color: #c53030; }
+        .cqc-stat-subtitle { font-size: 10px; color: var(--text-muted, #a0aec0); margin-top: 4px; }
 
-        .cqc-stat-card.yellow { border-top-color: #FFD700; }
-        .cqc-stat-card.green { border-top-color: #10b981; }
-        .cqc-stat-card.red { border-top-color: #ef4444; }
-
-        .cqc-stat-icon { font-size: 32px; margin-bottom: 12px; }
-        .cqc-stat-label { font-size: 13px; color: var(--text-muted, #999); margin-bottom: 8px; text-transform: uppercase; font-weight: 600; }
-        .cqc-stat-value { font-size: 28px; font-weight: bold; color: #0066CC; }
-        .cqc-stat-card.yellow .cqc-stat-value { color: #FFD700; }
-        .cqc-stat-card.green .cqc-stat-value { color: #10b981; }
-        .cqc-stat-card.red .cqc-stat-value { color: #ef4444; }
-        .cqc-stat-subtitle { font-size: 12px; color: var(--text-muted, #ccc); margin-top: 8px; }
-
+        /* Charts - compact glassmorphism */
         .cqc-charts-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
         }
-
         .cqc-chart-card {
-            background: var(--bg-secondary, rgba(255,255,255,0.85));
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 24px;
-            border-radius: 16px;
-            box-shadow: 0 4px 30px rgba(0, 102, 204, 0.08), 0 0 0 1px rgba(0,102,204,0.06);
-            border: 1px solid rgba(0,102,204,0.08);
-            transition: all 0.4s cubic-bezier(.4,0,.2,1);
+            background: var(--bg-secondary, rgba(255,255,255,0.92));
+            backdrop-filter: blur(12px);
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+            border: 1px solid var(--bg-tertiary, rgba(0,0,0,0.06));
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
-
         .cqc-chart-card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #00d4ff, #0066CC, #7c3aed, #f97316);
+            height: 2px;
+            background: linear-gradient(90deg, #718096, #4a5568, #a0aec0);
             background-size: 300% 100%;
             animation: cqcShimmer 4s ease infinite;
         }
-
         @keyframes cqcShimmer {
             0%,100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
         }
-
-        .cqc-chart-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 102, 204, 0.15), 0 0 60px rgba(0,102,204,0.05);
-        }
-
+        .cqc-chart-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
         .cqc-chart-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: #0066CC;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            font-size: 11px; font-weight: 700; color: #4a5568;
+            margin-bottom: 12px; display: flex; align-items: center;
+            gap: 6px; letter-spacing: 0.5px; text-transform: uppercase;
         }
+        .cqc-chart-canvas { max-height: 200px; }
 
-        .cqc-chart-canvas { max-height: 260px; }
-
+        /* Section title */
         .cqc-section-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #0066CC;
-            margin: 30px 0 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #FFD700;
+            font-size: 14px; font-weight: 700; color: #2d3748;
+            margin: 16px 0 12px; padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+            text-transform: uppercase; letter-spacing: 0.5px;
         }
 
+        /* Table - compact */
         .cqc-projects-table {
             background: var(--bg-secondary, white);
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-radius: 8px; overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
         }
-
         .cqc-projects-table table { width: 100%; border-collapse: collapse; }
-
         .cqc-projects-table th {
-            background: linear-gradient(135deg, #0066CC 0%, #004499 100%);
-            color: white;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 13px;
-            text-transform: uppercase;
+            background: #2d3748; color: #e2e8f0;
+            padding: 10px 14px; text-align: left;
+            font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px;
         }
-
         .cqc-projects-table td {
-            padding: 15px;
-            border-bottom: 1px solid var(--bg-tertiary, #eee);
-            font-size: 14px;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--bg-tertiary, #edf2f7);
+            font-size: 13px; color: var(--text-primary, #2d3748);
         }
+        .cqc-projects-table tr:hover { background: var(--bg-tertiary, #f7fafc); }
 
-        .cqc-projects-table tr:hover { background: var(--bg-tertiary, #f9f9f9); }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .status-planning { background: #ebf4ff; color: #2b6cb0; }
+        .status-procurement { background: #fefcbf; color: #975a16; }
+        .status-installation { background: #e6fffa; color: #285e61; }
+        .status-testing { background: #f0fff4; color: #276749; }
+        .status-completed { background: #c6f6d5; color: #22543d; }
+        .status-on_hold { background: #fed7d7; color: #9b2c2c; }
 
-        .status-badge {
-            display: inline-block; padding: 6px 12px; border-radius: 20px;
-            font-size: 12px; font-weight: 600;
-        }
-        .status-planning { background: #e3f2fd; color: #0066CC; }
-        .status-procurement { background: #fff3cd; color: #994500; }
-        .status-installation { background: #d1ecff; color: #0066CC; }
-        .status-testing { background: #c8e6c9; color: #2e7d32; }
-        .status-completed { background: #a5d6a7; color: #1b5e20; }
-        .status-on_hold { background: #ffccbc; color: #d84315; }
+        .cqc-progress-bar { width: 100%; height: 6px; background: var(--bg-tertiary, #edf2f7); border-radius: 3px; overflow: hidden; margin-bottom: 3px; }
+        .cqc-progress-fill { height: 100%; background: linear-gradient(90deg, #4a5568, #718096); border-radius: 3px; }
+        .cqc-progress-text { font-size: 11px; color: var(--text-muted, #a0aec0); }
 
-        .cqc-progress-bar { width: 100%; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
-        .cqc-progress-fill { height: 100%; background: linear-gradient(90deg, #0066CC, #FFD700); }
-        .cqc-progress-text { font-size: 12px; color: var(--text-muted, #666); }
-
-        .cqc-action-links { display: flex; gap: 10px; }
+        .cqc-action-links { display: flex; gap: 6px; }
         .cqc-action-links a {
-            padding: 6px 12px; background: #0066CC; color: white;
-            border-radius: 4px; text-decoration: none; font-size: 12px;
+            padding: 4px 10px; background: #4a5568; color: #f7fafc;
+            border-radius: 4px; text-decoration: none; font-size: 11px; font-weight: 500;
         }
-        .cqc-action-links a:hover { background: #004499; }
+        .cqc-action-links a:hover { background: #2d3748; }
 
-        .cqc-empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted, #999); }
-        .cqc-empty-state-icon { font-size: 64px; margin-bottom: 20px; }
-        .cqc-empty-state h3 { color: #0066CC; margin-bottom: 10px; }
+        .cqc-empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted, #a0aec0); }
+        .cqc-empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        .cqc-empty-state h3 { color: #2d3748; margin-bottom: 6px; font-size: 16px; }
+
+        @media (max-width: 900px) {
+            .cqc-stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .cqc-charts-section { grid-template-columns: 1fr; }
+        }
 </style>
 
     <div class="cqc-container">
-        <!-- Header -->
         <div class="cqc-header">
             <div>
                 <h1>☀️ Dashboard Proyek CQC</h1>
-                <p>Solar Panel Installation Project Management System</p>
+                <p>Solar Panel Installation Project Management</p>
             </div>
-            <div>
-                <button onclick="location.href='add.php'">➕ Proyek Baru</button>
-            </div>
+            <button onclick="location.href='add.php'">+ Proyek Baru</button>
         </div>
 
-        <!-- Stats Grid -->
         <div class="cqc-stats-grid">
             <div class="cqc-stat-card">
                 <div class="cqc-stat-icon">📋</div>
                 <div class="cqc-stat-label">Total Proyek</div>
                 <div class="cqc-stat-value"><?php echo $stats['total']; ?></div>
             </div>
-
             <div class="cqc-stat-card yellow">
                 <div class="cqc-stat-icon">⚡</div>
                 <div class="cqc-stat-label">Proyek Berjalan</div>
                 <div class="cqc-stat-value"><?php echo $stats['active']; ?></div>
                 <div class="cqc-stat-subtitle">Procurement, Installation, Testing</div>
             </div>
-
             <div class="cqc-stat-card green">
                 <div class="cqc-stat-icon">✅</div>
                 <div class="cqc-stat-label">Rata-rata Progress</div>
                 <div class="cqc-stat-value"><?php echo $stats['avg_progress']; ?>%</div>
             </div>
-
             <div class="cqc-stat-card red">
                 <div class="cqc-stat-icon">💰</div>
                 <div class="cqc-stat-label">Total Pengeluaran</div>
@@ -350,25 +295,21 @@ include '../../includes/header.php';
             </div>
         </div>
 
-        <!-- Charts Section -->
         <div class="cqc-charts-section">
             <div class="cqc-chart-card">
                 <div class="cqc-chart-title">📈 Distribusi Status</div>
                 <canvas id="statusChart" class="cqc-chart-canvas"></canvas>
             </div>
-
             <div class="cqc-chart-card">
                 <div class="cqc-chart-title">💵 Budget vs Pengeluaran</div>
                 <canvas id="budgetChart" class="cqc-chart-canvas"></canvas>
             </div>
-
             <div class="cqc-chart-card">
                 <div class="cqc-chart-title">⏳ Progress Rata-rata</div>
                 <canvas id="progressChart" class="cqc-chart-canvas"></canvas>
             </div>
         </div>
 
-        <!-- Running Projects -->
         <div class="cqc-section-title">⚡ Proyek Sedang Berjalan</div>
         
         <?php if (!empty($running_projects)): ?>
@@ -443,14 +384,14 @@ include '../../includes/header.php';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 if (text) {
-                    ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
-                    ctx.fillStyle = color || '#0066CC';
-                    ctx.fillText(text, cx, subtext ? cy - 10 : cy);
+                    ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+                    ctx.fillStyle = color || '#2d3748';
+                    ctx.fillText(text, cx, subtext ? cy - 8 : cy);
                 }
                 if (subtext) {
-                    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.fillText(subtext, cx, cy + 16);
+                    ctx.font = '600 9px -apple-system, BlinkMacSystemFont, sans-serif';
+                    ctx.fillStyle = '#a0aec0';
+                    ctx.fillText(subtext, cx, cy + 14);
                 }
                 ctx.restore();
             }
@@ -459,28 +400,28 @@ include '../../includes/header.php';
 
         // === Shared tooltip style ===
         const cqcTooltip = {
-            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            backgroundColor: 'rgba(26, 32, 44, 0.95)',
             titleColor: '#e2e8f0',
-            bodyColor: '#fff',
-            borderColor: 'rgba(0, 180, 255, 0.3)',
+            bodyColor: '#f7fafc',
+            borderColor: 'rgba(74, 85, 104, 0.4)',
             borderWidth: 1,
-            cornerRadius: 10,
-            padding: 12,
-            titleFont: { size: 12, weight: '600' },
-            bodyFont: { size: 13, weight: '700' },
+            cornerRadius: 8,
+            padding: 10,
+            titleFont: { size: 11, weight: '600' },
+            bodyFont: { size: 12, weight: '700' },
             displayColors: true,
             boxPadding: 4
         };
 
         // === Gradient helper ===
         function cqcGrad(ctx, c1, c2) {
-            const g = ctx.createLinearGradient(0, 0, 0, 300);
+            const g = ctx.createLinearGradient(0, 0, 0, 250);
             g.addColorStop(0, c1);
             g.addColorStop(1, c2);
             return g;
         }
 
-        // ── Status Chart (Neon Doughnut) ──
+        // ── Status Chart ──
         const statusCtx = document.getElementById('statusChart');
         if (statusCtx) {
             const sData = [
@@ -499,62 +440,38 @@ include '../../includes/header.php';
                     labels: ['Planning', 'Procurement', 'Installation', 'Testing', 'Completed', 'On Hold'],
                     datasets: [{
                         data: sData,
-                        backgroundColor: [
-                            '#3b82f6',
-                            '#f59e0b',
-                            '#06b6d4',
-                            '#8b5cf6',
-                            '#10b981',
-                            '#ef4444'
-                        ],
-                        hoverBackgroundColor: [
-                            '#60a5fa',
-                            '#fbbf24',
-                            '#22d3ee',
-                            '#a78bfa',
-                            '#34d399',
-                            '#f87171'
-                        ],
+                        backgroundColor: ['#4a5568','#d69e2e','#718096','#38a169','#2d3748','#c53030'],
+                        hoverBackgroundColor: ['#718096','#ecc94b','#a0aec0','#48bb78','#4a5568','#fc8181'],
                         borderWidth: 0,
-                        spacing: 3,
-                        borderRadius: 6
+                        spacing: 2,
+                        borderRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    cutout: '72%',
+                    cutout: '70%',
                     plugins: {
-                        centerText: { text: sTotal.toString(), subtext: 'PROYEK', color: '#0066CC' },
+                        centerText: { text: sTotal.toString(), subtext: 'PROYEK', color: '#2d3748' },
                         legend: {
                             position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                pointStyle: 'rectRounded',
-                                padding: 14,
-                                font: { size: 11, weight: '600' },
-                                color: '#64748b'
-                            }
+                            labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10, weight: '600' }, color: '#718096' }
                         },
                         tooltip: cqcTooltip
                     },
-                    animation: {
-                        animateRotate: true,
-                        duration: 1200,
-                        easing: 'easeOutQuart'
-                    }
+                    animation: { animateRotate: true, duration: 800, easing: 'easeOutQuart' }
                 }
             });
         }
 
-        // ── Budget Chart (Glassmorphic Bars) ──
+        // ── Budget Chart ──
         const budgetCtx = document.getElementById('budgetChart');
         if (budgetCtx) {
             const ctx2d = budgetCtx.getContext('2d');
             new Chart(budgetCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Budget Total', 'Pengeluaran', 'Sisa'],
+                    labels: ['Budget', 'Terpakai', 'Sisa'],
                     datasets: [{
                         label: 'Rp',
                         data: [
@@ -563,13 +480,13 @@ include '../../includes/header.php';
                             <?php echo $stats['remaining']; ?>
                         ],
                         backgroundColor: [
-                            cqcGrad(ctx2d, '#3b82f6', '#1d4ed8'),
-                            cqcGrad(ctx2d, '#f59e0b', '#d97706'),
-                            cqcGrad(ctx2d, '#10b981', '#059669')
+                            cqcGrad(ctx2d, '#4a5568', '#2d3748'),
+                            cqcGrad(ctx2d, '#d69e2e', '#b7791f'),
+                            cqcGrad(ctx2d, '#38a169', '#276749')
                         ],
-                        borderRadius: 8,
+                        borderRadius: 6,
                         borderSkipped: false,
-                        barPercentage: 0.6,
+                        barPercentage: 0.55,
                         categoryPercentage: 0.7
                     }]
                 },
@@ -581,37 +498,26 @@ include '../../includes/header.php';
                         legend: { display: false },
                         tooltip: {
                             ...cqcTooltip,
-                            callbacks: {
-                                label: function(ctx) {
-                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(ctx.parsed.x);
-                                }
-                            }
+                            callbacks: { label: function(ctx) { return 'Rp ' + new Intl.NumberFormat('id-ID').format(ctx.parsed.x); } }
                         }
                     },
                     scales: {
                         x: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(0,102,204,0.06)', drawBorder: false },
+                            grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
                             ticks: {
-                                color: '#94a3b8',
-                                font: { size: 11, weight: '500' },
-                                callback: function(v) {
-                                    if (v >= 1e9) return 'Rp ' + (v/1e9).toFixed(1) + 'B';
-                                    return 'Rp ' + (v/1e6).toFixed(0) + 'M';
-                                }
+                                color: '#a0aec0', font: { size: 10, weight: '500' },
+                                callback: function(v) { return v >= 1e9 ? 'Rp '+(v/1e9).toFixed(1)+'B' : 'Rp '+(v/1e6).toFixed(0)+'M'; }
                             }
                         },
-                        y: {
-                            grid: { display: false },
-                            ticks: { color: '#64748b', font: { size: 12, weight: '600' } }
-                        }
+                        y: { grid: { display: false }, ticks: { color: '#4a5568', font: { size: 11, weight: '600' } } }
                     },
-                    animation: { duration: 1000, easing: 'easeOutQuart' }
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
             });
         }
 
-        // ── Progress Chart (Neon Ring with Center %) ──
+        // ── Progress Chart ──
         const progressCtx = document.getElementById('progressChart');
         if (progressCtx) {
             const pVal = <?php echo $stats['avg_progress']; ?>;
@@ -623,49 +529,34 @@ include '../../includes/header.php';
                         data: [pVal, 100 - pVal],
                         backgroundColor: [
                             (function(){
-                                const g = progressCtx.getContext('2d').createLinearGradient(0,0,300,300);
-                                g.addColorStop(0, '#06b6d4');
-                                g.addColorStop(0.5, '#3b82f6');
-                                g.addColorStop(1, '#7c3aed');
+                                const g = progressCtx.getContext('2d').createLinearGradient(0,0,250,250);
+                                g.addColorStop(0, '#2d3748');
+                                g.addColorStop(1, '#4a5568');
                                 return g;
                             })(),
-                            'rgba(148, 163, 184, 0.12)'
+                            'rgba(160, 174, 192, 0.15)'
                         ],
                         borderWidth: 0,
                         spacing: 2,
-                        borderRadius: 20
+                        borderRadius: 12
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    cutout: '78%',
+                    cutout: '75%',
                     plugins: {
-                        centerText: { text: pVal + '%', subtext: 'PROGRESS', color: '#3b82f6' },
+                        centerText: { text: pVal + '%', subtext: 'PROGRESS', color: '#2d3748' },
                         legend: {
                             position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                pointStyle: 'rectRounded',
-                                padding: 14,
-                                font: { size: 11, weight: '600' },
-                                color: '#64748b'
-                            }
+                            labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10, weight: '600' }, color: '#718096' }
                         },
                         tooltip: {
                             ...cqcTooltip,
-                            callbacks: {
-                                label: function(ctx) {
-                                    return ctx.label + ': ' + ctx.parsed + '%';
-                                }
-                            }
+                            callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; } }
                         }
                     },
-                    animation: {
-                        animateRotate: true,
-                        duration: 1400,
-                        easing: 'easeOutBack'
-                    }
+                    animation: { animateRotate: true, duration: 1000, easing: 'easeOutQuart' }
                 }
             });
         }
