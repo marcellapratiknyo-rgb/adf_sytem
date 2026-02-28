@@ -1142,7 +1142,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     // ============================================
     // PIE CHART - Division Income
     // ============================================
-    <?php if (!empty($divisionIncomeData)): ?>
+    <?php if (!$isCQC && !empty($divisionIncomeData)): ?>
     const divisionPieCtx = document.getElementById('divisionPieChart').getContext('2d');
     let divisionPieChart = new Chart(divisionPieCtx, {
         type: 'doughnut',
@@ -1215,7 +1215,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     // ============================================
     // PIE CHART 2 - Expense per Division (NEW)
     // ============================================
-    <?php if (!empty($expenseDivisionData)): ?>
+    <?php if (!$isCQC && !empty($expenseDivisionData)): ?>
     const expenseCategoryCtx = document.getElementById('expenseCategoryChart').getContext('2d');
     let expenseCategoryChart = new Chart(expenseCategoryCtx, {
         type: 'doughnut',
@@ -1293,6 +1293,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     });
     <?php endif; ?>
     
+    <?php if (!$isCQC): ?>
     // Function to update division income chart
     function updateDivisionIncomeChart(month) {
         fetch(`api/division-income-data.php?month=${month}`)
@@ -1330,6 +1331,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
             })
             .catch(error => console.error('Error updating expense category chart:', error));
     }
+    <?php endif; // !$isCQC pie chart functions ?>
     
     // ============================================
     // PREMIUM TRADING LINE CHART
