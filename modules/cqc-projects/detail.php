@@ -255,7 +255,13 @@ include '../../includes/header.php';
                     </div>
 
                     <!-- Budget Info -->
-                    <h3 style="margin-top: 12px;">💰 Budget & Pengeluaran</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                        <h3 style="margin: 0;">💰 Budget & Pengeluaran</h3>
+                        <div style="display: flex; gap: 6px;">
+                            <a href="categories.php" style="background: #f1f5f9; color: #475569; padding: 4px 8px; border-radius: 4px; font-size: 10px; text-decoration: none; font-weight: 600;">⚙️ Kategori</a>
+                            <button onclick="openExpenseModal()" style="background: #10b981; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600;">+ Pengeluaran</button>
+                        </div>
+                    </div>
                     <div class="cqc-budget-grid">
                         <div class="cqc-budget-item">
                             <div class="cqc-budget-label">Budget Total</div>
