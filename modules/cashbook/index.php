@@ -299,8 +299,12 @@ if (!empty($filterDate) && !empty($filterMonth)) {
 }
 
 // Default month to current if no filters provided at all
+// For CQC, default to no month filter to show all transactions
 if (empty($filterDate) && empty($filterMonth) && !isset($_GET['date']) && !isset($_GET['type'])) {
-    $filterMonth = date('Y-m');
+    if (!$isCQC) {
+        $filterMonth = date('Y-m');
+    }
+    // CQC: no default filter, show all transactions
 }
 
 // Validate month format (YYYY-MM) - fix for browsers that don't support type="month"

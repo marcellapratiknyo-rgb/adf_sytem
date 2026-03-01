@@ -91,6 +91,24 @@ try {
         echo "<p>✅ Created categories table</p>";
     }
     
+    // Check if users table exists, if not create it (needed for cashbook JOIN)
+    $hasUsers = $pdo->query("SHOW TABLES LIKE 'users'")->rowCount() > 0;
+    if (!$hasUsers) {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(50) NOT NULL,
+                full_name VARCHAR(100) NOT NULL,
+                email VARCHAR(100),
+                role VARCHAR(20) DEFAULT 'staff',
+                is_active TINYINT(1) DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        $pdo->exec("INSERT INTO users (id, username, full_name, role) VALUES (1, 'admin', 'Administrator', 'admin')");
+        echo "<p>✅ Created users table with default admin</p>";
+    }
+    
     // Get all CQC projects
     $projects = $pdo->query("SELECT id, project_code, project_name FROM cqc_projects ORDER BY id")->fetchAll(PDO::FETCH_ASSOC);
     echo "<p>Found <strong>" . count($projects) . "</strong> projects</p>";
