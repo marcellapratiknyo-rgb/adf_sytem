@@ -1,7 +1,7 @@
 <?php
 /**
- * CQC Professional Invoice
- * Professional invoice display and print - English version
+ * CQC Professional Invoice - Compact A4 Version
+ * Professional invoice display and print - fits on single A4 page
  */
 define('APP_ACCESS', true);
 require_once '../../config/config.php';
@@ -47,7 +47,7 @@ if (!$invoice) {
 $db = Database::getInstance();
 $businessId = 7; // CQC business ID
 
-// Default company info - REQUIRED fields
+// Default company info
 $companyName = 'CQC Enjiniring';
 $companyTagline = 'Solar Panel Installation Contractor';
 $companyAddress = 'Address not configured';
@@ -157,7 +157,7 @@ function numberToWords($number) {
 
 $totalInWords = numberToWords($invoice['total_amount']) . ' Rupiah';
 
-// Format date for invoice (renamed to avoid conflict with global function)
+// Format date for invoice
 function formatInvDate($date) {
     return date('F j, Y', strtotime($date));
 }
@@ -166,19 +166,15 @@ function formatInvDate($date) {
 $logoPath = '';
 $logoExists = false;
 if ($companyLogo) {
-    // Check various possible paths
-    // Logo might be stored as "logos/filename.png" or just "filename.png"
     $possiblePaths = [
-        $configPath . '/uploads/' . $companyLogo,  // Direct path like "logos/file.png"
-        $configPath . '/uploads/logos/' . $companyLogo, // Just filename, look in logos folder
+        $configPath . '/uploads/' . $companyLogo,
+        $configPath . '/uploads/logos/' . $companyLogo,
         $configPath . '/assets/images/' . $companyLogo,
     ];
     foreach ($possiblePaths as $path) {
         if (file_exists($path)) {
             $logoExists = true;
-            // Determine URL based on path
             if (strpos($companyLogo, 'logos/') === 0) {
-                // Logo stored as "logos/filename.png"
                 $logoPath = BASE_URL . '/uploads/' . $companyLogo;
             } elseif (strpos($path, '/uploads/logos/') !== false) {
                 $logoPath = BASE_URL . '/uploads/logos/' . $companyLogo;
@@ -220,43 +216,45 @@ if ($companyLogo) {
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 11px; 
-            line-height: 1.5; 
+            font-size: 10px; 
+            line-height: 1.4; 
             color: #333;
             background: <?php echo $print ? '#fff' : '#e5e7eb'; ?>;
         }
         
         .page {
-            max-width: 210mm; 
+            width: 210mm; 
             min-height: 297mm;
-            margin: <?php echo $print ? '0' : '20px auto'; ?>; 
+            max-height: 297mm;
+            margin: <?php echo $print ? '0' : '15px auto'; ?>; 
             padding: 0;
             background: #fff; 
+            overflow: hidden;
             <?php if (!$print): ?>
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.2);
             <?php endif; ?>
         }
         
-        /* Header Section */
+        /* Header Section - Compact */
         .header {
             display: flex;
             justify-content: space-between;
-            padding: 30px 40px 25px;
-            border-bottom: 3px solid var(--navy);
+            padding: 18px 28px 15px;
+            border-bottom: 2px solid var(--navy);
         }
         
         .company-block {
             display: flex;
-            gap: 20px;
+            gap: 14px;
             align-items: flex-start;
         }
         
         .logo-box {
-            width: 70px;
-            height: 70px;
+            width: 50px;
+            height: 50px;
             background: var(--gray-100);
-            border: 2px solid var(--gray-200);
-            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -264,51 +262,41 @@ if ($companyLogo) {
         }
         
         .logo-box img {
-            max-width: 60px;
-            max-height: 60px;
+            max-width: 44px;
+            max-height: 44px;
             object-fit: contain;
         }
         
         .logo-box .no-logo {
-            font-size: 9px;
+            font-size: 8px;
             color: var(--gray-400);
             text-align: center;
-            padding: 5px;
         }
         
         .company-info h1 {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 800;
             color: var(--navy);
-            margin-bottom: 4px;
-            letter-spacing: -0.3px;
-        }
-        
-        .company-info .tagline {
-            font-size: 10px;
-            color: var(--gold-dark);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-        }
-        
-        .company-contact {
-            font-size: 10px;
-            color: var(--gray-600);
-            line-height: 1.6;
-        }
-        
-        .company-contact .row {
-            display: flex;
-            gap: 5px;
             margin-bottom: 2px;
         }
         
-        .company-contact .icon {
-            width: 14px;
-            text-align: center;
-            flex-shrink: 0;
+        .company-info .tagline {
+            font-size: 8px;
+            color: var(--gold-dark);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 6px;
+        }
+        
+        .company-contact {
+            font-size: 8px;
+            color: var(--gray-600);
+            line-height: 1.5;
+        }
+        
+        .company-contact .row {
+            margin-bottom: 1px;
         }
         
         .invoice-header {
@@ -316,43 +304,38 @@ if ($companyLogo) {
         }
         
         .invoice-title {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 800;
             color: var(--navy);
-            letter-spacing: 4px;
-            margin-bottom: 8px;
+            letter-spacing: 3px;
+            margin-bottom: 4px;
         }
         
         .invoice-number {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--gray-700);
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         
         .invoice-meta {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--gray-500);
-            text-align: right;
         }
         
         .invoice-meta .row {
-            margin-bottom: 3px;
-        }
-        
-        .invoice-meta strong {
-            color: var(--gray-700);
+            margin-bottom: 2px;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 5px 16px;
-            border-radius: 4px;
-            font-size: 10px;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 8px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 10px;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
         }
         
         .status-draft { background: var(--gray-200); color: var(--gray-600); }
@@ -361,149 +344,121 @@ if ($companyLogo) {
         .status-partial { background: #fef3c7; color: #d97706; }
         .status-overdue { background: #fee2e2; color: #dc2626; }
         
-        /* Content */
+        /* Content - Compact */
         .content {
-            padding: 30px 40px;
+            padding: 16px 28px;
         }
         
-        /* Bill To Section */
+        /* Bill To Section - Compact */
         .parties-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 30px;
+            gap: 20px;
+            margin-bottom: 14px;
         }
         
         .party-box {
-            padding: 20px;
+            padding: 12px 14px;
             background: var(--gray-50);
-            border-radius: 8px;
-            border-left: 4px solid var(--gold);
+            border-radius: 6px;
+            border-left: 3px solid var(--gold);
         }
         
         .party-box h4 {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             color: var(--gray-400);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
         }
         
         .party-box .name {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         
         .party-box .info {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--gray-600);
-            line-height: 1.7;
+            line-height: 1.5;
         }
         
-        .party-box .info .row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 3px;
-        }
-        
-        /* Invoice Table */
+        /* Invoice Table - Compact */
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 25px;
+            margin-bottom: 14px;
         }
         
         .invoice-table th {
             background: var(--navy);
             color: #fff;
-            padding: 12px 14px;
+            padding: 8px 10px;
             text-align: left;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         
-        .invoice-table th:first-child { border-radius: 6px 0 0 0; }
-        .invoice-table th:last-child { border-radius: 0 6px 0 0; }
+        .invoice-table th:first-child { border-radius: 4px 0 0 0; }
+        .invoice-table th:last-child { border-radius: 0 4px 0 0; }
         
         .invoice-table td {
-            padding: 14px;
+            padding: 10px;
             border-bottom: 1px solid var(--gray-200);
-            font-size: 11px;
-        }
-        
-        .invoice-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .invoice-table tbody tr:hover {
-            background: var(--gray-50);
+            font-size: 10px;
         }
         
         .term-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--navy);
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 800;
-            border-radius: 8px;
+            border-radius: 5px;
         }
         
         .item-title {
             font-weight: 600;
             color: var(--navy);
-            margin-bottom: 3px;
+            font-size: 10px;
         }
         
         .item-subtitle {
-            font-size: 9px;
+            font-size: 8px;
             color: var(--gray-400);
         }
         
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
-        /* Summary Section */
+        /* Summary - Compact */
         .summary-wrapper {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 25px;
+            margin-bottom: 12px;
         }
         
         .summary-table {
-            width: 350px;
+            width: 280px;
             background: var(--gray-50);
-            border-radius: 8px;
+            border-radius: 6px;
             overflow: hidden;
         }
         
         .summary-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 16px;
+            padding: 6px 12px;
             border-bottom: 1px solid var(--gray-200);
-            font-size: 11px;
-        }
-        
-        .summary-row:last-of-type {
-            border-bottom: none;
-        }
-        
-        .summary-row .label {
-            color: var(--gray-500);
-        }
-        
-        .summary-row .value {
-            font-weight: 600;
-            color: var(--gray-700);
+            font-size: 9px;
         }
         
         .summary-row .value.add { color: var(--success); }
@@ -511,7 +466,7 @@ if ($companyLogo) {
         
         .summary-total {
             background: var(--navy);
-            padding: 14px 16px;
+            padding: 10px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -519,130 +474,129 @@ if ($companyLogo) {
         
         .summary-total .label {
             color: rgba(255,255,255,0.7);
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 1px;
         }
         
         .summary-total .value {
             color: var(--gold);
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 800;
         }
         
-        /* Amount in Words */
+        /* Amount in Words - Compact */
         .amount-words {
-            background: linear-gradient(135deg, rgba(240,180,41,0.06), rgba(240,180,41,0.02));
-            border: 1px solid rgba(240,180,41,0.3);
-            border-radius: 6px;
-            padding: 12px 16px;
-            margin-bottom: 25px;
+            background: rgba(240,180,41,0.05);
+            border: 1px solid rgba(240,180,41,0.25);
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
         }
         
         .amount-words .label {
-            font-size: 9px;
+            font-size: 8px;
             color: var(--gray-400);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
         .amount-words .text {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
             color: var(--navy);
             font-style: italic;
         }
         
-        /* Bank Details */
+        /* Bank & Terms Row - Side by Side */
+        .bottom-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+        
         .bank-section {
             background: var(--gray-100);
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin-bottom: 25px;
+            border-radius: 6px;
+            padding: 10px 14px;
         }
         
         .bank-section h5 {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             color: var(--gray-400);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         
         .bank-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            grid-template-columns: 1fr;
+            gap: 4px;
         }
         
-        .bank-item .label {
+        .bank-item {
             font-size: 9px;
-            color: var(--gray-400);
-            margin-bottom: 2px;
         }
         
-        .bank-item .value {
-            font-size: 11px;
-            font-weight: 700;
+        .bank-item span {
+            color: var(--gray-500);
+        }
+        
+        .bank-item strong {
             color: var(--navy);
         }
         
-        /* Notes */
-        .notes-section {
-            background: #fffbeb;
-            border-left: 3px solid #f59e0b;
-            padding: 14px 18px;
-            border-radius: 0 6px 6px 0;
-            margin-bottom: 25px;
-        }
-        
-        .notes-section .label {
-            font-size: 9px;
-            font-weight: 700;
-            color: #92400e;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-        }
-        
-        .notes-section .text {
-            font-size: 10px;
-            color: #78350f;
-            line-height: 1.6;
-        }
-        
-        /* Terms */
         .terms-section {
-            border-top: 1px solid var(--gray-200);
-            padding-top: 20px;
-            margin-bottom: 30px;
+            padding: 10px 14px;
+            background: var(--gray-50);
+            border-radius: 6px;
         }
         
         .terms-section h5 {
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 700;
             color: var(--gray-400);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         
         .terms-section ul {
-            font-size: 9px;
+            font-size: 8px;
             color: var(--gray-500);
-            margin-left: 16px;
-            line-height: 1.8;
+            margin-left: 12px;
+            line-height: 1.5;
         }
         
-        /* Signatures */
+        /* Notes - Compact */
+        .notes-section {
+            background: #fffbeb;
+            border-left: 2px solid #f59e0b;
+            padding: 8px 12px;
+            border-radius: 0 4px 4px 0;
+            margin-bottom: 12px;
+        }
+        
+        .notes-section .label {
+            font-size: 8px;
+            font-weight: 700;
+            color: #92400e;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+        
+        .notes-section .text {
+            font-size: 9px;
+            color: #78350f;
+        }
+        
+        /* Signatures - Compact */
         .signatures {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            margin-top: 40px;
+            gap: 60px;
+            margin-top: 20px;
         }
         
         .sig-block {
@@ -650,75 +604,81 @@ if ($companyLogo) {
         }
         
         .sig-block .role {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--gray-500);
-            margin-bottom: 60px;
+            margin-bottom: 35px;
         }
         
         .sig-block .line {
             border-top: 1px solid var(--navy);
-            padding-top: 8px;
+            padding-top: 6px;
         }
         
         .sig-block .name {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             color: var(--navy);
         }
         
-        /* Footer */
+        /* Footer - Compact */
         .footer {
             background: var(--gray-50);
-            padding: 15px 40px;
+            padding: 10px 28px;
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             color: var(--gray-400);
             border-top: 1px solid var(--gray-200);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
         }
         
         /* Print Controls */
         .print-controls { 
             position: fixed; 
-            top: 20px; 
-            right: 20px; 
+            top: 15px; 
+            right: 15px; 
             display: flex; 
-            gap: 10px; 
+            gap: 8px; 
             z-index: 100;
         }
         
         .print-controls button, .print-controls a {
-            padding: 12px 24px; 
+            padding: 10px 20px; 
             border: none; 
-            border-radius: 8px;
+            border-radius: 6px;
             font-weight: 700; 
-            font-size: 13px; 
+            font-size: 12px; 
             cursor: pointer;
             text-decoration: none; 
             display: inline-flex; 
             align-items: center; 
-            gap: 8px;
+            gap: 6px;
             transition: all 0.2s;
         }
         
         .btn-print { 
             background: var(--navy); 
             color: #fff; 
-            box-shadow: 0 4px 15px rgba(13,31,60,0.3);
+            box-shadow: 0 3px 10px rgba(13,31,60,0.25);
         }
-        .btn-print:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,31,60,0.4); }
         
         .btn-back { 
             background: #fff; 
             color: var(--gray-600); 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-        .btn-back:hover { background: var(--gray-50); }
 
         @media print {
             body { background: #fff; }
             .page { box-shadow: none; margin: 0; }
             .print-controls { display: none !important; }
-            @page { margin: 8mm; }
+            .footer { position: relative; }
+            @page { 
+                size: A4; 
+                margin: 0; 
+            }
         }
     </style>
 </head>
@@ -745,10 +705,9 @@ if ($companyLogo) {
                     <h1><?php echo htmlspecialchars($companyName); ?></h1>
                     <div class="tagline"><?php echo htmlspecialchars($companyTagline); ?></div>
                     <div class="company-contact">
-                        <div class="row"><span class="icon">📍</span> <?php echo htmlspecialchars($fullAddress); ?></div>
-                        <div class="row"><span class="icon">📞</span> <?php echo htmlspecialchars($companyPhone); ?></div>
-                        <div class="row"><span class="icon">✉️</span> <?php echo htmlspecialchars($companyEmail); ?></div>
-                        <div class="row"><span class="icon">🏢</span> NPWP: <?php echo htmlspecialchars($companyNPWP); ?></div>
+                        <div class="row">📍 <?php echo htmlspecialchars($fullAddress); ?></div>
+                        <div class="row">📞 <?php echo htmlspecialchars($companyPhone); ?> | ✉️ <?php echo htmlspecialchars($companyEmail); ?></div>
+                        <div class="row">NPWP: <?php echo htmlspecialchars($companyNPWP); ?></div>
                     </div>
                 </div>
             </div>
@@ -758,7 +717,7 @@ if ($companyLogo) {
                 <div class="invoice-meta">
                     <div class="row"><strong>Date:</strong> <?php echo formatInvDate($invoice['invoice_date']); ?></div>
                     <?php if ($invoice['due_date']): ?>
-                    <div class="row"><strong>Due Date:</strong> <?php echo formatInvDate($invoice['due_date']); ?></div>
+                    <div class="row"><strong>Due:</strong> <?php echo formatInvDate($invoice['due_date']); ?></div>
                     <?php endif; ?>
                 </div>
                 <?php
@@ -783,28 +742,17 @@ if ($companyLogo) {
                     <h4>Bill To</h4>
                     <div class="name"><?php echo htmlspecialchars($invoice['client_name']); ?></div>
                     <div class="info">
-                        <?php if ($invoice['client_phone']): ?>
-                        <div class="row">Phone: <?php echo htmlspecialchars($invoice['client_phone']); ?></div>
-                        <?php endif; ?>
-                        <?php if ($invoice['client_email']): ?>
-                        <div class="row">Email: <?php echo htmlspecialchars($invoice['client_email']); ?></div>
-                        <?php endif; ?>
-                        <?php if ($invoice['location']): ?>
-                        <div class="row">Address: <?php echo htmlspecialchars($invoice['location']); ?></div>
-                        <?php endif; ?>
+                        <?php if ($invoice['client_phone']): ?>Phone: <?php echo htmlspecialchars($invoice['client_phone']); ?><br><?php endif; ?>
+                        <?php if ($invoice['client_email']): ?>Email: <?php echo htmlspecialchars($invoice['client_email']); ?><br><?php endif; ?>
+                        <?php if ($invoice['location']): ?>Address: <?php echo htmlspecialchars($invoice['location']); ?><?php endif; ?>
                     </div>
                 </div>
                 <div class="party-box">
-                    <h4>Project Details</h4>
+                    <h4>Project</h4>
                     <div class="name"><?php echo htmlspecialchars($invoice['project_name']); ?></div>
                     <div class="info">
-                        <div class="row">Code: <?php echo htmlspecialchars($invoice['project_code']); ?></div>
-                        <?php if ($invoice['solar_capacity_kwp']): ?>
-                        <div class="row">Capacity: <?php echo number_format($invoice['solar_capacity_kwp'], 2); ?> kWp</div>
-                        <?php endif; ?>
-                        <?php if ($invoice['location']): ?>
-                        <div class="row">Location: <?php echo htmlspecialchars($invoice['location']); ?></div>
-                        <?php endif; ?>
+                        Code: <?php echo htmlspecialchars($invoice['project_code']); ?>
+                        <?php if ($invoice['solar_capacity_kwp']): ?><br>Capacity: <?php echo number_format($invoice['solar_capacity_kwp'], 2); ?> kWp<?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -813,11 +761,11 @@ if ($companyLogo) {
             <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th style="width: 70px;" class="text-center">Term</th>
+                        <th style="width: 50px;" class="text-center">Term</th>
                         <th>Description</th>
-                        <th style="width: 70px;" class="text-center">%</th>
-                        <th style="width: 130px;" class="text-right">Contract Value</th>
-                        <th style="width: 130px;" class="text-right">Amount</th>
+                        <th style="width: 50px;" class="text-center">%</th>
+                        <th style="width: 110px;" class="text-right">Contract Value</th>
+                        <th style="width: 110px;" class="text-right">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -876,33 +824,6 @@ if ($companyLogo) {
                 <div class="text"># <?php echo $totalInWords; ?> #</div>
             </div>
             
-            <!-- Bank Details -->
-            <?php if ($bankName || $bankAccount): ?>
-            <div class="bank-section">
-                <h5>Payment Information</h5>
-                <div class="bank-grid">
-                    <?php if ($bankName): ?>
-                    <div class="bank-item">
-                        <div class="label">Bank Name</div>
-                        <div class="value"><?php echo htmlspecialchars($bankName); ?></div>
-                    </div>
-                    <?php endif; ?>
-                    <?php if ($bankAccount): ?>
-                    <div class="bank-item">
-                        <div class="label">Account Number</div>
-                        <div class="value"><?php echo htmlspecialchars($bankAccount); ?></div>
-                    </div>
-                    <?php endif; ?>
-                    <?php if ($bankHolder): ?>
-                    <div class="bank-item">
-                        <div class="label">Account Holder</div>
-                        <div class="value"><?php echo htmlspecialchars($bankHolder); ?></div>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-            
             <?php if ($invoice['notes']): ?>
             <div class="notes-section">
                 <div class="label">Notes</div>
@@ -910,14 +831,28 @@ if ($companyLogo) {
             </div>
             <?php endif; ?>
             
-            <!-- Terms & Conditions -->
-            <div class="terms-section">
-                <h5>Terms & Conditions</h5>
-                <ul>
-                    <li>Payment is due within 14 days from invoice date unless otherwise specified.</li>
-                    <li>Please include the invoice number as payment reference.</li>
-                    <li>Late payments may be subject to additional charges.</li>
-                </ul>
+            <!-- Bank & Terms - Side by Side -->
+            <div class="bottom-row">
+                <?php if ($bankName || $bankAccount): ?>
+                <div class="bank-section">
+                    <h5>Payment Information</h5>
+                    <div class="bank-grid">
+                        <?php if ($bankName): ?><div class="bank-item"><span>Bank:</span> <strong><?php echo htmlspecialchars($bankName); ?></strong></div><?php endif; ?>
+                        <?php if ($bankAccount): ?><div class="bank-item"><span>Account:</span> <strong><?php echo htmlspecialchars($bankAccount); ?></strong></div><?php endif; ?>
+                        <?php if ($bankHolder): ?><div class="bank-item"><span>Name:</span> <strong><?php echo htmlspecialchars($bankHolder); ?></strong></div><?php endif; ?>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div></div>
+                <?php endif; ?>
+                
+                <div class="terms-section">
+                    <h5>Terms & Conditions</h5>
+                    <ul>
+                        <li>Payment due within 14 days from invoice date</li>
+                        <li>Include invoice number as payment reference</li>
+                    </ul>
+                </div>
             </div>
             
             <!-- Signatures -->
@@ -939,7 +874,7 @@ if ($companyLogo) {
         
         <!-- Footer -->
         <div class="footer">
-            Thank you for your business. For any inquiries, please contact <?php echo htmlspecialchars($companyEmail); ?>
+            Thank you for your business. For inquiries: <?php echo htmlspecialchars($companyEmail); ?>
         </div>
     </div>
 
