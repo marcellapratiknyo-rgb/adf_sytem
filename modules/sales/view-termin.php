@@ -167,16 +167,20 @@ $logoPath = '';
 $logoExists = false;
 if ($companyLogo) {
     // Check various possible paths
+    // Logo might be stored as "logos/filename.png" or just "filename.png"
     $possiblePaths = [
-        $configPath . '/uploads/' . $companyLogo,
-        $configPath . '/uploads/logos/' . $companyLogo,
+        $configPath . '/uploads/' . $companyLogo,  // Direct path like "logos/file.png"
+        $configPath . '/uploads/logos/' . $companyLogo, // Just filename, look in logos folder
         $configPath . '/assets/images/' . $companyLogo,
     ];
     foreach ($possiblePaths as $path) {
         if (file_exists($path)) {
             $logoExists = true;
-            // Determine URL
-            if (strpos($path, '/uploads/logos/') !== false) {
+            // Determine URL based on path
+            if (strpos($companyLogo, 'logos/') === 0) {
+                // Logo stored as "logos/filename.png"
+                $logoPath = BASE_URL . '/uploads/' . $companyLogo;
+            } elseif (strpos($path, '/uploads/logos/') !== false) {
                 $logoPath = BASE_URL . '/uploads/logos/' . $companyLogo;
             } elseif (strpos($path, '/uploads/') !== false) {
                 $logoPath = BASE_URL . '/uploads/' . $companyLogo;
