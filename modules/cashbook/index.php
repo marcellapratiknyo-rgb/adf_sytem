@@ -286,6 +286,7 @@ $filterMonth = trim(getGet('month', ''));
 $filterType = trim(getGet('type', 'all'));
 $filterDivision = trim(getGet('division', 'all'));
 $filterPayment = trim(getGet('payment', 'all'));
+$filterUser = trim(getGet('user', 'all'));
 
 // SMART CONFLICT RESOLUTION: If both date and month are provided,
 // and date falls within the selected month, prioritize MONTH filter
@@ -342,6 +343,11 @@ if (!empty($filterPayment) && $filterPayment !== 'all') {
     $params['payment'] = $filterPayment;
 }
 
+if (!empty($filterUser) && $filterUser !== 'all') {
+    $whereClauses[] = "cb.created_by = :user_id";
+    $params['user_id'] = $filterUser;
+}
+
 $whereSQL = count($whereClauses) > 0 ? 'WHERE ' . implode(' AND ', $whereClauses) : '';
 
 // Get transactions - Use LEFT JOIN to handle missing references
@@ -354,6 +360,8 @@ try {
 }
 $orderBy = $hasTransactionTime ? 'cb.transaction_date DESC, cb.transaction_time DESC' : 'cb.transaction_date DESC, cb.id DESC';
 
+// Use cross-database join to get user names from master database
+$masterDbName = DB_NAME;
 $transactions = $db->fetchAll(
     "SELECT 
         cb.*,
@@ -364,7 +372,7 @@ $transactions = $db->fetchAll(
     FROM cash_book cb
     LEFT JOIN divisions d ON cb.division_id = d.id
     LEFT JOIN categories c ON cb.category_id = c.id
-    LEFT JOIN users u ON cb.created_by = u.id
+    LEFT JOIN {$masterDbName}.users u ON cb.created_by = u.id
     {$whereSQL}
     ORDER BY {$orderBy}",
     $params
@@ -377,6 +385,17 @@ if (empty($transactions) && empty($whereClauses)) {
 
 // Get divisions for filter
 $divisions = $db->fetchAll("SELECT * FROM divisions WHERE is_active = 1 ORDER BY division_name");
+
+// Get users for filter (from master database)
+$usersForFilter = [];
+try {
+    $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+    $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $usersForFilter = $masterDb->query("SELECT id, full_name FROM users WHERE is_active = 1 ORDER BY full_name")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Fallback: empty array
+    $usersForFilter = [];
+}
 
 // Calculate totals
 $totalIncome = 0;
@@ -416,7 +435,7 @@ echo getPrintCSS();
 
 .cqc-filter-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 1rem;
 }
 
@@ -453,7 +472,7 @@ echo getPrintCSS();
 }
 
 .cqc-filter-actions {
-    grid-column: span 5;
+    grid-column: span 6;
     display: flex;
     gap: 0.75rem;
     margin-top: 0.5rem;
@@ -845,6 +864,21 @@ echo getPrintCSS();
 .cqc-info-chip.user {
     background: rgba(107, 114, 128, 0.1);
     color: #4b5563;
+}
+
+/* ===== INPUT BY USER BADGE ===== */
+.cb-user-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+    color: #4f46e5;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    border: 1px solid rgba(99, 102, 241, 0.15);
 }
 
 /* ===== ELEGANT PRINT STYLES ===== */
@@ -1424,6 +1458,18 @@ echo getPrintCSS();
                 </select>
             </div>
             
+            <div class="cqc-filter-group">
+                <label class="cqc-filter-label">👤 Input By</label>
+                <select name="user" class="cqc-filter-input">
+                    <option value="all" <?php echo ($filterUser === 'all' || empty($filterUser)) ? 'selected' : ''; ?>>Semua User</option>
+                    <?php foreach ($usersForFilter as $user): ?>
+                        <option value="<?php echo $user['id']; ?>" <?php echo $filterUser == $user['id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($user['full_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
             <div class="cqc-filter-actions">
                 <button type="submit" class="cqc-btn-filter">
                     <i data-feather="filter" style="width: 16px; height: 16px;"></i> 
@@ -1437,7 +1483,7 @@ echo getPrintCSS();
         </div>
     </form>
     <?php else: ?>
-    <form method="GET" action="" autocomplete="off" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; padding: 1.25rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--bg-tertiary);">
+    <form method="GET" action="" autocomplete="off" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; padding: 1.25rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--bg-tertiary);">
         <div class="form-group" style="margin-bottom: 0;">
             <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Tanggal</label>
             <input type="date" id="filterDate" name="date" value="<?php echo htmlspecialchars($filterDate); ?>" class="form-control" autocomplete="off" style="height: 38px; font-size: 0.875rem;" onchange="if(this.value) document.getElementById('filterMonth').value=''"<?php echo empty($filterDate) ? ' placeholder="Pilih tanggal"' : ''; ?>>
@@ -1482,7 +1528,19 @@ echo getPrintCSS();
             </select>
         </div>
         
-        <div style="display: flex; align-items: flex-end; gap: 0.625rem; grid-column: span 5;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Input By</label>
+            <select name="user" class="form-control" style="height: 38px; font-size: 0.875rem;">
+                <option value="all" <?php echo ($filterUser === 'all' || empty($filterUser)) ? 'selected' : ''; ?>>Semua User</option>
+                <?php foreach ($usersForFilter as $user): ?>
+                    <option value="<?php echo $user['id']; ?>" <?php echo $filterUser == $user['id'] ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($user['full_name']); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div style="display: flex; align-items: flex-end; gap: 0.625rem; grid-column: span 6;">
             <button type="submit" class="btn btn-primary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; height: 40px;">
                 <i data-feather="filter" style="width: 16px; height: 16px;"></i> 
                 <span>Filter</span>
@@ -1507,14 +1565,15 @@ echo getPrintCSS();
                     <th style="width: 60px;">Tipe</th>
                     <th style="width: 70px;">Metode</th>
                     <th style="width: 100px; text-align: right;">Jumlah</th>
-                    <th style="text-align: center; padding-left: 1.5rem;">Keterangan</th>
+                    <th style="text-align: left;">Keterangan</th>
+                    <th style="width: 80px;">Input By</th>
                     <th style="width: 70px;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($transactions)): ?>
                     <tr>
-                        <td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <td colspan="10" style="text-align: center; padding: 3rem; color: var(--text-muted);">
                             <i data-feather="inbox" style="width: 48px; height: 48px; margin-bottom: 1rem;"></i>
                             <div>Belum ada transaksi</div>
                             <?php if (!empty($filterDate) || !empty($filterMonth)): ?>
@@ -1553,7 +1612,7 @@ echo getPrintCSS();
                             $shiftUsers = implode(', ', $usersByDate[$currentDate] ?? []);
                     ?>
                         <tr style="background: linear-gradient(135deg, #f1f5f9, #e2e8f0);">
-                            <td colspan="9" style="text-align: center; font-weight: 700; color: #475569; padding: 0.5rem; font-size: 0.8rem;">
+                            <td colspan="10" style="text-align: center; font-weight: 700; color: #475569; padding: 0.5rem; font-size: 0.8rem;">
                                 Transaksi tanggal: <?php echo formatDate($trans['transaction_date']); ?>
                                 <span style="margin-left: 15px; font-weight: 500; color: #64748b; font-size: 0.85em;">
                                     <i data-feather="users" style="width: 14px; height: 14px; vertical-align: middle; margin-right: 4px;"></i>
@@ -1648,23 +1707,11 @@ echo getPrintCSS();
                                     echo $descDisplay;
                                 ?>
                                 
-                                <!-- Payment Info (for all businesses) -->
-                                <div class="cqc-payment-info">
-                                    <?php if (!empty($trans['payment_method'])): ?>
-                                    <span class="cqc-info-chip method">
-                                        <?php 
-                                        $methodIcons = ['cash'=>'💵','transfer'=>'🏦','debit'=>'💳','qr'=>'📱','edc'=>'📟','other'=>'📦'];
-                                        echo ($methodIcons[strtolower($trans['payment_method'])] ?? '💳') . ' ' . strtoupper($trans['payment_method']);
-                                        ?>
-                                    </span>
-                                    <?php endif; ?>
-                                    <?php if (!empty($trans['created_by_name'])): ?>
-                                    <span class="cqc-info-chip user">👤 <?php echo $trans['created_by_name']; ?></span>
-                                    <?php endif; ?>
-                                    <?php if ($isCQC && isset($cqcProjMatch) && $cqcProjMatch): ?>
-                                    <span class="cqc-info-chip category">📊 <?php echo htmlspecialchars($cqcProjMatch['project_name']); ?></span>
-                                    <?php endif; ?>
-                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="cb-user-badge">
+                                    👤 <?php echo htmlspecialchars($trans['created_by_name'] ?: 'System'); ?>
+                                </span>
                             </td>
                             <td>
                                 <div class="cb-actions">
