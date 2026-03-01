@@ -157,8 +157,8 @@ function numberToWords($number) {
 
 $totalInWords = numberToWords($invoice['total_amount']) . ' Rupiah';
 
-// Format date
-function formatDate($date) {
+// Format date for invoice (renamed to avoid conflict with global function)
+function formatInvDate($date) {
     return date('F j, Y', strtotime($date));
 }
 
@@ -756,9 +756,9 @@ if ($companyLogo) {
                 <div class="invoice-title">INVOICE</div>
                 <div class="invoice-number"><?php echo htmlspecialchars($invoice['invoice_number']); ?></div>
                 <div class="invoice-meta">
-                    <div class="row"><strong>Date:</strong> <?php echo formatDate($invoice['invoice_date']); ?></div>
+                    <div class="row"><strong>Date:</strong> <?php echo formatInvDate($invoice['invoice_date']); ?></div>
                     <?php if ($invoice['due_date']): ?>
-                    <div class="row"><strong>Due Date:</strong> <?php echo formatDate($invoice['due_date']); ?></div>
+                    <div class="row"><strong>Due Date:</strong> <?php echo formatInvDate($invoice['due_date']); ?></div>
                     <?php endif; ?>
                 </div>
                 <?php

@@ -76,7 +76,7 @@ return [
         'breakfast' => 'Sarapan',
         'reports' => 'Laporan',
         'sales' => 'Penjualan',
-        'sales_invoice' => 'Faktur Penjualan', 
+        'sales_invoice' => 'Faktur & Invoice', 
         'procurement' => 'Pengadaan',
         'purchase_orders' => 'Purchase Order',
         'purchase_invoices' => 'Faktur Pembelian',
