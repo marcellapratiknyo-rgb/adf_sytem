@@ -137,6 +137,71 @@ try {
     // Table doesn't exist
 }
 
+// Get recent transactions (combined from cash_book and cqc_project_expenses)
+$recent_transactions = [];
+try {
+    // Get from cash_book with project info
+    $stmt = $pdo->query("
+        SELECT 
+            cb.id,
+            cb.transaction_date,
+            cb.transaction_time,
+            cb.transaction_type,
+            cb.amount,
+            cb.description,
+            cb.source_type,
+            cb.created_at,
+            'cashbook' as source_table
+        FROM cash_book cb
+        ORDER BY cb.transaction_date DESC, cb.transaction_time DESC
+        LIMIT 15
+    ");
+    $cashbook_txns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get from cqc_project_expenses with project info
+    $stmt = $pdo->query("
+        SELECT 
+            pe.id,
+            pe.expense_date as transaction_date,
+            TIME(pe.created_at) as transaction_time,
+            'expense' as transaction_type,
+            pe.amount,
+            pe.description,
+            'cqc_project' as source_type,
+            pe.created_at,
+            pe.project_id,
+            p.project_code,
+            p.project_name,
+            ec.category_name,
+            ec.category_icon,
+            'project_expense' as source_table
+        FROM cqc_project_expenses pe
+        LEFT JOIN cqc_projects p ON pe.project_id = p.id
+        LEFT JOIN cqc_expense_categories ec ON pe.category_id = ec.id
+        ORDER BY pe.expense_date DESC, pe.created_at DESC
+        LIMIT 15
+    ");
+    $expense_txns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Merge and sort by date
+    $all_recent = array_merge($cashbook_txns, $expense_txns);
+    usort($all_recent, function($a, $b) {
+        $dateA = $a['transaction_date'] . ' ' . ($a['transaction_time'] ?? '00:00:00');
+        $dateB = $b['transaction_date'] . ' ' . ($b['transaction_time'] ?? '00:00:00');
+        return strtotime($dateB) - strtotime($dateA);
+    });
+    $recent_transactions = array_slice($all_recent, 0, 10);
+    
+    // Get project map for cashbook transactions
+    $project_map = [];
+    foreach ($all_projects as $p) {
+        $project_map[$p['id']] = $p;
+    }
+    
+} catch (Exception $e) {
+    error_log('Recent transactions error: ' . $e->getMessage());
+}
+
 $pageTitle = "CQC Projects Dashboard";
 $pageSubtitle = "Solar Panel Installation Project Management";
 
@@ -484,10 +549,94 @@ include '../../includes/header.php';
             </div>
         <?php else: ?>
             <div class="cqc-empty-state">
-                <div class="cqc-empty-state-icon">�</div>
+                <div class="cqc-empty-state-icon">📋</div>
                 <h3>Belum Ada Proyek</h3>
                 <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
                 <button onclick="location.href='add.php'">Buat Proyek Baru</button>
+            </div>
+        <?php endif; ?>
+        
+        <!-- RECENT TRANSACTIONS TABLE -->
+        <div class="cqc-section-title" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>📊 Transaksi Terakhir</span>
+            <a href="../cashbook/index.php" style="font-size: 11px; color: var(--cqc-accent); text-decoration: none; font-weight: 600;">Lihat Semua →</a>
+        </div>
+        
+        <?php if (!empty($recent_transactions)): ?>
+            <div class="cqc-projects-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 90px;">Tanggal</th>
+                            <th style="width: 60px;">Waktu</th>
+                            <th>Proyek</th>
+                            <th>Kategori/Keterangan</th>
+                            <th style="width: 80px;">Tipe</th>
+                            <th style="width: 120px; text-align: right;">Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_transactions as $txn): 
+                            // Parse project info from description for cashbook transactions
+                            $projectCode = '-';
+                            $projectName = '';
+                            $categoryDisplay = $txn['description'] ?? '-';
+                            
+                            if ($txn['source_table'] === 'project_expense') {
+                                $projectCode = $txn['project_code'] ?? '-';
+                                $projectName = $txn['project_name'] ?? '';
+                                $categoryDisplay = ($txn['category_icon'] ?? '📦') . ' ' . ($txn['category_name'] ?? 'Lainnya');
+                                if (!empty($txn['description'])) {
+                                    $categoryDisplay .= ' - ' . $txn['description'];
+                                }
+                            } else {
+                                // Extract from [CQC_PROJECT:id] marker
+                                if (preg_match('/\[CQC_PROJECT:(\d+)\]/', $txn['description'] ?? '', $matches)) {
+                                    $projId = $matches[1];
+                                    if (isset($project_map[$projId])) {
+                                        $projectCode = $project_map[$projId]['project_code'];
+                                        $projectName = $project_map[$projId]['project_name'];
+                                    }
+                                    // Clean description
+                                    $categoryDisplay = preg_replace('/\[CQC_PROJECT:\d+\]\s*/', '', $txn['description']);
+                                    $categoryDisplay = preg_replace('/\[[A-Z0-9\-]+\]\s*/', '', $categoryDisplay);
+                                }
+                            }
+                            
+                            $isIncome = ($txn['transaction_type'] === 'income');
+                        ?>
+                            <tr>
+                                <td style="font-size: 11px; font-weight: 600;"><?php echo date('d/m/Y', strtotime($txn['transaction_date'])); ?></td>
+                                <td style="font-size: 10px; color: #666;"><?php echo $txn['transaction_time'] ? date('H:i', strtotime($txn['transaction_time'])) : '-'; ?></td>
+                                <td>
+                                    <?php if ($projectCode !== '-'): ?>
+                                        <code style="font-size: 9px; background: rgba(14,165,233,0.1); padding: 2px 5px; border-radius: 3px; color: #0284c7;"><?php echo htmlspecialchars($projectCode); ?></code>
+                                        <span style="font-size: 10px; color: #666; margin-left: 4px;"><?php echo htmlspecialchars(mb_substr($projectName, 0, 15)); ?></span>
+                                    <?php else: ?>
+                                        <span style="color: #999;">-</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td style="font-size: 11px;">
+                                    <?php echo htmlspecialchars(mb_substr($categoryDisplay, 0, 40)); ?>
+                                    <?php if (strlen($categoryDisplay) > 40): ?>...<?php endif; ?>
+                                </td>
+                                <td>
+                                    <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; <?php echo $isIncome ? 'background: rgba(16,185,129,0.1); color: #059669;' : 'background: rgba(239,68,68,0.1); color: #dc2626;'; ?>">
+                                        <?php echo $isIncome ? '↗ Masuk' : '↙ Keluar'; ?>
+                                    </span>
+                                </td>
+                                <td style="text-align: right; font-weight: 700; font-size: 11px; <?php echo $isIncome ? 'color: #059669;' : 'color: #dc2626;'; ?>">
+                                    <?php echo ($isIncome ? '+' : '-') . ' Rp ' . number_format($txn['amount'], 0, ',', '.'); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php else: ?>
+            <div style="padding: 2rem; text-align: center; background: #f8fafc; border-radius: 8px; border: 1px dashed var(--cqc-border);">
+                <div style="font-size: 32px; margin-bottom: 8px;">💰</div>
+                <p style="margin: 0; color: var(--cqc-muted); font-size: 12px;">Belum ada transaksi</p>
             </div>
         <?php endif; ?>
     </div>
