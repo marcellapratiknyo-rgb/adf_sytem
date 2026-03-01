@@ -162,29 +162,22 @@ function formatInvDate($date) {
     return date('F j, Y', strtotime($date));
 }
 
-// Logo path check
+// Logo path check - simplified and robust
 $logoPath = '';
 $logoExists = false;
-if ($companyLogo) {
-    $possiblePaths = [
-        $configPath . '/uploads/' . $companyLogo,
-        $configPath . '/uploads/logos/' . $companyLogo,
-        $configPath . '/assets/images/' . $companyLogo,
-    ];
-    foreach ($possiblePaths as $path) {
-        if (file_exists($path)) {
-            $logoExists = true;
-            if (strpos($companyLogo, 'logos/') === 0) {
-                $logoPath = BASE_URL . '/uploads/' . $companyLogo;
-            } elseif (strpos($path, '/uploads/logos/') !== false) {
-                $logoPath = BASE_URL . '/uploads/logos/' . $companyLogo;
-            } elseif (strpos($path, '/uploads/') !== false) {
-                $logoPath = BASE_URL . '/uploads/' . $companyLogo;
-            } else {
-                $logoPath = BASE_URL . '/assets/images/' . $companyLogo;
-            }
-            break;
-        }
+$possibleLogos = [
+    $companyLogo,
+    'logos/' . $companyLogo,
+    'logos/cqc_logo.png',  // Default CQC logo fallback
+    'cqc_logo.png'
+];
+foreach ($possibleLogos as $logo) {
+    if (!$logo) continue;
+    $fullPath = $configPath . '/uploads/' . $logo;
+    if (file_exists($fullPath)) {
+        $logoExists = true;
+        $logoPath = BASE_URL . '/uploads/' . $logo;
+        break;
     }
 }
 ?>
@@ -216,45 +209,45 @@ if ($companyLogo) {
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 10px; 
-            line-height: 1.4; 
+            font-size: 8px; 
+            line-height: 1.3; 
             color: #333;
             background: <?php echo $print ? '#fff' : '#e5e7eb'; ?>;
         }
         
         .page {
             width: 210mm; 
-            min-height: 297mm;
-            max-height: 297mm;
+            height: 297mm;
             margin: <?php echo $print ? '0' : '15px auto'; ?>; 
             padding: 0;
             background: #fff; 
             overflow: hidden;
+            position: relative;
             <?php if (!$print): ?>
             box-shadow: 0 15px 40px -10px rgba(0,0,0,0.2);
             <?php endif; ?>
         }
         
-        /* Header Section - Compact */
+        /* Header Section - Ultra Compact */
         .header {
             display: flex;
             justify-content: space-between;
-            padding: 18px 28px 15px;
+            padding: 12px 20px 10px;
             border-bottom: 2px solid var(--navy);
         }
         
         .company-block {
             display: flex;
-            gap: 14px;
+            gap: 10px;
             align-items: flex-start;
         }
         
         .logo-box {
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             background: var(--gray-100);
             border: 1px solid var(--gray-200);
-            border-radius: 6px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -262,41 +255,41 @@ if ($companyLogo) {
         }
         
         .logo-box img {
-            max-width: 44px;
-            max-height: 44px;
+            max-width: 36px;
+            max-height: 36px;
             object-fit: contain;
         }
         
         .logo-box .no-logo {
-            font-size: 8px;
+            font-size: 6px;
             color: var(--gray-400);
             text-align: center;
         }
         
         .company-info h1 {
-            font-size: 16px;
+            font-size: 13px;
             font-weight: 800;
             color: var(--navy);
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         
         .company-info .tagline {
-            font-size: 8px;
+            font-size: 6px;
             color: var(--gold-dark);
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 6px;
+            letter-spacing: 0.2px;
+            margin-bottom: 4px;
         }
         
         .company-contact {
-            font-size: 8px;
+            font-size: 7px;
             color: var(--gray-600);
-            line-height: 1.5;
+            line-height: 1.4;
         }
         
         .company-contact .row {
-            margin-bottom: 1px;
+            margin-bottom: 0;
         }
         
         .invoice-header {
@@ -304,38 +297,38 @@ if ($companyLogo) {
         }
         
         .invoice-title {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 800;
             color: var(--navy);
-            letter-spacing: 3px;
-            margin-bottom: 4px;
+            letter-spacing: 2px;
+            margin-bottom: 2px;
         }
         
         .invoice-number {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 700;
             color: var(--gray-700);
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         
         .invoice-meta {
-            font-size: 9px;
+            font-size: 7px;
             color: var(--gray-500);
         }
         
         .invoice-meta .row {
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 3px 10px;
-            border-radius: 3px;
-            font-size: 8px;
+            padding: 2px 8px;
+            border-radius: 2px;
+            font-size: 6px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-top: 6px;
+            letter-spacing: 0.3px;
+            margin-top: 4px;
         }
         
         .status-draft { background: var(--gray-200); color: var(--gray-600); }
@@ -344,121 +337,121 @@ if ($companyLogo) {
         .status-partial { background: #fef3c7; color: #d97706; }
         .status-overdue { background: #fee2e2; color: #dc2626; }
         
-        /* Content - Compact */
+        /* Content - Ultra Compact */
         .content {
-            padding: 16px 28px;
+            padding: 10px 20px;
         }
         
-        /* Bill To Section - Compact */
+        /* Bill To Section - Ultra Compact */
         .parties-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 14px;
+            gap: 12px;
+            margin-bottom: 8px;
         }
         
         .party-box {
-            padding: 12px 14px;
+            padding: 8px 10px;
             background: var(--gray-50);
-            border-radius: 6px;
-            border-left: 3px solid var(--gold);
+            border-radius: 4px;
+            border-left: 2px solid var(--gold);
         }
         
         .party-box h4 {
-            font-size: 8px;
+            font-size: 6px;
             font-weight: 700;
             color: var(--gray-400);
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
         }
         
         .party-box .name {
-            font-size: 12px;
+            font-size: 9px;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
         .party-box .info {
-            font-size: 9px;
+            font-size: 7px;
             color: var(--gray-600);
-            line-height: 1.5;
+            line-height: 1.3;
         }
         
-        /* Invoice Table - Compact */
+        /* Invoice Table - Ultra Compact */
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
         }
         
         .invoice-table th {
             background: var(--navy);
             color: #fff;
-            padding: 8px 10px;
+            padding: 5px 8px;
             text-align: left;
-            font-size: 8px;
+            font-size: 6px;
             font-weight: 700;
             text-transform: uppercase;
         }
         
-        .invoice-table th:first-child { border-radius: 4px 0 0 0; }
-        .invoice-table th:last-child { border-radius: 0 4px 0 0; }
+        .invoice-table th:first-child { border-radius: 3px 0 0 0; }
+        .invoice-table th:last-child { border-radius: 0 3px 0 0; }
         
         .invoice-table td {
-            padding: 10px;
+            padding: 6px 8px;
             border-bottom: 1px solid var(--gray-200);
-            font-size: 10px;
+            font-size: 8px;
         }
         
         .term-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
+            width: 20px;
+            height: 20px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--navy);
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 800;
-            border-radius: 5px;
+            border-radius: 3px;
         }
         
         .item-title {
             font-weight: 600;
             color: var(--navy);
-            font-size: 10px;
+            font-size: 8px;
         }
         
         .item-subtitle {
-            font-size: 8px;
+            font-size: 6px;
             color: var(--gray-400);
         }
         
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
-        /* Summary - Compact */
+        /* Summary - Ultra Compact */
         .summary-wrapper {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         
         .summary-table {
-            width: 280px;
+            width: 220px;
             background: var(--gray-50);
-            border-radius: 6px;
+            border-radius: 4px;
             overflow: hidden;
         }
         
         .summary-row {
             display: flex;
             justify-content: space-between;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-bottom: 1px solid var(--gray-200);
-            font-size: 9px;
+            font-size: 7px;
         }
         
         .summary-row .value.add { color: var(--success); }
@@ -466,7 +459,7 @@ if ($companyLogo) {
         
         .summary-total {
             background: var(--navy);
-            padding: 10px 12px;
+            padding: 6px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -474,35 +467,35 @@ if ($companyLogo) {
         
         .summary-total .label {
             color: rgba(255,255,255,0.7);
-            font-size: 9px;
+            font-size: 7px;
             font-weight: 600;
             text-transform: uppercase;
         }
         
         .summary-total .value {
             color: var(--gold);
-            font-size: 14px;
+            font-size: 11px;
             font-weight: 800;
         }
         
-        /* Amount in Words - Compact */
+        /* Amount in Words - Ultra Compact */
         .amount-words {
             background: rgba(240,180,41,0.05);
             border: 1px solid rgba(240,180,41,0.25);
-            border-radius: 4px;
-            padding: 8px 12px;
-            margin-bottom: 12px;
+            border-radius: 3px;
+            padding: 5px 10px;
+            margin-bottom: 8px;
         }
         
         .amount-words .label {
-            font-size: 8px;
+            font-size: 6px;
             color: var(--gray-400);
             text-transform: uppercase;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
         
         .amount-words .text {
-            font-size: 9px;
+            font-size: 7px;
             font-weight: 600;
             color: var(--navy);
             font-style: italic;
@@ -512,32 +505,32 @@ if ($companyLogo) {
         .bottom-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 12px;
+            gap: 12px;
+            margin-bottom: 8px;
         }
         
         .bank-section {
             background: var(--gray-100);
-            border-radius: 6px;
-            padding: 10px 14px;
+            border-radius: 4px;
+            padding: 6px 10px;
         }
         
         .bank-section h5 {
-            font-size: 8px;
+            font-size: 6px;
             font-weight: 700;
             color: var(--gray-400);
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 3px;
         }
         
         .bank-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 4px;
+            gap: 2px;
         }
         
         .bank-item {
-            font-size: 9px;
+            font-size: 7px;
         }
         
         .bank-item span {
@@ -549,54 +542,55 @@ if ($companyLogo) {
         }
         
         .terms-section {
-            padding: 10px 14px;
+            padding: 6px 10px;
             background: var(--gray-50);
-            border-radius: 6px;
+            border-radius: 4px;
         }
         
         .terms-section h5 {
-            font-size: 8px;
+            font-size: 6px;
             font-weight: 700;
             color: var(--gray-400);
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-        
-        .terms-section ul {
-            font-size: 8px;
-            color: var(--gray-500);
-            margin-left: 12px;
-            line-height: 1.5;
-        }
-        
-        /* Notes - Compact */
-        .notes-section {
-            background: #fffbeb;
-            border-left: 2px solid #f59e0b;
-            padding: 8px 12px;
-            border-radius: 0 4px 4px 0;
-            margin-bottom: 12px;
-        }
-        
-        .notes-section .label {
-            font-size: 8px;
-            font-weight: 700;
-            color: #92400e;
             text-transform: uppercase;
             margin-bottom: 3px;
         }
         
+        .terms-section ul {
+            font-size: 6px;
+            color: var(--gray-500);
+            margin-left: 10px;
+            line-height: 1.3;
+        }
+        
+        /* Notes - Ultra Compact */
+        .notes-section {
+            background: #fffbeb;
+            border-left: 2px solid #f59e0b;
+            padding: 5px 10px;
+            border-radius: 0 3px 3px 0;
+            margin-bottom: 8px;
+        }
+        
+        .notes-section .label {
+            font-size: 6px;
+            font-weight: 700;
+            color: #92400e;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        
         .notes-section .text {
-            font-size: 9px;
+            font-size: 7px;
             color: #78350f;
         }
         
-        /* Signatures - Compact */
+        /* Signatures - Ultra Compact */
         .signatures {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            margin-top: 20px;
+            gap: 40px;
+            margin-top: 12px;
+            padding: 0 20px;
         }
         
         .sig-block {
@@ -604,28 +598,28 @@ if ($companyLogo) {
         }
         
         .sig-block .role {
-            font-size: 9px;
+            font-size: 7px;
             color: var(--gray-500);
-            margin-bottom: 35px;
+            margin-bottom: 25px;
         }
         
         .sig-block .line {
             border-top: 1px solid var(--navy);
-            padding-top: 6px;
+            padding-top: 4px;
         }
         
         .sig-block .name {
-            font-size: 10px;
+            font-size: 8px;
             font-weight: 700;
             color: var(--navy);
         }
         
-        /* Footer - Compact */
+        /* Footer - Ultra Compact */
         .footer {
             background: var(--gray-50);
-            padding: 10px 28px;
+            padding: 6px 20px;
             text-align: center;
-            font-size: 8px;
+            font-size: 6px;
             color: var(--gray-400);
             border-top: 1px solid var(--gray-200);
             position: absolute;
