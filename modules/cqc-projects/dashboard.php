@@ -150,110 +150,167 @@ include '../../includes/header.php';
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <style>
-        .cqc-container { max-width: 100%; }
+        /* 2027 Elegant Design System */
+        :root {
+            --cqc-primary: #1e293b;
+            --cqc-accent: #0ea5e9;
+            --cqc-success: #10b981;
+            --cqc-warning: #f59e0b;
+            --cqc-danger: #ef4444;
+            --cqc-text: #334155;
+            --cqc-muted: #94a3b8;
+            --cqc-border: #e2e8f0;
+            --cqc-bg: #f8fafc;
+        }
+        
+        .cqc-container { 
+            max-width: 100%; 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
 
-        /* Header */
+        /* Header - Minimal Elegant */
         .cqc-header {
-            background: #fff;
-            padding: 10px 16px;
-            border-radius: 6px;
-            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+            padding: 16px 20px;
+            border-radius: 12px;
+            margin-bottom: 16px;
             display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #f0b429;
+            border: 1px solid var(--cqc-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
-        .cqc-header h1 { font-size: 16px; font-weight: 700; color: #0d1f3c !important; margin: 0 0 2px; }
-        .cqc-header p { font-size: 11px; margin: 0; color: #64748b !important; }
+        .cqc-header h1 { 
+            font-size: 18px; font-weight: 700; color: var(--cqc-primary); 
+            margin: 0 0 4px; letter-spacing: -0.3px;
+        }
+        .cqc-header p { font-size: 12px; margin: 0; color: var(--cqc-muted); font-weight: 500; }
         .cqc-header button {
-            background: #0d1f3c; color: #fff; border: none;
-            padding: 5px 14px; border-radius: 4px; font-weight: 700;
-            font-size: 11px; cursor: pointer;
+            background: var(--cqc-primary); color: #fff; border: none;
+            padding: 8px 16px; border-radius: 8px; font-weight: 600;
+            font-size: 12px; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
         }
-        .cqc-header button:hover { background: #122a4e; }
+        .cqc-header button:hover { background: #0f172a; transform: translateY(-1px); }
 
-        /* Stats */
-        .cqc-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
+        /* Stats - Clean Cards */
+        .cqc-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
         .cqc-stat-card {
-            background: #fff; padding: 8px 10px; border-radius: 5px;
-            border-left: 3px solid #e0e0e0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            background: #fff; padding: 14px 16px; border-radius: 10px;
+            border: 1px solid var(--cqc-border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            position: relative; overflow: hidden;
         }
-        .cqc-stat-card.yellow { border-left-color: #f0b429; }
-        .cqc-stat-card.green { border-left-color: #27ae60; }
-        .cqc-stat-card.red { border-left-color: #e74c3c; }
-        .cqc-stat-icon { font-size: 15px; margin-bottom: 2px; }
-        .cqc-stat-label { font-size: 9px; color: #888; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px; }
-        .cqc-stat-value { font-size: 18px; font-weight: 800; color: #0d1f3c; }
-        .cqc-stat-card.yellow .cqc-stat-value { color: #d4960d; }
-        .cqc-stat-card.green .cqc-stat-value { color: #27ae60; }
-        .cqc-stat-card.red .cqc-stat-value { color: #e74c3c; }
-        .cqc-stat-subtitle { font-size: 9px; color: #bbb; margin-top: 1px; }
+        .cqc-stat-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--cqc-border);
+        }
+        .cqc-stat-card.accent::before { background: var(--cqc-accent); }
+        .cqc-stat-card.success::before { background: var(--cqc-success); }
+        .cqc-stat-card.warning::before { background: var(--cqc-warning); }
+        .cqc-stat-card.danger::before { background: var(--cqc-danger); }
+        
+        .cqc-stat-icon { 
+            width: 32px; height: 32px; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; margin-bottom: 10px; background: var(--cqc-bg);
+        }
+        .cqc-stat-label { 
+            font-size: 11px; color: var(--cqc-muted); text-transform: uppercase; 
+            font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; 
+        }
+        .cqc-stat-value { 
+            font-size: 22px; font-weight: 700; color: var(--cqc-primary); 
+            letter-spacing: -0.5px; line-height: 1;
+        }
+        .cqc-stat-subtitle { font-size: 11px; color: var(--cqc-muted); margin-top: 4px; }
 
-        /* Charts */
-        .cqc-charts-section { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-bottom: 10px; }
+        /* Charts - Clean */
+        .cqc-charts-section { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
         .cqc-chart-card {
-            background: #fff; padding: 10px; border-radius: 5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            border-top: 2px solid #f0b429;
+            background: #fff; padding: 16px; border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid var(--cqc-border);
         }
         .cqc-chart-title {
-            font-size: 10px; font-weight: 700; color: #0d1f3c;
-            margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;
-            display: flex; align-items: center; gap: 4px;
+            font-size: 12px; font-weight: 600; color: var(--cqc-primary);
+            margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
         }
-        .cqc-chart-canvas { max-height: 155px; }
+        .cqc-chart-title span {
+            width: 24px; height: 24px; background: var(--cqc-bg); border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; font-size: 12px;
+        }
+        .cqc-chart-canvas { max-height: 160px; }
 
-        /* Section title */
+        /* Section title - Refined */
         .cqc-section-title {
-            font-size: 12px; font-weight: 700; color: #0d1f3c;
-            margin: 10px 0 6px; padding-bottom: 4px;
-            border-bottom: 2px solid #f0b429;
-            text-transform: uppercase; letter-spacing: 0.4px;
+            font-size: 13px; font-weight: 600; color: var(--cqc-primary);
+            margin: 20px 0 10px; padding: 8px 0;
+            border-bottom: 2px solid var(--cqc-border);
+            display: flex; align-items: center; gap: 8px;
         }
 
-        /* Table */
+        /* Table - Modern Clean */
         .cqc-projects-table {
-            background: #fff; border-radius: 5px; overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            background: #fff; border-radius: 10px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border: 1px solid var(--cqc-border);
         }
         .cqc-projects-table table { width: 100%; border-collapse: collapse; }
         .cqc-projects-table th {
-            background: #0d1f3c; color: #f0b429;
-            padding: 7px 10px; text-align: left;
-            font-weight: 700; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
+            background: var(--cqc-bg); color: var(--cqc-text);
+            padding: 10px 14px; text-align: left;
+            font-weight: 600; font-size: 11px; text-transform: uppercase; 
+            letter-spacing: 0.4px; border-bottom: 1px solid var(--cqc-border);
         }
         .cqc-projects-table td {
-            padding: 7px 10px; border-bottom: 1px solid #f0f0f0;
-            font-size: 12px; color: #333;
+            padding: 12px 14px; border-bottom: 1px solid #f1f5f9;
+            font-size: 13px; color: var(--cqc-text);
         }
-        .cqc-projects-table tr:hover { background: #fffdf0; }
+        .cqc-projects-table tr:last-child td { border-bottom: none; }
+        .cqc-projects-table tr:hover { background: #fafbfc; }
 
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: 10px; font-weight: 700; }
-        .status-planning { background: #eef2ff; color: #4a6cf7; }
-        .status-procurement { background: #fef6e0; color: #d4960d; }
-        .status-installation { background: #e8f5e9; color: #27ae60; }
-        .status-testing { background: #e0f7fa; color: #0097a7; }
-        .status-completed { background: #e8f5e9; color: #1b8a3e; }
-        .status-on_hold { background: #fce4ec; color: #c62828; }
+        .status-badge { 
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; 
+        }
+        .status-planning { background: #f1f5f9; color: #475569; }
+        .status-procurement { background: #fef3c7; color: #92400e; }
+        .status-installation { background: #d1fae5; color: #065f46; }
+        .status-testing { background: #e0f2fe; color: #0369a1; }
+        .status-completed { background: #dcfce7; color: #166534; }
+        .status-on_hold { background: #fee2e2; color: #991b1b; }
 
-        .cqc-progress-bar { width: 100%; height: 3px; background: #eee; border-radius: 2px; overflow: hidden; margin-bottom: 1px; }
-        .cqc-progress-fill { height: 100%; background: linear-gradient(90deg, #f0b429, #f5c842); border-radius: 2px; }
-        .cqc-progress-text { font-size: 10px; color: #888; }
+        .cqc-progress-bar { 
+            width: 100%; height: 4px; background: #e2e8f0; 
+            border-radius: 2px; overflow: hidden; margin-bottom: 4px; 
+        }
+        .cqc-progress-fill { 
+            height: 100%; background: linear-gradient(90deg, var(--cqc-accent), #38bdf8); 
+            border-radius: 2px; transition: width 0.4s ease;
+        }
+        .cqc-progress-text { font-size: 11px; color: var(--cqc-muted); font-weight: 500; }
 
-        .cqc-action-links { display: flex; gap: 4px; }
+        .cqc-action-links { display: flex; gap: 6px; }
         .cqc-action-links a {
-            padding: 3px 8px; background: #fff !important; color: #374151 !important;
-            border-radius: 3px; text-decoration: none; font-size: 10px; font-weight: 700;
-            border: 1px solid #e5e7eb;
+            padding: 5px 10px; background: #fff; color: var(--cqc-text);
+            border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: 600;
+            border: 1px solid var(--cqc-border); transition: all 0.15s;
         }
-        .cqc-action-links a:hover { background: #f3f4f6 !important; }
-        .cqc-action-links a.btn-start { background: #fff !important; color: #3b82f6 !important; border-color: #3b82f6; }
-        .cqc-action-links a.btn-start:hover { background: #eff6ff !important; }
+        .cqc-action-links a:hover { background: var(--cqc-bg); border-color: #cbd5e1; }
+        .cqc-action-links a.btn-start { 
+            background: var(--cqc-success); color: #fff; border-color: var(--cqc-success); 
+        }
+        .cqc-action-links a.btn-start:hover { background: #059669; }
 
-        .cqc-empty-state { text-align: center; padding: 24px 14px; color: #999; }
-        .cqc-empty-state-icon { font-size: 28px; margin-bottom: 6px; }
-        .cqc-empty-state h3 { color: #333; margin-bottom: 3px; font-size: 12px; }
-        .cqc-empty-state p { font-size: 10px; color: #999; }
+        .cqc-empty-state { text-align: center; padding: 40px 20px; color: var(--cqc-muted); }
+        .cqc-empty-state-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+        .cqc-empty-state h3 { color: var(--cqc-text); margin-bottom: 6px; font-size: 14px; font-weight: 600; }
+        .cqc-empty-state p { font-size: 12px; color: var(--cqc-muted); }
+        .cqc-empty-state button {
+            background: var(--cqc-primary); color: #fff; border: none;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; margin-top: 14px;
+            font-weight: 600; font-size: 12px; transition: all 0.2s;
+        }
+        .cqc-empty-state button:hover { background: #0f172a; }
 
         @media (max-width: 768px) {
             .cqc-stats-grid { grid-template-columns: repeat(2,1fr); }
@@ -264,10 +321,10 @@ include '../../includes/header.php';
     <div class="cqc-container">
         <div class="cqc-header">
             <div>
-                <h1>☀️ Dashboard Proyek CQC</h1>
-                <p>Solar Panel Installation Project Management</p>
+                <h1>Dashboard Proyek CQC</h1>
+                <p>Solar Panel Installation Management</p>
             </div>
-            <button onclick="location.href='add.php'">+ Proyek Baru</button>
+            <button onclick="location.href='add.php'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> Proyek Baru</button>
         </div>
 
         <div class="cqc-stats-grid">
@@ -276,18 +333,18 @@ include '../../includes/header.php';
                 <div class="cqc-stat-label">Total Proyek</div>
                 <div class="cqc-stat-value"><?php echo $stats['total']; ?></div>
             </div>
-            <div class="cqc-stat-card yellow">
+            <div class="cqc-stat-card accent">
                 <div class="cqc-stat-icon">⚡</div>
                 <div class="cqc-stat-label">Proyek Berjalan</div>
                 <div class="cqc-stat-value"><?php echo $stats['active']; ?></div>
                 <div class="cqc-stat-subtitle">Procurement, Installation, Testing</div>
             </div>
-            <div class="cqc-stat-card green">
+            <div class="cqc-stat-card success">
                 <div class="cqc-stat-icon">✅</div>
                 <div class="cqc-stat-label">Rata-rata Progress</div>
                 <div class="cqc-stat-value"><?php echo $stats['avg_progress']; ?>%</div>
             </div>
-            <div class="cqc-stat-card red">
+            <div class="cqc-stat-card warning">
                 <div class="cqc-stat-icon">💰</div>
                 <div class="cqc-stat-label">Total Pengeluaran</div>
                 <div class="cqc-stat-value">Rp <?php echo number_format($stats['total_spent'], 0); ?></div>
@@ -297,20 +354,20 @@ include '../../includes/header.php';
 
         <div class="cqc-charts-section">
             <div class="cqc-chart-card">
-                <div class="cqc-chart-title">📈 Distribusi Status</div>
+                <div class="cqc-chart-title"><span>📊</span> Distribusi Status</div>
                 <canvas id="statusChart" class="cqc-chart-canvas"></canvas>
             </div>
             <div class="cqc-chart-card">
-                <div class="cqc-chart-title">💵 Budget vs Pengeluaran</div>
+                <div class="cqc-chart-title"><span>💵</span> Budget vs Spent</div>
                 <canvas id="budgetChart" class="cqc-chart-canvas"></canvas>
             </div>
             <div class="cqc-chart-card">
-                <div class="cqc-chart-title">⏳ Progress Rata-rata</div>
+                <div class="cqc-chart-title"><span>⏳</span> Progress</div>
                 <canvas id="progressChart" class="cqc-chart-canvas"></canvas>
             </div>
         </div>
 
-        <div class="cqc-section-title">⚡ Proyek Sedang Berjalan</div>
+        <div class="cqc-section-title">Proyek Sedang Berjalan</div>
         
         <?php if (!empty($running_projects)): ?>
             <div class="cqc-projects-table">
@@ -362,18 +419,16 @@ include '../../includes/header.php';
                 </table>
             </div>
         <?php else: ?>
-            <div class="cqc-empty-state">
-                <div class="cqc-empty-state-icon">📭</div>
+                    <div class="cqc-empty-state">
+                <div class="cqc-empty-state-icon">📦</div>
                 <h3>Tidak Ada Proyek Sedang Berjalan</h3>
                 <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
-                <button style="background: #f0b429; color: #0d1f3c; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: 700; font-size: 10px;" onclick="location.href='add.php'">
-                    ➕ Buat Proyek Baru
-                </button>
+                <button onclick="location.href='add.php'">Buat Proyek Baru</button>
             </div>
         <?php endif; ?>
 
         <!-- ALL PROJECTS TABLE -->
-        <div class="cqc-section-title" style="margin-top: 1.5rem;">📋 Semua Proyek</div>
+        <div class="cqc-section-title" style="margin-top: 1.5rem;">Semua Proyek</div>
         
         <?php if (!empty($all_projects)): ?>
             <div class="cqc-projects-table">
@@ -429,12 +484,10 @@ include '../../includes/header.php';
             </div>
         <?php else: ?>
             <div class="cqc-empty-state">
-                <div class="cqc-empty-state-icon">📭</div>
+                <div class="cqc-empty-state-icon">�</div>
                 <h3>Belum Ada Proyek</h3>
                 <p>Mulai dengan membuat proyek baru untuk instalasi panel surya.</p>
-                <button style="background: #f0b429; color: #0d1f3c; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; margin-top: 10px; font-weight: 700; font-size: 10px;" onclick="location.href='add.php'">
-                    ➕ Buat Proyek Baru
-                </button>
+                <button onclick="location.href='add.php'">Buat Proyek Baru</button>
             </div>
         <?php endif; ?>
     </div>
