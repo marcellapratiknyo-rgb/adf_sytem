@@ -1263,6 +1263,47 @@ echo getPrintCSS();
     </div>
 </div>
 
+<?php if ($isCQC): ?>
+<!-- CQC Daily Expenses -->
+<div class="cqc-daily-expenses">
+    <div class="cqc-daily-header">
+        <div class="cqc-daily-icon">💰</div>
+        <div>
+            <div class="cqc-daily-title">Daily Expenses</div>
+            <div class="cqc-daily-subtitle">Uang dari owner bukan income perusahaan, pengeluaran langsung mengurangi kas</div>
+        </div>
+    </div>
+    <div class="cqc-daily-grid">
+        <div class="cqc-daily-card owner">
+            <div class="cqc-daily-label">
+                <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                Total Saldo Owner
+            </div>
+            <div class="cqc-daily-value">Rp <?php echo number_format($totalIncome, 0, ',', '.'); ?></div>
+            <div class="cqc-daily-desc">Modal dari owner (bukan pendapatan)</div>
+        </div>
+        <div class="cqc-daily-card expense">
+            <div class="cqc-daily-label">
+                <i data-feather="upload" style="width: 14px; height: 14px;"></i>
+                Total Pengeluaran
+            </div>
+            <div class="cqc-daily-value">Rp <?php echo number_format($totalExpense, 0, ',', '.'); ?></div>
+            <div class="cqc-daily-desc">Biaya operasional & proyek</div>
+        </div>
+        <div class="cqc-daily-card balance">
+            <div class="cqc-daily-label">
+                <i data-feather="credit-card" style="width: 14px; height: 14px;"></i>
+                Saldo Akhir
+            </div>
+            <div class="cqc-daily-value" style="color: <?php echo $balance >= 0 ? '#2563eb' : '#dc2626'; ?>;">
+                Rp <?php echo number_format($balance, 0, ',', '.'); ?>
+            </div>
+            <div class="cqc-daily-desc">Sisa kas saat ini</div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Transactions Table -->
 <div class="table-container">
     <div class="table-header <?php echo $isCQC ? 'table-header-cqc' : ''; ?>" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -1414,47 +1455,6 @@ echo getPrintCSS();
             </a>
         </div>
     </form>
-    <?php endif; ?>
-    
-    <?php if ($isCQC): ?>
-    <!-- CQC Daily Expenses Summary -->
-    <div class="cqc-daily-expenses">
-        <div class="cqc-daily-header">
-            <div class="cqc-daily-icon">💰</div>
-            <div>
-                <div class="cqc-daily-title">Ringkasan Kas CQC</div>
-                <div class="cqc-daily-subtitle">Uang dari owner bukan income perusahaan, pengeluaran langsung mengurangi kas</div>
-            </div>
-        </div>
-        <div class="cqc-daily-grid">
-            <div class="cqc-daily-card owner">
-                <div class="cqc-daily-label">
-                    <i data-feather="download" style="width: 14px; height: 14px;"></i>
-                    Total Saldo Owner
-                </div>
-                <div class="cqc-daily-value">Rp <?php echo number_format($totalIncome, 0, ',', '.'); ?></div>
-                <div class="cqc-daily-desc">Modal dari owner (bukan pendapatan)</div>
-            </div>
-            <div class="cqc-daily-card expense">
-                <div class="cqc-daily-label">
-                    <i data-feather="upload" style="width: 14px; height: 14px;"></i>
-                    Total Pengeluaran
-                </div>
-                <div class="cqc-daily-value">Rp <?php echo number_format($totalExpense, 0, ',', '.'); ?></div>
-                <div class="cqc-daily-desc">Biaya operasional & proyek</div>
-            </div>
-            <div class="cqc-daily-card balance">
-                <div class="cqc-daily-label">
-                    <i data-feather="credit-card" style="width: 14px; height: 14px;"></i>
-                    Saldo Akhir
-                </div>
-                <div class="cqc-daily-value" style="color: <?php echo $balance >= 0 ? '#2563eb' : '#dc2626'; ?>;">
-                    Rp <?php echo number_format($balance, 0, ',', '.'); ?>
-                </div>
-                <div class="cqc-daily-desc">Sisa kas saat ini</div>
-            </div>
-        </div>
-    </div>
     <?php endif; ?>
     
     <!-- Table -->
