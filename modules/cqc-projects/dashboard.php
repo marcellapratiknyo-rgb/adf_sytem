@@ -242,10 +242,12 @@ include '../../includes/header.php';
 
         .cqc-action-links { display: flex; gap: 4px; }
         .cqc-action-links a {
-            padding: 3px 8px; background: #f0b429; color: #0d1f3c;
+            padding: 3px 8px; background: #10b981; color: #fff;
             border-radius: 3px; text-decoration: none; font-size: 10px; font-weight: 700;
         }
-        .cqc-action-links a:hover { background: #f5c842; }
+        .cqc-action-links a:hover { background: #059669; }
+        .cqc-action-links a.btn-start { background: #3b82f6; }
+        .cqc-action-links a.btn-start:hover { background: #2563eb; }
 
         .cqc-empty-state { text-align: center; padding: 24px 14px; color: #999; }
         .cqc-empty-state-icon { font-size: 28px; margin-bottom: 6px; }
@@ -348,6 +350,9 @@ include '../../includes/header.php';
                                     <div class="cqc-action-links">
                                         <a href="detail.php?id=<?php echo $proj['id']; ?>">Lihat</a>
                                         <a href="add.php?id=<?php echo $proj['id']; ?>">Edit</a>
+                                        <?php if ($proj['status'] === 'planning' || $proj['status'] === 'on_hold'): ?>
+                                        <a href="?action=start&id=<?php echo $proj['id']; ?>" class="btn-start" onclick="return confirm('Start proyek ini?')">Start</a>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>
@@ -412,7 +417,7 @@ include '../../includes/header.php';
                                         <a href="detail.php?id=<?php echo $proj['id']; ?>">Lihat</a>
                                         <a href="add.php?id=<?php echo $proj['id']; ?>">Edit</a>
                                         <?php if ($proj['status'] === 'planning' || $proj['status'] === 'on_hold'): ?>
-                                        <a href="?action=start&id=<?php echo $proj['id']; ?>" onclick="return confirm('Start proyek ini?')" style="background: #10b981; color: white;">Start</a>
+                                        <a href="?action=start&id=<?php echo $proj['id']; ?>" class="btn-start" onclick="return confirm('Start proyek ini?')">Start</a>
                                         <?php endif; ?>
                                     </div>
                                 </td>
