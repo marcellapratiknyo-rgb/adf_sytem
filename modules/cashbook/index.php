@@ -809,6 +809,44 @@ echo getPrintCSS();
     cursor: not-allowed;
 }
 
+/* ===== PAYMENT INFO CHIPS (Global) ===== */
+.cqc-payment-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+}
+
+.cqc-info-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 5px;
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.cqc-info-chip.method {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.cqc-info-chip.account {
+    background: rgba(139, 92, 246, 0.1);
+    color: #7c3aed;
+}
+
+.cqc-info-chip.category {
+    background: rgba(240, 180, 41, 0.12);
+    color: #92400e;
+}
+
+.cqc-info-chip.user {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+}
+
 /* ===== ELEGANT PRINT STYLES ===== */
 @media print {
     * {
@@ -1610,8 +1648,7 @@ echo getPrintCSS();
                                     echo $descDisplay;
                                 ?>
                                 
-                                <?php if ($isCQC): ?>
-                                <!-- CQC: Detailed payment info -->
+                                <!-- Payment Info (for all businesses) -->
                                 <div class="cqc-payment-info">
                                     <?php if (!empty($trans['payment_method'])): ?>
                                     <span class="cqc-info-chip method">
@@ -1628,7 +1665,6 @@ echo getPrintCSS();
                                     <span class="cqc-info-chip category">📊 <?php echo htmlspecialchars($cqcProjMatch['project_name']); ?></span>
                                     <?php endif; ?>
                                 </div>
-                                <?php endif; ?>
                             </td>
                             <td>
                                 <div class="cb-actions">
