@@ -209,8 +209,8 @@ foreach ($possibleLogos as $logo) {
         
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            font-size: 8px; 
-            line-height: 1.3; 
+            font-size: 9px; 
+            line-height: 1.4; 
             color: #333;
             background: <?php echo $print ? '#fff' : '#e5e7eb'; ?>;
         }
@@ -228,68 +228,78 @@ foreach ($possibleLogos as $logo) {
             <?php endif; ?>
         }
         
-        /* Header Section - Ultra Compact */
+        /* Header Section - Elegant */
         .header {
             display: flex;
             justify-content: space-between;
-            padding: 12px 20px 10px;
-            border-bottom: 2px solid var(--navy);
+            align-items: flex-start;
+            padding: 20px 25px 15px;
+            border-bottom: 3px solid var(--navy);
+            background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
         }
         
         .company-block {
             display: flex;
-            gap: 10px;
-            align-items: flex-start;
+            gap: 15px;
+            align-items: center;
         }
         
         .logo-box {
-            width: 40px;
-            height: 40px;
-            background: var(--gray-100);
-            border: 1px solid var(--gray-200);
-            border-radius: 4px;
+            width: 55px;
+            height: 55px;
+            background: #fff;
+            border: 2px solid var(--gold);
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(240,180,41,0.15);
         }
         
         .logo-box img {
-            max-width: 36px;
-            max-height: 36px;
+            max-width: 48px;
+            max-height: 48px;
             object-fit: contain;
         }
         
         .logo-box .no-logo {
-            font-size: 6px;
+            font-size: 7px;
             color: var(--gray-400);
             text-align: center;
         }
         
+        .company-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
         .company-info h1 {
-            font-size: 13px;
+            font-size: 18px;
             font-weight: 800;
             color: var(--navy);
-            margin-bottom: 1px;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
         }
         
         .company-info .tagline {
-            font-size: 6px;
+            font-size: 8px;
             color: var(--gold-dark);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.2px;
-            margin-bottom: 4px;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
         }
         
         .company-contact {
-            font-size: 7px;
+            font-size: 8px;
             color: var(--gray-600);
-            line-height: 1.4;
+            line-height: 1.5;
         }
         
         .company-contact .row {
-            margin-bottom: 0;
+            margin-bottom: 1px;
         }
         
         .invoice-header {
@@ -297,38 +307,38 @@ foreach ($possibleLogos as $logo) {
         }
         
         .invoice-title {
-            font-size: 18px;
+            font-size: 26px;
             font-weight: 800;
             color: var(--navy);
-            letter-spacing: 2px;
-            margin-bottom: 2px;
-        }
-        
-        .invoice-number {
-            font-size: 9px;
-            font-weight: 700;
-            color: var(--gray-700);
+            letter-spacing: 4px;
             margin-bottom: 4px;
         }
         
+        .invoice-number {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+        }
+        
         .invoice-meta {
-            font-size: 7px;
+            font-size: 9px;
             color: var(--gray-500);
         }
         
         .invoice-meta .row {
-            margin-bottom: 1px;
+            margin-bottom: 2px;
         }
         
         .status-badge {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 2px;
-            font-size: 6px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 8px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-top: 4px;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
         }
         
         .status-draft { background: var(--gray-200); color: var(--gray-600); }
@@ -337,165 +347,172 @@ foreach ($possibleLogos as $logo) {
         .status-partial { background: #fef3c7; color: #d97706; }
         .status-overdue { background: #fee2e2; color: #dc2626; }
         
-        /* Content - Ultra Compact */
+        /* Content - Elegant Spacing */
         .content {
-            padding: 10px 20px;
+            padding: 18px 25px;
         }
         
-        /* Bill To Section - Ultra Compact */
+        /* Bill To Section - Elegant */
         .parties-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 8px;
+            gap: 20px;
+            margin-bottom: 15px;
         }
         
         .party-box {
-            padding: 8px 10px;
-            background: var(--gray-50);
-            border-radius: 4px;
-            border-left: 2px solid var(--gold);
+            padding: 12px 15px;
+            background: linear-gradient(135deg, var(--gray-50) 0%, #fff 100%);
+            border-radius: 6px;
+            border-left: 3px solid var(--gold);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         }
         
         .party-box h4 {
-            font-size: 6px;
+            font-size: 7px;
             font-weight: 700;
-            color: var(--gray-400);
+            color: var(--gold-dark);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 3px;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
         }
         
         .party-box .name {
-            font-size: 9px;
+            font-size: 12px;
             font-weight: 700;
             color: var(--navy);
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         
         .party-box .info {
-            font-size: 7px;
+            font-size: 9px;
             color: var(--gray-600);
-            line-height: 1.3;
+            line-height: 1.5;
         }
         
-        /* Invoice Table - Ultra Compact */
+        /* Invoice Table - Elegant */
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
         }
         
         .invoice-table th {
-            background: var(--navy);
+            background: linear-gradient(135deg, var(--navy), var(--navy-light));
             color: #fff;
-            padding: 5px 8px;
+            padding: 10px 12px;
             text-align: left;
-            font-size: 6px;
+            font-size: 8px;
             font-weight: 700;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .invoice-table th:first-child { border-radius: 3px 0 0 0; }
-        .invoice-table th:last-child { border-radius: 0 3px 0 0; }
+        .invoice-table th:first-child { border-radius: 5px 0 0 0; }
+        .invoice-table th:last-child { border-radius: 0 5px 0 0; }
         
         .invoice-table td {
-            padding: 6px 8px;
+            padding: 12px;
             border-bottom: 1px solid var(--gray-200);
-            font-size: 8px;
+            font-size: 10px;
         }
         
         .term-badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
+            width: 28px;
+            height: 28px;
             background: linear-gradient(135deg, var(--gold), var(--gold-dark));
             color: var(--navy);
-            font-size: 9px;
+            font-size: 12px;
             font-weight: 800;
-            border-radius: 3px;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(240,180,41,0.3);
         }
         
         .item-title {
             font-weight: 600;
             color: var(--navy);
-            font-size: 8px;
+            font-size: 11px;
         }
         
         .item-subtitle {
-            font-size: 6px;
+            font-size: 8px;
             color: var(--gray-400);
+            margin-top: 2px;
         }
         
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         
-        /* Summary - Ultra Compact */
+        /* Summary - Elegant */
         .summary-wrapper {
             display: flex;
             justify-content: flex-end;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
         }
         
         .summary-table {
-            width: 220px;
+            width: 260px;
             background: var(--gray-50);
-            border-radius: 4px;
+            border-radius: 6px;
             overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
         
         .summary-row {
             display: flex;
             justify-content: space-between;
-            padding: 4px 10px;
+            padding: 8px 14px;
             border-bottom: 1px solid var(--gray-200);
-            font-size: 7px;
+            font-size: 9px;
         }
         
-        .summary-row .value.add { color: var(--success); }
-        .summary-row .value.sub { color: var(--danger); }
+        .summary-row .value.add { color: var(--success); font-weight: 600; }
+        .summary-row .value.sub { color: var(--danger); font-weight: 600; }
         
         .summary-total {
-            background: var(--navy);
-            padding: 6px 10px;
+            background: linear-gradient(135deg, var(--navy), var(--navy-light));
+            padding: 10px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
         .summary-total .label {
-            color: rgba(255,255,255,0.7);
-            font-size: 7px;
+            color: rgba(255,255,255,0.8);
+            font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .summary-total .value {
             color: var(--gold);
-            font-size: 11px;
+            font-size: 14px;
             font-weight: 800;
         }
         
-        /* Amount in Words - Ultra Compact */
+        /* Amount in Words - Elegant */
         .amount-words {
-            background: rgba(240,180,41,0.05);
-            border: 1px solid rgba(240,180,41,0.25);
-            border-radius: 3px;
-            padding: 5px 10px;
-            margin-bottom: 8px;
+            background: linear-gradient(135deg, rgba(240,180,41,0.08) 0%, rgba(240,180,41,0.03) 100%);
+            border: 1px solid rgba(240,180,41,0.3);
+            border-radius: 5px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
         }
         
         .amount-words .label {
-            font-size: 6px;
+            font-size: 7px;
             color: var(--gray-400);
             text-transform: uppercase;
-            margin-bottom: 1px;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
         }
         
         .amount-words .text {
-            font-size: 7px;
+            font-size: 10px;
             font-weight: 600;
             color: var(--navy);
             font-style: italic;
@@ -505,32 +522,33 @@ foreach ($possibleLogos as $logo) {
         .bottom-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 8px;
+            gap: 20px;
+            margin-bottom: 10px;
         }
         
         .bank-section {
-            background: var(--gray-100);
-            border-radius: 4px;
-            padding: 6px 10px;
+            background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50) 100%);
+            border-radius: 6px;
+            padding: 12px 14px;
         }
         
         .bank-section h5 {
-            font-size: 6px;
+            font-size: 7px;
             font-weight: 700;
-            color: var(--gray-400);
+            color: var(--gold-dark);
             text-transform: uppercase;
-            margin-bottom: 3px;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
         }
         
         .bank-grid {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 2px;
+            gap: 4px;
         }
         
         .bank-item {
-            font-size: 7px;
+            font-size: 9px;
         }
         
         .bank-item span {
@@ -542,55 +560,57 @@ foreach ($possibleLogos as $logo) {
         }
         
         .terms-section {
-            padding: 6px 10px;
+            padding: 12px 14px;
             background: var(--gray-50);
-            border-radius: 4px;
+            border-radius: 6px;
         }
         
         .terms-section h5 {
-            font-size: 6px;
+            font-size: 7px;
             font-weight: 700;
-            color: var(--gray-400);
+            color: var(--gold-dark);
             text-transform: uppercase;
-            margin-bottom: 3px;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
         }
         
         .terms-section ul {
-            font-size: 6px;
+            font-size: 8px;
             color: var(--gray-500);
-            margin-left: 10px;
-            line-height: 1.3;
+            margin-left: 12px;
+            line-height: 1.5;
         }
         
-        /* Notes - Ultra Compact */
+        /* Notes - Elegant */
         .notes-section {
-            background: #fffbeb;
-            border-left: 2px solid #f59e0b;
-            padding: 5px 10px;
-            border-radius: 0 3px 3px 0;
-            margin-bottom: 8px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fff 100%);
+            border-left: 3px solid #f59e0b;
+            padding: 10px 14px;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 10px;
         }
         
         .notes-section .label {
-            font-size: 6px;
+            font-size: 7px;
             font-weight: 700;
             color: #92400e;
             text-transform: uppercase;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
         
         .notes-section .text {
-            font-size: 7px;
+            font-size: 9px;
             color: #78350f;
         }
         
-        /* Signatures - Ultra Compact */
+        /* Signatures - Elegant */
         .signatures {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin-top: 12px;
-            padding: 0 20px;
+            gap: 60px;
+            margin-top: 20px;
+            padding: 0 30px;
         }
         
         .sig-block {
@@ -598,28 +618,29 @@ foreach ($possibleLogos as $logo) {
         }
         
         .sig-block .role {
-            font-size: 7px;
+            font-size: 9px;
             color: var(--gray-500);
-            margin-bottom: 25px;
+            font-weight: 500;
+            margin-bottom: 35px;
         }
         
         .sig-block .line {
             border-top: 1px solid var(--navy);
-            padding-top: 4px;
+            padding-top: 8px;
         }
         
         .sig-block .name {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: 700;
             color: var(--navy);
         }
         
-        /* Footer - Ultra Compact */
+        /* Footer - Elegant */
         .footer {
-            background: var(--gray-50);
-            padding: 6px 20px;
+            background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%);
+            padding: 12px 25px;
             text-align: center;
-            font-size: 6px;
+            font-size: 8px;
             color: var(--gray-400);
             border-top: 1px solid var(--gray-200);
             position: absolute;
