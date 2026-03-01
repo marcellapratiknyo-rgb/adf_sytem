@@ -575,6 +575,114 @@ echo getPrintCSS();
     .cqc-filter-grid { grid-template-columns: 1fr; }
     .cqc-filter-actions { grid-column: span 1; flex-direction: column; }
 }
+
+/* ===== CQC DAILY EXPENSES CONTAINER ===== */
+.cqc-daily-expenses {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #f0b429;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.cqc-daily-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.cqc-daily-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f0b429, #d4960d);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.cqc-daily-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0d1f3c;
+}
+
+.cqc-daily-subtitle {
+    font-size: 0.7rem;
+    color: #6b7280;
+}
+
+.cqc-daily-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.cqc-daily-card {
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+}
+
+.cqc-daily-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.cqc-daily-card.owner {
+    background: linear-gradient(135deg, rgba(240,180,41,0.08), rgba(240,180,41,0.03));
+    border-left: 4px solid #f0b429;
+}
+
+.cqc-daily-card.expense {
+    background: linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02));
+    border-left: 4px solid #ef4444;
+}
+
+.cqc-daily-card.balance {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(59,130,246,0.03));
+    border-left: 4px solid #3b82f6;
+}
+
+.cqc-daily-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.cqc-daily-card.owner .cqc-daily-label { color: #92400e; }
+.cqc-daily-card.expense .cqc-daily-label { color: #dc2626; }
+.cqc-daily-card.balance .cqc-daily-label { color: #2563eb; }
+
+.cqc-daily-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+}
+
+.cqc-daily-card.owner .cqc-daily-value { color: #b45309; }
+.cqc-daily-card.expense .cqc-daily-value { color: #dc2626; }
+.cqc-daily-card.balance .cqc-daily-value { color: #2563eb; }
+
+.cqc-daily-desc {
+    font-size: 0.65rem;
+    color: #6b7280;
+}
+
+@media (max-width: 768px) {
+    .cqc-daily-grid { grid-template-columns: 1fr; }
+    .cqc-daily-value { font-size: 1.2rem; }
+}
 </style>
 <?php endif; ?>
 
@@ -1306,6 +1414,47 @@ echo getPrintCSS();
             </a>
         </div>
     </form>
+    <?php endif; ?>
+    
+    <?php if ($isCQC): ?>
+    <!-- CQC Daily Expenses Summary -->
+    <div class="cqc-daily-expenses">
+        <div class="cqc-daily-header">
+            <div class="cqc-daily-icon">💰</div>
+            <div>
+                <div class="cqc-daily-title">Ringkasan Kas CQC</div>
+                <div class="cqc-daily-subtitle">Uang dari owner bukan income perusahaan, pengeluaran langsung mengurangi kas</div>
+            </div>
+        </div>
+        <div class="cqc-daily-grid">
+            <div class="cqc-daily-card owner">
+                <div class="cqc-daily-label">
+                    <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                    Total Saldo Owner
+                </div>
+                <div class="cqc-daily-value">Rp <?php echo number_format($totalIncome, 0, ',', '.'); ?></div>
+                <div class="cqc-daily-desc">Modal dari owner (bukan pendapatan)</div>
+            </div>
+            <div class="cqc-daily-card expense">
+                <div class="cqc-daily-label">
+                    <i data-feather="upload" style="width: 14px; height: 14px;"></i>
+                    Total Pengeluaran
+                </div>
+                <div class="cqc-daily-value">Rp <?php echo number_format($totalExpense, 0, ',', '.'); ?></div>
+                <div class="cqc-daily-desc">Biaya operasional & proyek</div>
+            </div>
+            <div class="cqc-daily-card balance">
+                <div class="cqc-daily-label">
+                    <i data-feather="credit-card" style="width: 14px; height: 14px;"></i>
+                    Saldo Akhir
+                </div>
+                <div class="cqc-daily-value" style="color: <?php echo $balance >= 0 ? '#2563eb' : '#dc2626'; ?>;">
+                    Rp <?php echo number_format($balance, 0, ',', '.'); ?>
+                </div>
+                <div class="cqc-daily-desc">Sisa kas saat ini</div>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
     
     <!-- Table -->
