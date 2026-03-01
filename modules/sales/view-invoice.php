@@ -1,4 +1,9 @@
 <?php
+/**
+ * CQC Professional General Invoice - Same design as Termin Invoice
+ * Elegant A4 invoice display and print
+ */
+define('APP_ACCESS', true);
 require_once '../../config/config.php';
 require_once '../../config/database.php';
 require_once '../../includes/auth.php';
@@ -7,1105 +12,507 @@ require_once '../../includes/functions.php';
 $auth = new Auth();
 $auth->requireLogin();
 
-$db = Database::getInstance();
-$invoice_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$print_mode = isset($_GET['print']);
+require_once '../cqc-projects/db-helper.php';
 
-if ($invoice_id <= 0) {
-    $_SESSION['error'] = 'Invoice tidak ditemukan';
-    redirect(BASE_URL . '/modules/sales/index.php');
+try {
+    $pdo = getCQCDatabaseConnection();
+    ensureCQCGeneralInvoiceTable($pdo);
+} catch (Exception $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
-// Get invoice data
-$invoice = $db->fetchOne("
-    SELECT 
-        si.*,
-        d.division_name,
-        d.division_code,
-        u.full_name as created_by_name
-    FROM sales_invoices_header si
-    LEFT JOIN divisions d ON si.division_id = d.id
-    LEFT JOIN users u ON si.created_by = u.id
-    WHERE si.id = ?
-", [$invoice_id]);
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$print = isset($_GET['print']) && $_GET['print'] == '1';
+
+if (!$id) {
+    header('Location: index-cqc.php');
+    exit;
+}
+
+// Get invoice
+$stmt = $pdo->prepare("SELECT * FROM cqc_general_invoices WHERE id = ?");
+$stmt->execute([$id]);
+$invoice = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$invoice) {
-    $_SESSION['error'] = 'Invoice tidak ditemukan';
-    redirect(BASE_URL . '/modules/sales/index.php');
+    die("Invoice not found.");
 }
 
 // Get invoice items
-$items = $db->fetchAll("
-    SELECT * FROM sales_invoices_detail
-    WHERE invoice_header_id = ?
-    ORDER BY id
-", [$invoice_id]);
+$stmtItems = $pdo->prepare("SELECT * FROM cqc_general_invoice_items WHERE invoice_id = ? ORDER BY sort_order");
+$stmtItems->execute([$id]);
+$items = $stmtItems->fetchAll(PDO::FETCH_ASSOC);
 
-// Get company/hotel info from active business configuration
-// Get all settings at once for efficiency
-$allSettings = $db->fetchAll("SELECT setting_key, setting_value FROM settings", []);
-$settingsMap = [];
-foreach ($allSettings as $setting) {
-    $settingsMap[$setting['setting_key']] = $setting['setting_value'];
-}
+// Get CQC business settings from master database
+$db = Database::getInstance();
+$businessId = 7;
 
-// Get invoice-specific logo for this business
-$invoiceLogoKey = 'invoice_logo_' . ACTIVE_BUSINESS_ID;
-$invoiceLogo = $settingsMap[$invoiceLogoKey] ?? null;
+// Default company info
+$companyName = 'CQC Enjiniring';
+$companyTagline = 'Solar Panel Installation Contractor';
+$companyAddress = 'Address not configured';
+$companyCity = '';
+$companyPhone = '-';
+$companyEmail = '-';
+$companyNPWP = '-';
+$companyLogo = '';
+$bankName = '';
+$bankAccount = '';
+$bankHolder = '';
 
-// Get report display settings
-$showLogo = ($settingsMap['report_show_logo'] ?? '1') === '1';
-$showAddress = ($settingsMap['report_show_address'] ?? '1') === '1';
-$showPhone = ($settingsMap['report_show_phone'] ?? '1') === '1';
-
-$companySettings = [
-    'name' => $settingsMap['company_name'] ?? BUSINESS_NAME,
-    'tagline' => $settingsMap['company_tagline'] ?? '',
-    'business_icon' => BUSINESS_ICON,
-    'business_color' => BUSINESS_COLOR,
-    'address' => $showAddress ? ($settingsMap['company_address'] ?? '') : '',
-    'phone' => $showPhone ? ($settingsMap['company_phone'] ?? '') : '',
-    'email' => $settingsMap['company_email'] ?? '',
-    'logo' => $settingsMap['company_logo'] ?? null,
-    'invoice_logo' => $invoiceLogo,
-    'show_logo' => $showLogo
-];
-
-// Use invoice logo if available and enabled, otherwise use company logo
-// Invoice logo is stored as filename only in database (e.g., "narayana-hotel_invoice_logo.png")
-if ($showLogo && $invoiceLogo) {
-    $displayLogo = 'uploads/logos/' . $invoiceLogo;
-} elseif ($showLogo && $companySettings['logo']) {
-    $displayLogo = $companySettings['logo'];
-} else {
-    $displayLogo = null;
-}
-
-// Convert relative path to absolute for PDF export
-$absoluteLogoPath = null;
-if ($displayLogo) {
-    // Check if it's already an absolute URL
-    if (strpos($displayLogo, 'http') === 0) {
-        $absoluteLogoPath = $displayLogo;
-    } else {
-        // Try different possible paths
-        $possiblePaths = [
-            $_SERVER['DOCUMENT_ROOT'] . '/adf_system/' . $displayLogo,
-            dirname(dirname(dirname(__FILE__))) . '/' . $displayLogo,
-            $_SERVER['DOCUMENT_ROOT'] . '/adf_system/uploads/' . basename($displayLogo),
-            dirname(dirname(dirname(__FILE__))) . '/uploads/' . basename($displayLogo),
-            $displayLogo
-        ];
-        
-        foreach ($possiblePaths as $path) {
-            if (file_exists($path)) {
-                $absoluteLogoPath = $path;
-                break;
-            }
+// Try to load from business_settings
+try {
+    $settings = $db->fetchAll("SELECT setting_key, setting_value FROM business_settings WHERE business_id = ?", [$businessId]);
+    foreach ($settings as $s) {
+        switch ($s['setting_key']) {
+            case 'business_name': if ($s['setting_value']) $companyName = $s['setting_value']; break;
+            case 'tagline': if ($s['setting_value']) $companyTagline = $s['setting_value']; break;
+            case 'address': if ($s['setting_value']) $companyAddress = $s['setting_value']; break;
+            case 'city': if ($s['setting_value']) $companyCity = $s['setting_value']; break;
+            case 'phone': if ($s['setting_value']) $companyPhone = $s['setting_value']; break;
+            case 'email': if ($s['setting_value']) $companyEmail = $s['setting_value']; break;
+            case 'npwp': if ($s['setting_value']) $companyNPWP = $s['setting_value']; break;
+            case 'logo': if ($s['setting_value']) $companyLogo = $s['setting_value']; break;
+            case 'bank_name': if ($s['setting_value']) $bankName = $s['setting_value']; break;
+            case 'bank_account': if ($s['setting_value']) $bankAccount = $s['setting_value']; break;
+            case 'bank_holder': if ($s['setting_value']) $bankHolder = $s['setting_value']; break;
         }
     }
+} catch (Exception $e) {}
+
+// Full address
+$fullAddress = $companyAddress;
+if ($companyCity) $fullAddress .= ', ' . $companyCity;
+
+$pageTitle = "Invoice " . $invoice['invoice_number'];
+
+// Number to words
+function numberToWordsGen($number) {
+    $number = abs(intval($number));
+    $words = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+              'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+    $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    
+    if ($number < 20) return $words[$number];
+    if ($number < 100) return $tens[intval($number / 10)] . ($number % 10 ? ' ' . $words[$number % 10] : '');
+    if ($number < 1000) return $words[intval($number / 100)] . ' Hundred' . ($number % 100 ? ' ' . numberToWordsGen($number % 100) : '');
+    if ($number < 1000000) return numberToWordsGen(intval($number / 1000)) . ' Thousand' . ($number % 1000 ? ' ' . numberToWordsGen($number % 1000) : '');
+    if ($number < 1000000000) return numberToWordsGen(intval($number / 1000000)) . ' Million' . ($number % 1000000 ? ' ' . numberToWordsGen($number % 1000000) : '');
+    if ($number < 1000000000000) return numberToWordsGen(intval($number / 1000000000)) . ' Billion' . ($number % 1000000000 ? ' ' . numberToWordsGen(intval($number % 1000000000)) : '');
+    return numberToWordsGen(intval($number / 1000000000000)) . ' Trillion' . ($number % 1000000000000 ? ' ' . numberToWordsGen(intval($number % 1000000000000)) : '');
 }
 
-// Handle PDF export
-if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    // Generate invoice content for PDF download
-    $invoiceHtml = '
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Invoice ' . htmlspecialchars($invoice['invoice_number']) . '</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { 
-                font-family: "Arial", sans-serif; 
-                font-size: 12px; 
-                color: #2c3e50;
-                padding: 20px;
-            }
-            .invoice-container { 
-                max-width: 210mm;
-                margin: 0 auto;
-                background: white;
-                padding: 20mm;
-            }
-            .header-section {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 20px;
-                padding-bottom: 15px;
-                border-bottom: 2px solid ' . $companySettings['business_color'] . ';
-            }
-            .company-header {
-                display: flex;
-                gap: 15px;
-                flex: 1;
-            }
-            .company-logo {
-                width: 60px;
-                height: 60px;
-                flex-shrink: 0;
-                overflow: hidden;
-            }
-            .company-logo img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-            .company-info {
-                flex: 1;
-            }
-            .company-name { 
-                font-size: 18px; 
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            .company-details {
-                font-size: 10px;
-                color: #666;
-                line-height: 1.6;
-            }
-            .invoice-meta {
-                text-align: right;
-                font-size: 11px;
-            }
-            .invoice-number {
-                font-size: 16px;
-                font-weight: bold;
-                color: ' . $companySettings['business_color'] . ';
-            }
-            .status-badge {
-                display: inline-block;
-                padding: 8px 15px;
-                border-radius: 4px;
-                font-size: 14px;
-                font-weight: bold;
-                margin-top: 5px;
-                border: 1px solid transparent;
-            }
-            .status-paid { background: #d4edda; color: #155724; border-color: #c3e6cb; }
-            .status-unpaid { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-            .status-partial { background: #fff3cd; color: #856404; border-color: #ffeeba; }
-            
-            .section-title {
-                font-size: 10px;
-                font-weight: bold;
-                text-transform: uppercase;
-                color: #666;
-                margin: 15px 0 8px 0;
-            }
-            
-            .customer-info {
-                font-size: 11px;
-                margin-bottom: 15px;
-            }
-            .customer-name {
-                font-size: 12px;
-                font-weight: bold;
-                margin-bottom: 3px;
-            }
-            
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                margin: 15px 0;
-                font-size: 10px;
-            }
-            
-            th {
-                background: ' . $companySettings['business_color'] . ';
-                color: white;
-                padding: 8px;
-                text-align: left;
-                font-weight: bold;
-            }
-            
-            td {
-                padding: 8px;
-                border-bottom: 1px solid #ddd;
-            }
-            
-            tr:nth-child(even) {
-                background: #f9f9f9;
-            }
-            
-            .text-center { text-align: center; }
-            .text-right { text-align: right; }
-            
-            .summary {
-                width: 300px;
-                margin-left: auto;
-                margin: 15px 0 0 0;
-            }
-            
-            .summary-row {
-                display: flex;
-                justify-content: space-between;
-                padding: 5px 0;
-                font-size: 11px;
-            }
-            
-            .summary-row.total {
-                border-top: 2px solid ' . $companySettings['business_color'] . ';
-                padding-top: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                color: ' . $companySettings['business_color'] . ';
-            }
-            
-            .notes {
-                margin-top: 15px;
-                padding: 10px;
-                background: #f5f5f5;
-                border-radius: 4px;
-                font-size: 10px;
-            }
-            
-            .notes-title {
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            
-            .footer {
-                margin-top: 20px;
-                padding-top: 15px;
-                border-top: 1px solid #ddd;
-                text-align: center;
-                font-size: 10px;
-                color: #666;
-            }
-            
-            @media print {
-                body { padding: 0; }
-                .invoice-container { padding: 0; margin: 0; }
-            }
-        </style>
-    </head>
-    <body onload="window.print();">
-        <div class="invoice-container">
-            <div class="header-section">
-                <div class="company-header">
-                    ' . ($absoluteLogoPath && file_exists($absoluteLogoPath) ? 
-                        '<div class="company-logo"><img src="file:///' . str_replace('\\', '/', $absoluteLogoPath) . '" alt="Logo"></div>' : 
-                        '') . '
-                    <div class="company-info">
-                        <div class="company-name">' . htmlspecialchars($companySettings['name']) . '</div>
-                        <div class="company-details">
-                            ' . ($companySettings['address'] ? htmlspecialchars($companySettings['address']) . '<br>' : '') . '
-                            ' . ($companySettings['phone'] ? 'Tel: ' . htmlspecialchars($companySettings['phone']) . '<br>' : '') . '
-                            ' . ($companySettings['email'] ? 'Email: ' . htmlspecialchars($companySettings['email']) : '') . '
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="invoice-meta">
-                    <div class="invoice-number">' . htmlspecialchars($invoice['invoice_number']) . '</div>
-                    <div>' . date('d M Y', strtotime($invoice['invoice_date'])) . '</div>
-                    <span class="status-badge ' . ($invoice['payment_status'] === 'paid' ? 'status-paid' : ($invoice['payment_status'] === 'unpaid' ? 'status-unpaid' : 'status-partial')) . '">
-                        ' . ($invoice['payment_status'] === 'paid' ? '✓ PAID' : ($invoice['payment_status'] === 'unpaid' ? '⏳ UNPAID' : '⚠ PARTIAL')) . '
-                    </span>
-                </div>
-            </div>
-            
-            <div class="section-title">Kepada:</div>
-            <div class="customer-info">
-                <div class="customer-name">' . htmlspecialchars($invoice['customer_name']) . '</div>
-                ' . ($invoice['customer_address'] ? '<div>' . htmlspecialchars($invoice['customer_address']) . '</div>' : '') . '
-                ' . ($invoice['customer_phone'] ? '<div>Tel: ' . htmlspecialchars($invoice['customer_phone']) . '</div>' : '') . '
-                ' . ($invoice['customer_email'] ? '<div>Email: ' . htmlspecialchars($invoice['customer_email']) . '</div>' : '') . '
-            </div>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 30px;">#</th>
-                        <th>Item / Layanan</th>
-                        <th style="width: 60px;" class="text-center">Qty</th>
-                        <th style="width: 80px;" class="text-right">Harga</th>
-                        <th style="width: 80px;" class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>';
-                
-    $no = 1;
-    foreach ($items as $item) {
-        $invoiceHtml .= '
-                    <tr>
-                        <td class="text-center">' . $no . '</td>
-                        <td>
-                            <strong>' . htmlspecialchars($item['item_name']) . '</strong>
-                            ' . ($item['item_description'] ? '<br><small>' . htmlspecialchars($item['item_description']) . '</small>' : '') . '
-                        </td>
-                        <td class="text-center">' . number_format($item['quantity'], 0, ',', '.') . '</td>
-                        <td class="text-right">Rp ' . number_format($item['unit_price'], 0, ',', '.') . '</td>
-                        <td class="text-right"><strong>Rp ' . number_format($item['quantity'] * $item['unit_price'], 0, ',', '.') . '</strong></td>
-                    </tr>';
-        $no++;
+$totalInWords = numberToWordsGen($invoice['total_amount']) . ' Rupiah';
+
+function formatInvDateGen($date) {
+    return date('F j, Y', strtotime($date));
+}
+
+// Logo path check
+$configPath = defined('ROOT_PATH') ? ROOT_PATH : dirname(dirname(__DIR__));
+$logoPath = '';
+$logoExists = false;
+$possibleLogos = [$companyLogo, 'logos/' . $companyLogo, 'logos/cqc_logo.png', 'cqc_logo.png'];
+foreach ($possibleLogos as $logo) {
+    if (!$logo) continue;
+    $fullPath = $configPath . '/uploads/' . $logo;
+    if (file_exists($fullPath)) {
+        $logoExists = true;
+        $logoPath = BASE_URL . '/uploads/' . $logo;
+        break;
     }
-    
-    $invoiceHtml .= '
-                </tbody>
-            </table>
-            
-            <div class="summary">
-                <div class="summary-row">
-                    <span>Subtotal</span>
-                    <span>Rp ' . number_format($invoice['subtotal'], 0, ',', '.') . '</span>
-                </div>
-                ' . ($invoice['discount_amount'] > 0 ? '
-                <div class="summary-row" style="color: #ef4444;">
-                    <span>Diskon</span>
-                    <span>- Rp ' . number_format($invoice['discount_amount'], 0, ',', '.') . '</span>
-                </div>' : '') . '
-                ' . ($invoice['tax_amount'] > 0 ? '
-                <div class="summary-row">
-                    <span>Pajak</span>
-                    <span>Rp ' . number_format($invoice['tax_amount'], 0, ',', '.') . '</span>
-                </div>' : '') . '
-                <div class="summary-row total">
-                    <span>TOTAL</span>
-                    <span>Rp ' . number_format($invoice['total_amount'], 0, ',', '.') . '</span>
-                </div>
-            </div>
-            
-            ' . ($invoice['notes'] ? '
-            <div class="notes">
-                <div class="notes-title">Catatan:</div>
-                ' . htmlspecialchars($invoice['notes']) . '
-            </div>' : '') . '
-            
-            <div class="footer">
-                <strong>' . htmlspecialchars($companySettings['name']) . '</strong><br>
-                Terima kasih atas kepercayaan Anda.
-            </div>
-        </div>
-    </body>
-    </html>';
-    
-    // Output as HTML with print dialog
-    header('Content-Type: text/html; charset=utf-8');
-    echo $invoiceHtml;
-    exit;
 }
-
-if ($print_mode) {
-    // Print layout
-    ?>
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Invoice <?php echo $invoice['invoice_number']; ?></title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { height: 100%; }
-            body { 
-                font-family: 'Segoe UI', 'Trebuchet MS', sans-serif; 
-                font-size: 13px; 
-                color: #2c3e50;
-                background: #f5f5f5;
-            }
-            .invoice-container { 
-                max-width: 210mm; 
-                height: 297mm;
-                margin: 0 auto; 
-                padding: 18mm;
-                background: white;
-                box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                position: relative;
-            }
-            
-            /* Premium Header with Color Gradient */
-            .header-section {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 25px;
-                padding-bottom: 18px;
-                border-bottom: 3px solid;
-                border-bottom-color: <?php echo $companySettings['business_color']; ?>;
-            }
-            
-            .company-header {
-                display: flex;
-                align-items: flex-start;
-                gap: 15px;
-                flex: 1;
-            }
-            
-            .company-logo {
-                width: 70px;
-                height: 70px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background: #f5f5f5;
-                border-radius: 8px;
-                overflow: hidden;
-                flex-shrink: 0;
-            }
-            
-            .company-logo img {
-                width: 100%;
-                height: 100%;
-                object-fit: contain;
-            }
-            
-            .company-icon {
-                font-size: 48px;
-                line-height: 1;
-            }
-            
-            .company-info {
-                flex: 1;
-            }
-            
-            .company-name { 
-                font-size: 22px; 
-                font-weight: 900;
-                background: linear-gradient(135deg, <?php echo $companySettings['business_color']; ?>, #000);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                margin-bottom: 3px;
-                letter-spacing: -0.5px;
-            }
-            
-            .company-details {
-                font-size: 11px;
-                color: #666;
-                line-height: 1.7;
-                margin: 3px 0 0 0;
-            }
-            
-            .invoice-meta {
-                text-align: right;
-            }
-            
-            .invoice-label {
-                font-size: 11px;
-                color: #999;
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                font-weight: 700;
-                margin-bottom: 3px;
-            }
-            
-            .invoice-number { 
-                font-size: 32px; 
-                font-weight: 900;
-                color: <?php echo $companySettings['business_color']; ?>;
-                margin-bottom: 3px;
-                letter-spacing: -1px;
-            }
-            
-            .invoice-date { 
-                font-size: 12px;
-                color: #666;
-                margin-bottom: 8px;
-            }
-            
-            .status-badge { 
-                display: inline-block; 
-                padding: 7px 18px; 
-                border-radius: 25px; 
-                font-weight: 700; 
-                font-size: 11px;
-                letter-spacing: 1px;
-                text-transform: uppercase;
-            }
-            
-            .status-paid { 
-                background: #d4edda; 
-                color: #155724;
-                border: 1px solid #c3e6cb;
-            }
-            
-            .status-unpaid { 
-                background: #f8d7da; 
-                color: #721c24;
-                border: 1px solid #f5c6cb;
-            }
-            
-            .status-partial { 
-                background: #fff3cd; 
-                color: #856404;
-                border: 1px solid #ffeeba;
-            }
-            
-            /* Info Sections */
-            .info-section {
-                display: flex;
-                gap: 30px;
-                margin-bottom: 28px;
-            }
-            
-            .info-box {
-                flex: 1;
-            }
-            
-            .section-label {
-                font-size: 10px;
-                font-weight: 900;
-                color: #999;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-                margin-bottom: 8px;
-                display: block;
-            }
-            
-            .info-content {
-                background: #f8f9fa;
-                padding: 12px 14px;
-                border-radius: 6px;
-                border-left: 4px solid <?php echo $companySettings['business_color']; ?>;
-            }
-            
-            .info-name {
-                font-size: 14px;
-                font-weight: 700;
-                color: #2c3e50;
-                margin-bottom: 6px;
-            }
-            
-            .info-detail {
-                font-size: 11px;
-                color: #666;
-                line-height: 1.5;
-            }
-            
-            /* Items Table */
-            .items-section {
-                margin-bottom: 25px;
-            }
-            
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            
-            table.items-table {
-                margin-top: 8px;
-            }
-            
-            table.items-table th {
-                background: <?php echo $companySettings['business_color']; ?>;
-                color: white;
-                padding: 11px 12px;
-                text-align: left;
-                font-weight: 700;
-                font-size: 11px;
-                letter-spacing: 0.5px;
-                text-transform: uppercase;
-            }
-            
-            table.items-table td {
-                padding: 11px 12px;
-                border-bottom: 1px solid #e9ecef;
-                font-size: 12px;
-            }
-            
-            table.items-table tbody tr:last-child td {
-                border-bottom: 2px solid <?php echo $companySettings['business_color']; ?>;
-            }
-            
-            .text-right { text-align: right; }
-            .text-center { text-align: center; }
-            
-            /* Summary Section */
-            .summary-section {
-                display: flex;
-                justify-content: flex-end;
-                margin-top: 30px;
-                margin-bottom: 40px;
-            }
-            
-            .summary-table {
-                width: 320px;
-            }
-            
-            .summary-table tr td {
-                padding: 9px 12px;
-                font-size: 12px;
-                border-bottom: 1px solid #e9ecef;
-            }
-            
-            .summary-table .label {
-                color: #666;
-                font-weight: 600;
-            }
-            
-            .summary-table .value {
-                text-align: right;
-                color: #2c3e50;
-                font-weight: 700;
-            }
-            
-            .summary-row-total {
-                background: linear-gradient(135deg, <?php echo $companySettings['business_color']; ?>15, <?php echo $companySettings['business_color']; ?>08);
-                border-top: 2px solid <?php echo $companySettings['business_color']; ?> !important;
-                border-bottom: none !important;
-            }
-            
-            .summary-row-total .label {
-                font-size: 13px;
-                font-weight: 900;
-                text-transform: uppercase;
-                color: <?php echo $companySettings['business_color']; ?>;
-                letter-spacing: 1px;
-            }
-            
-            .summary-row-total .value {
-                font-size: 28px;
-                font-weight: 900;
-                color: <?php echo $companySettings['business_color']; ?>;
-                letter-spacing: -0.5px;
-            }
-            
-            /* Notes & Footer */
-            .notes-section {
-                background: #f8f9fa;
-                padding: 12px 14px;
-                border-radius: 6px;
-                margin-bottom: 25px;
-                font-size: 11px;
-                line-height: 1.6;
-                color: #555;
-            }
-            
-            .notes-title {
-                font-weight: 700;
-                color: #2c3e50;
-                margin-bottom: 6px;
-                font-size: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-            
-            .footer-section {
-                margin-top: auto;
-                padding-top: 15px;
-                border-top: 2px solid #e9ecef;
-                text-align: center;
-                font-size: 10px;
-                color: #999;
-                line-height: 1.6;
-            }
-            
-            .footer-divider {
-                height: 1px;
-                background: #e9ecef;
-                margin: 8px 0;
-            }
-            
-            @media print {
-                * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                body { background: white; }
-                .invoice-container { 
-                    max-width: 100%;
-                    height: auto;
-                    margin: 0;
-                    padding: 18mm;
-                    box-shadow: none;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="invoice-container">
-            <!-- Premium Header -->
-            <div class="header-section">
-                <div class="company-header">
-                    <?php if ($displayLogo): 
-                        // FINAL FIX: Trust the URL structure
-                        // displayLogo usually equals "uploads/logos/filename.png"
-                        if (strpos($displayLogo, 'http') === 0) {
-                            $logoUrl = $displayLogo;
-                        } else {
-                            // Construct absolute URL safely
-                            $logoUrl = rtrim(BASE_URL, '/') . '/' . ltrim($displayLogo, '/');
-                            
-                            // Add cache buster
-                            $logoUrl .= '?t=' . time();
-                        }
-                    ?>
-                        <div class="company-logo">
-                            <img src="<?php echo htmlspecialchars($logoUrl); ?>" 
-                                 alt="<?php echo htmlspecialchars($companySettings['name']); ?>"
-                                 onerror="this.style.display='none'; this.parentNode.innerHTML='<span style=\'font-size:12px;color:red\'>Image Load Error: ' + this.src + '</span>';" 
-                                 style="max-height: 100px; width: auto; object-fit: contain;">
-                        </div>
-                    <?php else: ?>
-                        <div class="company-logo" style="font-size: 40px; color: <?php echo $companySettings['business_color']; ?>;">
-                            <?php echo $companySettings['business_icon']; ?>
-                        </div>
-                    <?php endif; ?>
-                    <div class="company-info">
-                        <div class="company-name"><?php echo htmlspecialchars($companySettings['name']); ?></div>
-                        <?php if ($companySettings['tagline']): ?>
-                            <div style="font-size: 11px; color: #666; margin-top: 2px; font-style: italic;">
-                                <?php echo htmlspecialchars($companySettings['tagline']); ?>
-                            </div>
-                        <?php endif; ?>
-                        <div class="company-details">
-                            <?php if ($companySettings['address']): ?>
-                                <?php echo htmlspecialchars($companySettings['address']); ?><br>
-                            <?php endif; ?>
-                            <?php if ($companySettings['phone']): ?>
-                                Tel: <?php echo htmlspecialchars($companySettings['phone']); ?><br>
-                            <?php endif; ?>
-                            <?php if ($companySettings['email']): ?>
-                                Email: <?php echo htmlspecialchars($companySettings['email']); ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="invoice-meta">
-                    <div class="invoice-label">Invoice</div>
-                    <div class="invoice-number"><?php echo htmlspecialchars($invoice['invoice_number']); ?></div>
-                    <div class="invoice-date"><?php echo date('d M Y', strtotime($invoice['invoice_date'])); ?></div>
-                    <div style="margin-top: 8px;">
-                        <span class="status-badge <?php 
-                            echo ($invoice['payment_status'] === 'paid') ? 'status-paid' : 
-                                 (($invoice['payment_status'] === 'unpaid') ? 'status-unpaid' : 'status-partial'); 
-                        ?>">
-                            <?php 
-                                echo ($invoice['payment_status'] === 'paid') ? '✓ LUNAS' : 
-                                     (($invoice['payment_status'] === 'unpaid') ? '⏳ BELUM BAYAR' : '⚠ SEBAGIAN'); 
-                            ?>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Customer & Details Info -->
-            <div class="info-section">
-                <div class="info-box">
-                    <span class="section-label">Kepada:</span>
-                    <div class="info-content">
-                        <div class="info-name"><?php echo htmlspecialchars($invoice['customer_name']); ?></div>
-                        <div class="info-detail">
-                            <?php if ($invoice['customer_address']): ?>
-                                <?php echo nl2br(htmlspecialchars($invoice['customer_address'])); ?><br>
-                            <?php endif; ?>
-                            <?php if ($invoice['customer_phone']): ?>
-                                Tel: <?php echo htmlspecialchars($invoice['customer_phone']); ?><br>
-                            <?php endif; ?>
-                            <?php if ($invoice['customer_email']): ?>
-                                Email: <?php echo htmlspecialchars($invoice['customer_email']); ?>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <span class="section-label">Detail Invoice:</span>
-                    <div class="info-content">
-                        <table style="font-size: 11px;">
-                            <tr>
-                                <td class="label" style="color: #999;">Divisi:</td>
-                                <td style="text-align: right; font-weight: 700;"><?php echo htmlspecialchars($invoice['division_name'] ?? '-'); ?></td>
-                            </tr>
-                            <tr>
-                                <td class="label" style="color: #999;">Metode Bayar:</td>
-                                <td style="text-align: right; font-weight: 700;">
-                                    <?php 
-                                        $payment_methods = [
-                                            'cash' => '💵 Cash',
-                                            'debit' => '💳 Debit',
-                                            'transfer' => '🔄 Transfer',
-                                            'qr' => '📱 QR Code',
-                                            'other' => '➕ Lainnya'
-                                        ];
-                                        echo $payment_methods[$invoice['payment_method']] ?? ucfirst($invoice['payment_method']);
-                                    ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="label" style="color: #999;">Dibuat oleh:</td>
-                                <td style="text-align: right; font-weight: 700;"><?php echo htmlspecialchars($invoice['created_by_name'] ?? '-'); ?></td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Items Table -->
-            <div class="items-section">
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 5%;">#</th>
-                            <th style="width: 35%;">Item / Layanan</th>
-                            <th style="width: 15%;">Kategori</th>
-                            <th style="width: 10%; text-align: right;">Qty</th>
-                            <th style="width: 20%; text-align: right;">Harga Satuan</th>
-                            <th style="width: 15%; text-align: right;">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php $no = 1; foreach ($items as $item): ?>
-                            <tr>
-                                <td><?php echo $no++; ?></td>
-                                <td>
-                                    <strong><?php echo htmlspecialchars($item['item_name']); ?></strong>
-                                    <?php if ($item['item_description']): ?>
-                                        <br><span style="color: #999; font-size: 10px;"><?php echo htmlspecialchars($item['item_description']); ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span style="background: #e9ecef; padding: 3px 8px; border-radius: 3px; font-size: 10px;">
-                                        <?php echo htmlspecialchars($item['category'] ?? '-'); ?>
-                                    </span>
-                                </td>
-                                <td class="text-right"><?php echo number_format($item['quantity'], 0, ',', '.'); ?></td>
-                                <td class="text-right">Rp <?php echo number_format($item['unit_price'], 0, ',', '.'); ?></td>
-                                <td class="text-right" style="font-weight: 700;">Rp <?php echo number_format($item['quantity'] * $item['unit_price'], 0, ',', '.'); ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Summary -->
-            <div class="summary-section">
-                <table class="summary-table">
-                    <tr>
-                        <td class="label">Subtotal</td>
-                        <td class="value">Rp <?php echo number_format($invoice['subtotal'], 0, ',', '.'); ?></td>
-                    </tr>
-                    <?php if ($invoice['discount_amount'] > 0): ?>
-                        <tr>
-                            <td class="label">Diskon</td>
-                            <td class="value">- Rp <?php echo number_format($invoice['discount_amount'], 0, ',', '.'); ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <?php if ($invoice['tax_amount'] > 0): ?>
-                        <tr>
-                            <td class="label">Pajak</td>
-                            <td class="value">+ Rp <?php echo number_format($invoice['tax_amount'], 0, ',', '.'); ?></td>
-                        </tr>
-                    <?php endif; ?>
-                    <tr class="summary-row-total">
-                        <td class="label">Total</td>
-                        <td class="value">Rp <?php echo number_format($invoice['total_amount'], 0, ',', '.'); ?></td>
-                    </tr>
-                </table>
-            </div>
-            
-            <!-- Notes -->
-            <?php if ($invoice['notes']): ?>
-                <div class="notes-section">
-                    <div class="notes-title">📝 Catatan:</div>
-                    <?php echo nl2br(htmlspecialchars($invoice['notes'])); ?>
-                </div>
-            <?php endif; ?>
-            
-            <!-- Footer -->
-            <div class="footer-section">
-                <strong><?php echo htmlspecialchars($companySettings['name']); ?></strong>
-                <div class="footer-divider"></div>
-                Terima kasih atas kepercayaan Anda. Invoice ini adalah bukti transaksi yang sah.
-                <br>
-                Cetak Tanggal: <?php echo date('d M Y H:i'); ?>
-            </div>
-        </div>
-    </body>
-    </html>
-    <?php
-    exit;
-}
-
-// Normal view mode
-$pageTitle = 'Invoice ' . $invoice['invoice_number'];
-include '../../includes/header.php';
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $pageTitle; ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --navy: #0d1f3c;
+            --navy-light: #1a3a5c;
+            --gold: #f0b429;
+            --gold-dark: #c49a1a;
+            --success: #10b981;
+            --danger: #ef4444;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+        }
+        
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 9px; 
+            line-height: 1.4; 
+            color: #333;
+            background: <?php echo $print ? '#fff' : '#e5e7eb'; ?>;
+        }
+        
+        .page {
+            width: 210mm; 
+            height: 297mm;
+            margin: <?php echo $print ? '0' : '15px auto'; ?>; 
+            padding: 0;
+            background: #fff; 
+            overflow: hidden;
+            position: relative;
+            <?php if (!$print): ?>
+            box-shadow: 0 15px 40px -10px rgba(0,0,0,0.2);
+            <?php endif; ?>
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 20px 25px 15px;
+            border-bottom: 3px solid var(--navy);
+            background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+        }
+        
+        .company-block { display: flex; gap: 15px; align-items: center; }
+        
+        .logo-box {
+            width: 55px; height: 55px;
+            background: #fff;
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(240,180,41,0.15);
+        }
+        
+        .logo-box img { max-width: 48px; max-height: 48px; object-fit: contain; }
+        .logo-box .no-logo { font-size: 7px; color: var(--gray-400); text-align: center; }
+        
+        .company-info { display: flex; flex-direction: column; justify-content: center; }
+        .company-info h1 { font-size: 18px; font-weight: 800; color: var(--navy); margin-bottom: 2px; letter-spacing: 0.5px; }
+        .company-info .tagline { font-size: 8px; color: var(--gold-dark); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .company-contact { font-size: 8px; color: var(--gray-600); line-height: 1.5; }
+        .company-contact .row { margin-bottom: 1px; }
+        
+        .invoice-header { text-align: right; }
+        .invoice-title { font-size: 26px; font-weight: 800; color: var(--navy); letter-spacing: 4px; margin-bottom: 4px; }
+        .invoice-number { font-size: 11px; font-weight: 700; color: var(--gray-700); margin-bottom: 6px; }
+        .invoice-meta { font-size: 9px; color: var(--gray-500); }
+        .invoice-meta .row { margin-bottom: 2px; }
+        
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; }
+        .status-draft { background: var(--gray-200); color: var(--gray-600); }
+        .status-sent { background: #dbeafe; color: #1d4ed8; }
+        .status-paid { background: #d1fae5; color: #059669; }
+        .status-partial { background: #fef3c7; color: #d97706; }
+        .status-overdue { background: #fee2e2; color: #dc2626; }
+        
+        /* Content */
+        .content { padding: 18px 25px; }
+        
+        /* Bill To */
+        .parties-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px; }
+        
+        .party-box {
+            padding: 12px 15px;
+            background: linear-gradient(135deg, var(--gray-50) 0%, #fff 100%);
+            border-radius: 6px;
+            border-left: 3px solid var(--gold);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        
+        .party-box h4 { font-size: 7px; font-weight: 700; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .party-box .name { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+        .party-box .info { font-size: 9px; color: var(--gray-600); line-height: 1.5; }
+        
+        /* Table */
+        .invoice-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .invoice-table th {
+            background: linear-gradient(135deg, var(--navy), var(--navy-light));
+            color: #fff; padding: 10px 12px; text-align: left;
+            font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .invoice-table th:first-child { border-radius: 5px 0 0 0; }
+        .invoice-table th:last-child { border-radius: 0 5px 0 0; }
+        .invoice-table td { padding: 10px 12px; border-bottom: 1px solid var(--gray-200); font-size: 9px; }
+        .item-no { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--navy); font-size: 10px; font-weight: 800; border-radius: 5px; }
+        .item-title { font-weight: 600; color: var(--navy); font-size: 10px; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        
+        /* Summary */
+        .summary-wrapper { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+        .summary-table { width: 260px; background: var(--gray-50); border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .summary-row { display: flex; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid var(--gray-200); font-size: 9px; }
+        .summary-row .value.add { color: var(--success); font-weight: 600; }
+        .summary-row .value.sub { color: var(--danger); font-weight: 600; }
+        .summary-total { background: linear-gradient(135deg, var(--navy), var(--navy-light)); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+        .summary-total .label { color: rgba(255,255,255,0.8); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-total .value { color: var(--gold); font-size: 14px; font-weight: 800; }
+        
+        /* Amount in Words */
+        .amount-words { background: linear-gradient(135deg, rgba(240,180,41,0.08) 0%, rgba(240,180,41,0.03) 100%); border: 1px solid rgba(240,180,41,0.3); border-radius: 5px; padding: 10px 14px; margin-bottom: 12px; }
+        .amount-words .label { font-size: 7px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .amount-words .text { font-size: 10px; font-weight: 600; color: var(--navy); font-style: italic; }
+        
+        /* Bottom Row */
+        .bottom-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 10px; }
+        .bank-section { background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50) 100%); border-radius: 6px; padding: 12px 14px; }
+        .bank-section h5 { font-size: 7px; font-weight: 700; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .bank-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
+        .bank-item { font-size: 9px; }
+        .bank-item span { color: var(--gray-500); }
+        .bank-item strong { color: var(--navy); }
+        
+        .terms-section { padding: 12px 14px; background: var(--gray-50); border-radius: 6px; }
+        .terms-section h5 { font-size: 7px; font-weight: 700; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .terms-section ul { font-size: 8px; color: var(--gray-500); margin-left: 12px; line-height: 1.5; }
+        
+        /* Notes */
+        .notes-section { background: linear-gradient(135deg, #fffbeb 0%, #fff 100%); border-left: 3px solid #f59e0b; padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 10px; }
+        .notes-section .label { font-size: 7px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .notes-section .text { font-size: 9px; color: #78350f; }
+        
+        /* Signatures */
+        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; margin-top: 20px; padding: 0 30px; }
+        .sig-block { text-align: center; }
+        .sig-block .role { font-size: 9px; color: var(--gray-500); font-weight: 500; margin-bottom: 35px; }
+        .sig-block .line { border-top: 1px solid var(--navy); padding-top: 8px; }
+        .sig-block .name { font-size: 10px; font-weight: 700; color: var(--navy); }
+        
+        /* Footer */
+        .footer { background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%); padding: 12px 25px; text-align: center; font-size: 8px; color: var(--gray-400); border-top: 1px solid var(--gray-200); position: absolute; bottom: 0; left: 0; right: 0; }
+        
+        /* Print Controls */
+        .print-controls { position: fixed; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 100; }
+        .print-controls button, .print-controls a { padding: 10px 20px; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .btn-print { background: var(--navy); color: #fff; box-shadow: 0 3px 10px rgba(13,31,60,0.25); }
+        .btn-back { background: #fff; color: var(--gray-600); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
-<div style="max-width: 900px; margin: 0 auto;">
-    <!-- Actions -->
-    <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-        <a href="index.php" class="btn btn-secondary">
-            <i data-feather="arrow-left" style="width: 16px; height: 16px;"></i> Kembali
-        </a>
-        <div style="display: flex; gap: 0.75rem;">
-            <a href="view-invoice.php?id=<?php echo $invoice_id; ?>&export=pdf" class="btn btn-success">
-                <i data-feather="download" style="width: 16px; height: 16px;"></i> Export PDF
-            </a>
-            <a href="view-invoice.php?id=<?php echo $invoice_id; ?>&print=1" target="_blank" class="btn btn-primary">
-                <i data-feather="printer" style="width: 16px; height: 16px;"></i> Print Invoice
-            </a>
-        </div>
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            html, body { width: 210mm; height: 297mm; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+            .page { width: 210mm !important; height: 297mm !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; position: relative !important; page-break-after: avoid !important; page-break-inside: avoid !important; }
+            .print-controls { display: none !important; }
+            .header { background: linear-gradient(180deg, #fafbfc 0%, #fff 100%) !important; border-bottom: 3px solid var(--navy) !important; }
+            .logo-box { background: #fff !important; border: 2px solid var(--gold) !important; box-shadow: 0 2px 8px rgba(240,180,41,0.15) !important; }
+            .invoice-table th { background: var(--navy) !important; color: #fff !important; }
+            .summary-total { background: var(--navy) !important; }
+            .summary-total .label { color: rgba(255,255,255,0.8) !important; }
+            .summary-total .value { color: var(--gold) !important; }
+            .item-no { background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important; }
+            .status-badge { background: var(--gray-200) !important; }
+            .status-paid { background: #d1fae5 !important; }
+            .status-sent { background: #dbeafe !important; }
+            .party-box { background: linear-gradient(135deg, var(--gray-50) 0%, #fff 100%) !important; border-left: 3px solid var(--gold) !important; }
+            .amount-words { background: linear-gradient(135deg, rgba(240,180,41,0.08) 0%, rgba(240,180,41,0.03) 100%) !important; }
+            .bank-section { background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50) 100%) !important; }
+            .notes-section { background: linear-gradient(135deg, #fffbeb 0%, #fff 100%) !important; }
+            .footer { position: absolute !important; bottom: 0 !important; background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%) !important; }
+            @page { size: A4 portrait; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <?php if (!$print): ?>
+    <div class="print-controls">
+        <a href="index-cqc.php" class="btn-back">← Back</a>
+        <button class="btn-print" onclick="window.print()">Print Invoice</button>
     </div>
-    
-    <!-- Invoice Preview Card -->
-    <div class="card" style="padding: 2rem;">
+    <?php endif; ?>
+
+    <div class="page">
         <!-- Header -->
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 3px solid var(--primary-color);">
-            <div>
-                <?php 
-                // WEB VIEW LOGO LOGIC
-                // Re-use variables defined at top of file
-                if ($displayLogo) {
-                    // Logic to resolve URL
-                    if (strpos($displayLogo, 'http') === 0) {
-                        $logoWebUrl = $displayLogo;
-                    } else {
-                        $logoWebUrl = rtrim(BASE_URL, '/') . '/' . ltrim($displayLogo, '/');
-                        $logoWebUrl .= '?t=' . time(); // Cache buster
-                    }
-                    
-                    echo '<img src="' . htmlspecialchars($logoWebUrl) . '" alt="' . htmlspecialchars($companySettings['name']) . '" style="max-height: 150px; width: auto; margin-bottom: 1rem;">';
-                } else {
-                    // Fallback to Icon
-                    echo '<div style="font-size: 3rem; line-height: 1; margin-bottom: 0.5rem;">' . $companySettings['business_icon'] . '</div>';
-                }
-                ?>
-                
-                <div style="font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, <?php echo $companySettings['business_color']; ?>, #000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.25rem;">
-                    <?php echo htmlspecialchars($companySettings['name']); ?>
+        <div class="header">
+            <div class="company-block">
+                <div class="logo-box">
+                    <?php if ($logoExists): ?>
+                        <img src="<?php echo $logoPath; ?>" alt="<?php echo htmlspecialchars($companyName); ?>">
+                    <?php else: ?>
+                        <div class="no-logo">LOGO</div>
+                    <?php endif; ?>
                 </div>
-                
-                <?php if ($companySettings['tagline']): ?>
-                    <div style="font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 0.5rem;">
-                        <?php echo htmlspecialchars($companySettings['tagline']); ?>
+                <div class="company-info">
+                    <h1><?php echo htmlspecialchars($companyName); ?></h1>
+                    <div class="tagline"><?php echo htmlspecialchars($companyTagline); ?></div>
+                    <div class="company-contact">
+                        <div class="row">📍 <?php echo htmlspecialchars($fullAddress); ?></div>
+                        <div class="row">📞 <?php echo htmlspecialchars($companyPhone); ?> | ✉️ <?php echo htmlspecialchars($companyEmail); ?></div>
+                        <div class="row">NPWP: <?php echo htmlspecialchars($companyNPWP); ?></div>
                     </div>
-                <?php endif; ?>
-                
-                <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem; line-height: 1.5;">
-                    <?php 
-                    if ($showAddress && $companySettings['address']) echo nl2br($companySettings['address']) . '<br>';
-                    if ($showPhone && $companySettings['phone']) echo 'Tel: ' . $companySettings['phone'] . '<br>';
-                    if ($companySettings['email']) echo 'Email: ' . $companySettings['email'];
-                    ?>
                 </div>
             </div>
-            
-            <div style="text-align: right;">
-                <div style="font-size: 2rem; font-weight: 700; color: var(--primary-color);"><?php echo $invoice['invoice_number']; ?></div>
-                <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem;"><?php echo date('d F Y', strtotime($invoice['invoice_date'])); ?></div>
+            <div class="invoice-header">
+                <div class="invoice-title">INVOICE</div>
+                <div class="invoice-number"><?php echo htmlspecialchars($invoice['invoice_number']); ?></div>
+                <div class="invoice-meta">
+                    <div class="row"><strong>Date:</strong> <?php echo formatInvDateGen($invoice['invoice_date']); ?></div>
+                    <?php if ($invoice['due_date']): ?>
+                    <div class="row"><strong>Due:</strong> <?php echo formatInvDateGen($invoice['due_date']); ?></div>
+                    <?php endif; ?>
+                </div>
                 <?php
-                $status_colors = ['paid' => 'success', 'unpaid' => 'danger', 'partial' => 'warning'];
-                $status_labels = ['paid' => '✓ PAID', 'unpaid' => '⏳ UNPAID', 'partial' => '⏱ PARTIAL'];
+                $statusLabels = ['draft' => 'DRAFT', 'sent' => 'SENT', 'paid' => 'PAID', 'partial' => 'PARTIAL', 'overdue' => 'OVERDUE'];
                 ?>
-                <span class="badge badge-<?php echo $status_colors[$invoice['payment_status']]; ?>" style="margin-top: 0.75rem; font-size: 1.25rem; padding: 0.75rem 1.5rem;">
-                    <?php echo $status_labels[$invoice['payment_status']]; ?>
+                <span class="status-badge status-<?php echo $invoice['payment_status']; ?>">
+                    <?php echo $statusLabels[$invoice['payment_status']] ?? strtoupper($invoice['payment_status']); ?>
                 </span>
             </div>
         </div>
         
-        <!-- Customer Info -->
-        <div style="background: var(--bg-secondary); padding: 1.25rem; border-radius: 0.75rem; margin-bottom: 2rem;">
-            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">Kepada:</div>
-            <div style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;"><?php echo $invoice['customer_name']; ?></div>
-            <?php if ($invoice['customer_address']): ?>
-                <div style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.25rem;"><?php echo nl2br($invoice['customer_address']); ?></div>
-            <?php endif; ?>
-            <?php if ($invoice['customer_phone']): ?>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">Tel: <?php echo $invoice['customer_phone']; ?></div>
-            <?php endif; ?>
-            <?php if ($invoice['customer_email']): ?>
-                <div style="color: var(--text-muted); font-size: 0.875rem;">Email: <?php echo $invoice['customer_email']; ?></div>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Items Table -->
-        <div class="table-responsive" style="margin-bottom: 2rem;">
-            <table class="table">
+        <div class="content">
+            <!-- Bill To / Subject -->
+            <div class="parties-row">
+                <div class="party-box">
+                    <h4>Bill To</h4>
+                    <div class="name"><?php echo htmlspecialchars($invoice['client_name']); ?></div>
+                    <div class="info">
+                        <?php if ($invoice['client_phone']): ?>Phone: <?php echo htmlspecialchars($invoice['client_phone']); ?><br><?php endif; ?>
+                        <?php if ($invoice['client_email']): ?>Email: <?php echo htmlspecialchars($invoice['client_email']); ?><br><?php endif; ?>
+                        <?php if ($invoice['client_address']): ?>Address: <?php echo htmlspecialchars($invoice['client_address']); ?><?php endif; ?>
+                    </div>
+                </div>
+                <?php if ($invoice['subject']): ?>
+                <div class="party-box">
+                    <h4>Subject</h4>
+                    <div class="name"><?php echo htmlspecialchars($invoice['subject']); ?></div>
+                </div>
+                <?php else: ?>
+                <div></div>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Invoice Items -->
+            <table class="invoice-table">
                 <thead>
                     <tr>
-                        <th style="width: 40px;" class="text-center">#</th>
-                        <th>Item / Layanan</th>
-                        <th style="width: 100px;" class="text-center">Qty</th>
-                        <th style="width: 150px;" class="text-right">Harga Satuan</th>
-                        <th style="width: 150px;" class="text-right">Total</th>
+                        <th style="width: 40px;" class="text-center">No</th>
+                        <th>Description</th>
+                        <th style="width: 50px;" class="text-center">Qty</th>
+                        <th style="width: 60px;" class="text-center">Unit</th>
+                        <th style="width: 100px;" class="text-right">Unit Price</th>
+                        <th style="width: 110px;" class="text-right">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($items as $index => $item): ?>
-                        <tr>
-                            <td class="text-center"><?php echo $index + 1; ?></td>
-                            <td>
-                                <div style="font-weight: 600;"><?php echo $item['item_name']; ?></div>
-                                <?php if ($item['item_description']): ?>
-                                    <div style="font-size: 0.813rem; color: var(--text-muted); margin-top: 0.25rem;"><?php echo $item['item_description']; ?></div>
-                                <?php endif; ?>
-                                <?php if ($item['category']): ?>
-                                    <span class="badge badge-secondary" style="margin-top: 0.25rem; font-size: 0.75rem;">
-                                        <?php echo ucfirst(str_replace('_', ' ', $item['category'])); ?>
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center"><?php echo number_format($item['quantity'], 0, ',', '.'); ?></td>
-                            <td class="text-right">Rp <?php echo number_format($item['unit_price'], 0, ',', '.'); ?></td>
-                            <td class="text-right" style="font-weight: 700;">Rp <?php echo number_format($item['quantity'] * $item['unit_price'], 0, ',', '.'); ?></td>
-                        </tr>
+                    <?php foreach ($items as $idx => $item): ?>
+                    <tr>
+                        <td class="text-center">
+                            <span class="item-no"><?php echo $idx + 1; ?></span>
+                        </td>
+                        <td>
+                            <div class="item-title"><?php echo htmlspecialchars($item['description']); ?></div>
+                        </td>
+                        <td class="text-center"><?php echo number_format($item['quantity'], 2); ?></td>
+                        <td class="text-center"><?php echo htmlspecialchars($item['unit']); ?></td>
+                        <td class="text-right">IDR <?php echo number_format($item['unit_price'], 0, ',', '.'); ?></td>
+                        <td class="text-right" style="font-weight: 600;">IDR <?php echo number_format($item['amount'], 0, ',', '.'); ?></td>
+                    </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            
+            <!-- Summary -->
+            <div class="summary-wrapper">
+                <div class="summary-table">
+                    <div class="summary-row">
+                        <span class="label">Subtotal</span>
+                        <span class="value">IDR <?php echo number_format($invoice['subtotal'], 0, ',', '.'); ?></span>
+                    </div>
+                    <?php if ($invoice['discount_amount'] > 0): ?>
+                    <div class="summary-row">
+                        <span class="label">(-) Discount <?php echo number_format($invoice['discount_percentage'], 1); ?>%</span>
+                        <span class="value sub">- IDR <?php echo number_format($invoice['discount_amount'], 0, ',', '.'); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($invoice['ppn_amount'] > 0): ?>
+                    <div class="summary-row">
+                        <span class="label">(+) VAT <?php echo number_format($invoice['ppn_percentage'], 1); ?>%</span>
+                        <span class="value add">+ IDR <?php echo number_format($invoice['ppn_amount'], 0, ',', '.'); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($invoice['pph_amount'] > 0): ?>
+                    <div class="summary-row">
+                        <span class="label">(-) Income Tax <?php echo number_format($invoice['pph_percentage'], 1); ?>%</span>
+                        <span class="value sub">- IDR <?php echo number_format($invoice['pph_amount'], 0, ',', '.'); ?></span>
+                    </div>
+                    <?php endif; ?>
+                    <div class="summary-total">
+                        <span class="label">Total Due</span>
+                        <span class="value">IDR <?php echo number_format($invoice['total_amount'], 0, ',', '.'); ?></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Amount in Words -->
+            <div class="amount-words">
+                <div class="label">Amount in Words</div>
+                <div class="text"># <?php echo $totalInWords; ?> #</div>
+            </div>
+            
+            <?php if ($invoice['notes']): ?>
+            <div class="notes-section">
+                <div class="label">Notes</div>
+                <div class="text"><?php echo nl2br(htmlspecialchars($invoice['notes'])); ?></div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Bank & Terms -->
+            <div class="bottom-row">
+                <?php if ($bankName || $bankAccount): ?>
+                <div class="bank-section">
+                    <h5>Payment Information</h5>
+                    <div class="bank-grid">
+                        <?php if ($bankName): ?><div class="bank-item"><span>Bank:</span> <strong><?php echo htmlspecialchars($bankName); ?></strong></div><?php endif; ?>
+                        <?php if ($bankAccount): ?><div class="bank-item"><span>Account:</span> <strong><?php echo htmlspecialchars($bankAccount); ?></strong></div><?php endif; ?>
+                        <?php if ($bankHolder): ?><div class="bank-item"><span>Name:</span> <strong><?php echo htmlspecialchars($bankHolder); ?></strong></div><?php endif; ?>
+                    </div>
+                </div>
+                <?php else: ?>
+                <div></div>
+                <?php endif; ?>
+                
+                <div class="terms-section">
+                    <h5>Terms & Conditions</h5>
+                    <ul>
+                        <li>Payment due within 14 days from invoice date</li>
+                        <li>Include invoice number as payment reference</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Signatures -->
+            <div class="signatures">
+                <div class="sig-block">
+                    <div class="role">Received By</div>
+                    <div class="line">
+                        <div class="name"><?php echo htmlspecialchars($invoice['client_name']); ?></div>
+                    </div>
+                </div>
+                <div class="sig-block">
+                    <div class="role">Authorized Signature</div>
+                    <div class="line">
+                        <div class="name"><?php echo htmlspecialchars($companyName); ?></div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <!-- Summary -->
-        <div style="display: flex; justify-content: flex-end;">
-            <div style="width: 350px; background: var(--bg-secondary); padding: 1.5rem; border-radius: 0.75rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
-                    <span>Subtotal</span>
-                    <span>Rp <?php echo number_format($invoice['subtotal'], 0, ',', '.'); ?></span>
-                </div>
-                <?php if ($invoice['discount_amount'] > 0): ?>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; color: #ef4444;">
-                        <span>Diskon</span>
-                        <span>- Rp <?php echo number_format($invoice['discount_amount'], 0, ',', '.'); ?></span>
-                    </div>
-                <?php endif; ?>
-                <?php if ($invoice['tax_amount'] > 0): ?>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
-                        <span>Pajak</span>
-                        <span>Rp <?php echo number_format($invoice['tax_amount'], 0, ',', '.'); ?></span>
-                    </div>
-                <?php endif; ?>
-                <div style="border-top: 2px solid var(--bg-tertiary); padding-top: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; color: var(--primary-color);">
-                    <span>TOTAL</span>
-                    <span>Rp <?php echo number_format($invoice['total_amount'], 0, ',', '.'); ?></span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Notes -->
-        <?php if ($invoice['notes']): ?>
-            <div style="margin-top: 2rem; background: var(--bg-secondary); padding: 1.25rem; border-radius: 0.75rem;">
-                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">Catatan:</div>
-                <div style="color: var(--text-muted); font-size: 0.875rem;"><?php echo nl2br($invoice['notes']); ?></div>
-            </div>
-        <?php endif; ?>
-        
-        <!-- Footer Info -->
-        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--bg-tertiary); text-align: center; color: var(--text-muted); font-size: 0.875rem;">
-            <?php 
-            // Get current logged in user
-            $currentUser = $auth->getCurrentUser();
-            $creatorName = $currentUser ? $currentUser['full_name'] : ($invoice['created_by_name'] ?? 'System');
-            ?>
-            <div>Dibuat oleh: <?php echo htmlspecialchars($creatorName); ?> | Tanggal: <?php echo date('d/m/Y H:i', strtotime($invoice['created_at'])); ?></div>
-            <div style="margin-top: 0.5rem;">
-                <strong>Metode Pembayaran:</strong> 
-                <?php 
-                    $payment_methods = [
-                        'cash' => '💵 Cash',
-                        'debit' => '💳 Debit Card',
-                        'transfer' => '🔄 Transfer',
-                        'qr' => '📱 QR Code',
-                        'other' => '➕ Lainnya'
-                    ];
-                    echo $payment_methods[$invoice['payment_method']] ?? ucfirst($invoice['payment_method']);
-                ?>
-            </div>
+        <!-- Footer -->
+        <div class="footer">
+            Thank you for your business. For inquiries: <?php echo htmlspecialchars($companyEmail); ?>
         </div>
     </div>
-</div>
 
-<script>
-feather.replace();
-</script>
-
-<?php include '../../includes/footer.php'; ?>
+    <?php if ($print): ?>
+    <script>window.onload = function() { window.print(); }</script>
+    <?php endif; ?>
+</body>
+</html>

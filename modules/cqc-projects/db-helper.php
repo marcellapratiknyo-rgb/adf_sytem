@@ -213,3 +213,74 @@ function ensureCQCTerminTable($pdo) {
     }
     return true;
 }
+
+/**
+ * Ensure CQC General Invoices table exists
+ */
+function ensureCQCGeneralInvoiceTable($pdo) {
+    $check = $pdo->query("SHOW TABLES LIKE 'cqc_general_invoices'");
+    if ($check->rowCount() === 0) {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS cqc_general_invoices (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                invoice_number VARCHAR(50) UNIQUE NOT NULL,
+                invoice_date DATE NOT NULL,
+                due_date DATE,
+                
+                -- Client info
+                client_name VARCHAR(200) NOT NULL,
+                client_phone VARCHAR(50),
+                client_email VARCHAR(100),
+                client_address TEXT,
+                
+                -- Invoice details
+                subject VARCHAR(255) COMMENT 'Invoice subject/title',
+                notes TEXT,
+                
+                -- Amount calculation  
+                subtotal DECIMAL(15,2) NOT NULL DEFAULT 0,
+                discount_percentage DECIMAL(5,2) DEFAULT 0,
+                discount_amount DECIMAL(15,2) DEFAULT 0,
+                ppn_percentage DECIMAL(5,2) DEFAULT 11,
+                ppn_amount DECIMAL(15,2) DEFAULT 0,
+                pph_percentage DECIMAL(5,2) DEFAULT 0,
+                pph_amount DECIMAL(15,2) DEFAULT 0,
+                total_amount DECIMAL(15,2) NOT NULL,
+                
+                -- Payment
+                payment_status ENUM('draft','sent','paid','partial','overdue') DEFAULT 'draft',
+                paid_amount DECIMAL(15,2) DEFAULT 0,
+                payment_date DATE,
+                payment_method VARCHAR(50),
+                payment_notes TEXT,
+                
+                created_by INT NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                
+                INDEX idx_status (payment_status),
+                INDEX idx_date (invoice_date),
+                INDEX idx_client (client_name)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        
+        // Create invoice items table
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS cqc_general_invoice_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                invoice_id INT NOT NULL,
+                description VARCHAR(500) NOT NULL,
+                quantity DECIMAL(10,2) DEFAULT 1,
+                unit VARCHAR(50) DEFAULT 'unit',
+                unit_price DECIMAL(15,2) NOT NULL,
+                amount DECIMAL(15,2) NOT NULL,
+                sort_order INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                INDEX idx_invoice (invoice_id),
+                FOREIGN KEY (invoice_id) REFERENCES cqc_general_invoices(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+    }
+    return true;
+}

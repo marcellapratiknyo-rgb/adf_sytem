@@ -19,9 +19,13 @@ try {
     $pdo = getCQCDatabaseConnection();
     // Ensure termin table exists
     ensureCQCTerminTable($pdo);
+    ensureCQCGeneralInvoiceTable($pdo);
 } catch (Exception $e) {
     die("Database connection failed: " . $e->getMessage());
 }
+
+// Get active tab (termin or general)
+$activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'termin';
 
 // Get filters
 $payment_status = isset($_GET['status']) ? $_GET['status'] : '';
@@ -82,6 +86,46 @@ $stats = [
         return in_array($inv['payment_status'], ['draft', 'sent', 'overdue']) ? floatval($inv['total_amount']) : 0;
     }, $invoices))
 ];
+
+// Get general invoices for "Invoice Umum" tab
+$generalInvoices = [];
+try {
+    $genWhere = ["invoice_date BETWEEN :date_from AND :date_to"];
+    $genParams = ['date_from' => $date_from, 'date_to' => $date_to];
+    
+    if ($payment_status) {
+        $genWhere[] = "payment_status = :payment_status";
+        $genParams['payment_status'] = $payment_status;
+    }
+    
+    $genWhereClause = implode(' AND ', $genWhere);
+    
+    $stmtGen = $pdo->prepare("
+        SELECT * FROM cqc_general_invoices
+        WHERE $genWhereClause
+        ORDER BY invoice_date DESC, created_at DESC
+        LIMIT 100
+    ");
+    $stmtGen->execute($genParams);
+    $generalInvoices = $stmtGen->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Table might not exist
+}
+
+// Calculate stats for general invoices
+$generalStats = [
+    'total_invoices' => count($generalInvoices),
+    'total_amount' => array_sum(array_column($generalInvoices, 'total_amount')),
+    'paid_amount' => array_sum(array_map(function($inv) {
+        return $inv['payment_status'] === 'paid' ? floatval($inv['total_amount']) : 0;
+    }, $generalInvoices)),
+    'unpaid_amount' => array_sum(array_map(function($inv) {
+        return in_array($inv['payment_status'], ['draft', 'sent', 'overdue']) ? floatval($inv['total_amount']) : 0;
+    }, $generalInvoices))
+];
+
+// Use stats based on active tab
+$displayStats = $activeTab === 'general' ? $generalStats : $stats;
 
 $pageTitle = "Invoice CQC";
 include '../../includes/header.php';
@@ -260,6 +304,19 @@ include '../../includes/header.php';
         .cqc-stats-grid { grid-template-columns: repeat(2,1fr); }
         .cqc-filter-grid { grid-template-columns: 1fr; }
     }
+
+    /* Tabs */
+    .cqc-tabs { display: flex; gap: 4px; background: var(--cqc-bg); padding: 4px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--cqc-border); }
+    .cqc-tab {
+        flex: 1; padding: 10px 16px; border: none; background: transparent;
+        border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px;
+        color: var(--cqc-muted); transition: all 0.2s; text-decoration: none;
+        text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .cqc-tab:hover { background: #fff; color: var(--cqc-text); }
+    .cqc-tab.active { background: var(--cqc-primary); color: #fff; box-shadow: 0 2px 8px rgba(13,31,60,0.3); }
+    .cqc-tab .badge { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    .cqc-tab.active .badge { background: rgba(255,255,255,0.2); }
 </style>
 
 <?php if (isset($_SESSION['success'])): ?>
@@ -287,11 +344,28 @@ include '../../includes/header.php';
             <a href="invoice-settings.php" class="btn-settings" style="background: #f1f5f9; color: #475569; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
                 ⚙️ PDF Settings
             </a>
+            <?php if ($activeTab === 'general'): ?>
+            <a href="add-invoice.php" class="btn-create">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                Buat Invoice Umum
+            </a>
+            <?php else: ?>
             <a href="create-termin.php" class="btn-create">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Buat Invoice
+                Buat Invoice Termin
             </a>
+            <?php endif; ?>
         </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="cqc-tabs">
+        <a href="?tab=termin&date_from=<?php echo $date_from; ?>&date_to=<?php echo $date_to; ?>" class="cqc-tab <?php echo $activeTab === 'termin' ? 'active' : ''; ?>">
+            📋 Invoice Termin <span class="badge"><?php echo count($invoices); ?></span>
+        </a>
+        <a href="?tab=general&date_from=<?php echo $date_from; ?>&date_to=<?php echo $date_to; ?>" class="cqc-tab <?php echo $activeTab === 'general' ? 'active' : ''; ?>">
+            📄 Invoice Umum <span class="badge"><?php echo count($generalInvoices); ?></span>
+        </a>
     </div>
 
     <!-- Stats Grid -->
@@ -299,28 +373,29 @@ include '../../includes/header.php';
         <div class="cqc-stat-card">
             <div class="cqc-stat-icon">📋</div>
             <div class="cqc-stat-label">Total Faktur</div>
-            <div class="cqc-stat-value"><?php echo $stats['total_invoices']; ?></div>
+            <div class="cqc-stat-value"><?php echo $displayStats['total_invoices']; ?></div>
         </div>
         <div class="cqc-stat-card accent">
             <div class="cqc-stat-icon">💰</div>
             <div class="cqc-stat-label">Total Tagihan</div>
-            <div class="cqc-stat-value">Rp <?php echo number_format($stats['total_amount'], 0, ',', '.'); ?></div>
+            <div class="cqc-stat-value">Rp <?php echo number_format($displayStats['total_amount'], 0, ',', '.'); ?></div>
         </div>
         <div class="cqc-stat-card success">
             <div class="cqc-stat-icon">✅</div>
             <div class="cqc-stat-label">Terbayar</div>
-            <div class="cqc-stat-value">Rp <?php echo number_format($stats['paid_amount'], 0, ',', '.'); ?></div>
+            <div class="cqc-stat-value">Rp <?php echo number_format($displayStats['paid_amount'], 0, ',', '.'); ?></div>
         </div>
         <div class="cqc-stat-card danger">
             <div class="cqc-stat-icon">⏳</div>
             <div class="cqc-stat-label">Belum Bayar</div>
-            <div class="cqc-stat-value">Rp <?php echo number_format($stats['unpaid_amount'], 0, ',', '.'); ?></div>
+            <div class="cqc-stat-value">Rp <?php echo number_format($displayStats['unpaid_amount'], 0, ',', '.'); ?></div>
         </div>
     </div>
 
     <!-- Filter -->
     <div class="cqc-filter-card">
         <form method="GET" class="cqc-filter-grid">
+            <input type="hidden" name="tab" value="<?php echo $activeTab; ?>">
             <div>
                 <div class="cqc-filter-label">Status Pembayaran</div>
                 <select name="status" class="cqc-filter-select">
@@ -332,6 +407,7 @@ include '../../includes/header.php';
                     <option value="overdue" <?php echo $payment_status === 'overdue' ? 'selected' : ''; ?>>Jatuh Tempo</option>
                 </select>
             </div>
+            <?php if ($activeTab === 'termin'): ?>
             <div>
                 <div class="cqc-filter-label">Proyek</div>
                 <select name="project_id" class="cqc-filter-select">
@@ -343,6 +419,9 @@ include '../../includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <?php else: ?>
+            <div></div>
+            <?php endif; ?>
             <div>
                 <div class="cqc-filter-label">Dari Tanggal</div>
                 <input type="date" name="date_from" class="cqc-filter-input" value="<?php echo $date_from; ?>">
@@ -359,6 +438,8 @@ include '../../includes/header.php';
     </div>
 
     <!-- Table -->
+    <?php if ($activeTab === 'termin'): ?>
+    <!-- Termin Invoices Table -->
     <div class="cqc-table-card">
         <table class="cqc-table">
             <thead>
@@ -382,7 +463,7 @@ include '../../includes/header.php';
                         <td colspan="11">
                             <div class="cqc-empty">
                                 <div class="cqc-empty-icon">📋</div>
-                                <h3>Tidak ada invoice</h3>
+                                <h3>Tidak ada invoice termin</h3>
                                 <p>Buat invoice pertama untuk memulai penagihan proyek.</p>
                             </div>
                         </td>
@@ -458,6 +539,102 @@ include '../../includes/header.php';
             </tbody>
         </table>
     </div>
+    <?php else: ?>
+    <!-- General Invoices Table -->
+    <div class="cqc-table-card">
+        <table class="cqc-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;">No</th>
+                    <th>No. Faktur</th>
+                    <th>Tanggal</th>
+                    <th>Klien</th>
+                    <th>Subject</th>
+                    <th style="text-align: right;">Subtotal</th>
+                    <th style="text-align: right;">Total</th>
+                    <th>Status</th>
+                    <th style="text-align: center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($generalInvoices)): ?>
+                    <tr>
+                        <td colspan="9">
+                            <div class="cqc-empty">
+                                <div class="cqc-empty-icon">📄</div>
+                                <h3>Tidak ada invoice umum</h3>
+                                <p>Buat invoice umum pertama untuk memulai penagihan.</p>
+                            </div>
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($generalInvoices as $idx => $inv): ?>
+                        <tr>
+                            <td style="text-align: center;">
+                                <span class="cqc-termin-badge"><?php echo $idx + 1; ?></span>
+                            </td>
+                            <td>
+                                <strong style="color: var(--cqc-primary);"><?php echo htmlspecialchars($inv['invoice_number']); ?></strong>
+                            </td>
+                            <td style="font-size: 11px;"><?php echo date('d/m/Y', strtotime($inv['invoice_date'])); ?></td>
+                            <td>
+                                <div style="font-weight: 600;"><?php echo htmlspecialchars($inv['client_name']); ?></div>
+                                <?php if ($inv['client_phone']): ?>
+                                <div style="font-size: 10px; color: var(--cqc-muted);"><?php echo htmlspecialchars($inv['client_phone']); ?></div>
+                                <?php endif; ?>
+                            </td>
+                            <td style="font-size: 11px;">
+                                <?php echo htmlspecialchars(mb_substr($inv['subject'] ?: '-', 0, 30)); ?>
+                            </td>
+                            <td style="text-align: right; font-size: 11px;">
+                                Rp <?php echo number_format($inv['subtotal'], 0, ',', '.'); ?>
+                            </td>
+                            <td style="text-align: right; font-weight: 700; color: var(--cqc-primary);">
+                                Rp <?php echo number_format($inv['total_amount'], 0, ',', '.'); ?>
+                            </td>
+                            <td>
+                                <?php
+                                $statusClass = [
+                                    'draft' => 'cqc-status-draft',
+                                    'sent' => 'cqc-status-sent',
+                                    'paid' => 'cqc-status-paid',
+                                    'partial' => 'cqc-status-partial',
+                                    'overdue' => 'cqc-status-overdue'
+                                ];
+                                $statusLabel = [
+                                    'draft' => 'Draft',
+                                    'sent' => 'Terkirim',
+                                    'paid' => '✓ Lunas',
+                                    'partial' => 'Sebagian',
+                                    'overdue' => '! Jatuh Tempo'
+                                ];
+                                ?>
+                                <span class="cqc-status <?php echo $statusClass[$inv['payment_status']] ?? 'cqc-status-draft'; ?>">
+                                    <?php echo $statusLabel[$inv['payment_status']] ?? ucfirst($inv['payment_status']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <div class="cqc-actions">
+                                    <a href="view-invoice.php?id=<?php echo $inv['id']; ?>" class="cqc-action-btn btn-view" title="Lihat & Cetak">
+                                        👁
+                                    </a>
+                                    <?php if ($inv['payment_status'] !== 'paid'): ?>
+                                    <button type="button" class="cqc-action-btn btn-pay" title="Bayar" onclick="openGeneralPaymentModal(<?php echo $inv['id']; ?>, '<?php echo $inv['invoice_number']; ?>', <?php echo $inv['total_amount']; ?>)">
+                                        💰
+                                    </button>
+                                    <?php endif; ?>
+                                    <button type="button" class="cqc-action-btn btn-delete" title="Hapus" onclick="deleteGeneralInvoice(<?php echo $inv['id']; ?>, '<?php echo $inv['invoice_number']; ?>')">
+                                        🗑
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php endif; ?>
 </div>
 
 <!-- Payment Modal -->
@@ -505,6 +682,15 @@ function openPaymentModal(id, invoiceNum, amount) {
     document.getElementById('paymentInvoiceId').value = id;
     document.getElementById('paymentInvoiceNum').textContent = invoiceNum;
     document.getElementById('paymentAmount').textContent = 'Rp ' + amount.toLocaleString('id-ID');
+    document.getElementById('paymentForm').action = 'pay-termin.php';
+    document.getElementById('paymentModal').style.display = 'block';
+}
+
+function openGeneralPaymentModal(id, invoiceNum, amount) {
+    document.getElementById('paymentInvoiceId').value = id;
+    document.getElementById('paymentInvoiceNum').textContent = invoiceNum;
+    document.getElementById('paymentAmount').textContent = 'Rp ' + amount.toLocaleString('id-ID');
+    document.getElementById('paymentForm').action = 'pay-general-invoice.php';
     document.getElementById('paymentModal').style.display = 'block';
 }
 
@@ -515,6 +701,12 @@ function closePaymentModal() {
 function deleteInvoice(id, invoiceNum) {
     if (confirm('⚠️ Hapus faktur ' + invoiceNum + '?\n\nData akan dihapus permanen!')) {
         window.location.href = 'delete-termin.php?id=' + id;
+    }
+}
+
+function deleteGeneralInvoice(id, invoiceNum) {
+    if (confirm('⚠️ Hapus faktur ' + invoiceNum + '?\n\nData akan dihapus permanen!')) {
+        window.location.href = 'delete-general-invoice.php?id=' + id;
     }
 }
 

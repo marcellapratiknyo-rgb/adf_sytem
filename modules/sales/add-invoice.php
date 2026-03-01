@@ -1,0 +1,381 @@
+<?php
+/**
+ * CQC General Invoice - Create New Invoice
+ * Theme: Navy + Gold
+ */
+define('APP_ACCESS', true);
+require_once '../../config/config.php';
+require_once '../../config/database.php';
+require_once '../../includes/auth.php';
+require_once '../../includes/functions.php';
+
+$auth = new Auth();
+$auth->requireLogin();
+
+require_once '../cqc-projects/db-helper.php';
+
+try {
+    $pdo = getCQCDatabaseConnection();
+    ensureCQCGeneralInvoiceTable($pdo);
+} catch (Exception $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+
+$message = '';
+$error = '';
+
+// Generate invoice number
+function generateInvoiceNumber($pdo) {
+    $prefix = 'INV';
+    $year = date('Y');
+    $month = date('m');
+    
+    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM cqc_general_invoices WHERE YEAR(invoice_date) = $year AND MONTH(invoice_date) = $month");
+    $count = $stmt->fetch(PDO::FETCH_ASSOC)['cnt'] + 1;
+    
+    return sprintf('%s/%s/%s/%03d/CQC', $prefix, $year, $month, $count);
+}
+
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $pdo->beginTransaction();
+        
+        $invoiceNumber = $_POST['invoice_number'] ?: generateInvoiceNumber($pdo);
+        $invoiceDate = $_POST['invoice_date'];
+        $dueDate = $_POST['due_date'] ?: null;
+        $clientName = trim($_POST['client_name']);
+        $clientPhone = trim($_POST['client_phone'] ?? '');
+        $clientEmail = trim($_POST['client_email'] ?? '');
+        $clientAddress = trim($_POST['client_address'] ?? '');
+        $subject = trim($_POST['subject'] ?? '');
+        $notes = trim($_POST['notes'] ?? '');
+        
+        // Calculate totals
+        $subtotal = 0;
+        $items = [];
+        if (isset($_POST['item_desc']) && is_array($_POST['item_desc'])) {
+            for ($i = 0; $i < count($_POST['item_desc']); $i++) {
+                if (!empty($_POST['item_desc'][$i])) {
+                    $qty = floatval($_POST['item_qty'][$i] ?? 1);
+                    $price = floatval($_POST['item_price'][$i] ?? 0);
+                    $amount = $qty * $price;
+                    $subtotal += $amount;
+                    $items[] = [
+                        'description' => $_POST['item_desc'][$i],
+                        'quantity' => $qty,
+                        'unit' => $_POST['item_unit'][$i] ?? 'unit',
+                        'unit_price' => $price,
+                        'amount' => $amount
+                    ];
+                }
+            }
+        }
+        
+        $discountPct = floatval($_POST['discount_percentage'] ?? 0);
+        $discountAmt = $subtotal * $discountPct / 100;
+        $afterDiscount = $subtotal - $discountAmt;
+        
+        $ppnPct = floatval($_POST['ppn_percentage'] ?? 11);
+        $ppnAmt = $afterDiscount * $ppnPct / 100;
+        
+        $pphPct = floatval($_POST['pph_percentage'] ?? 0);
+        $pphAmt = $afterDiscount * $pphPct / 100;
+        
+        $totalAmount = $afterDiscount + $ppnAmt - $pphAmt;
+        
+        // Insert invoice
+        $stmt = $pdo->prepare("
+            INSERT INTO cqc_general_invoices 
+            (invoice_number, invoice_date, due_date, client_name, client_phone, client_email, client_address, subject, notes,
+             subtotal, discount_percentage, discount_amount, ppn_percentage, ppn_amount, pph_percentage, pph_amount, total_amount, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $invoiceNumber, $invoiceDate, $dueDate, $clientName, $clientPhone, $clientEmail, $clientAddress, $subject, $notes,
+            $subtotal, $discountPct, $discountAmt, $ppnPct, $ppnAmt, $pphPct, $pphAmt, $totalAmount, 
+            $_SESSION['user_id'] ?? 1
+        ]);
+        
+        $invoiceId = $pdo->lastInsertId();
+        
+        // Insert items
+        $stmtItem = $pdo->prepare("
+            INSERT INTO cqc_general_invoice_items (invoice_id, description, quantity, unit, unit_price, amount, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        foreach ($items as $idx => $item) {
+            $stmtItem->execute([$invoiceId, $item['description'], $item['quantity'], $item['unit'], $item['unit_price'], $item['amount'], $idx]);
+        }
+        
+        $pdo->commit();
+        
+        header('Location: view-invoice.php?id=' . $invoiceId);
+        exit;
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        $error = 'Error: ' . $e->getMessage();
+    }
+}
+
+$pageTitle = "Buat Invoice Baru";
+include '../../includes/header.php';
+?>
+
+<style>
+    :root { --navy: #0d1f3c; --gold: #f0b429; --gold-dark: #c49a1a; }
+    .inv-wrap { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .inv-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid var(--navy); }
+    .inv-head h1 { font-size: 22px; color: var(--navy); }
+    .btn-back { background: #f1f5f9; color: #475569; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .btn-back:hover { background: #e2e8f0; }
+    
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.06); margin-bottom: 20px; overflow: hidden; }
+    .card-head { background: linear-gradient(135deg, var(--navy), #1a3a5c); color: #fff; padding: 12px 20px; font-size: 13px; font-weight: 700; }
+    .card-body { padding: 20px; }
+    
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    .form-group { margin-bottom: 0; }
+    .form-group.full { grid-column: span 2; }
+    .form-group label { display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 5px; text-transform: uppercase; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(240,180,41,0.15); }
+    .form-group textarea { resize: vertical; min-height: 60px; }
+    
+    .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    
+    /* Items Table */
+    .items-table { width: 100%; border-collapse: collapse; }
+    .items-table th { background: var(--navy); color: #fff; padding: 10px 12px; font-size: 11px; text-transform: uppercase; text-align: left; }
+    .items-table th:first-child { border-radius: 6px 0 0 0; }
+    .items-table th:last-child { border-radius: 0 6px 0 0; text-align: center; }
+    .items-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
+    .items-table input { width: 100%; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 12px; }
+    .items-table .col-desc { width: 40%; }
+    .items-table .col-qty { width: 10%; }
+    .items-table .col-unit { width: 12%; }
+    .items-table .col-price { width: 18%; }
+    .items-table .col-amount { width: 15%; text-align: right; font-weight: 600; color: var(--navy); }
+    .items-table .col-action { width: 5%; text-align: center; }
+    
+    .btn-remove { background: #fee2e2; color: #dc2626; border: none; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .btn-add-row { background: var(--gold); color: var(--navy); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; margin-top: 10px; }
+    
+    /* Summary */
+    .summary-box { background: #f8fafc; border-radius: 8px; padding: 15px 20px; margin-top: 15px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row.total { background: var(--navy); color: #fff; margin: 10px -20px -15px; padding: 12px 20px; border-radius: 0 0 8px 8px; }
+    .summary-row.total .value { color: var(--gold); font-size: 16px; font-weight: 800; }
+    .summary-row input { width: 80px; padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 4px; text-align: right; font-size: 12px; }
+    
+    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+    .btn-save { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--navy); padding: 12px 30px; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-save:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(240,180,41,0.3); }
+    .btn-draft { background: #f1f5f9; color: #475569; padding: 12px 25px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+</style>
+
+<div class="inv-wrap">
+    <div class="inv-head">
+        <h1>📝 Buat Invoice Baru</h1>
+        <a href="index-cqc.php" class="btn-back">← Kembali</a>
+    </div>
+    
+    <?php if ($error): ?>
+    <div class="alert alert-error">❌ <?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
+    
+    <form method="POST" id="invoiceForm">
+        <!-- Invoice Details -->
+        <div class="card">
+            <div class="card-head">📋 Detail Invoice</div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nomor Invoice *</label>
+                        <input type="text" name="invoice_number" value="<?php echo generateInvoiceNumber($pdo); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Subject / Perihal</label>
+                        <input type="text" name="subject" placeholder="e.g. Jasa Konsultasi, Penjualan Barang">
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Invoice *</label>
+                        <input type="date" name="invoice_date" value="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Jatuh Tempo</label>
+                        <input type="date" name="due_date" value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Client Info -->
+        <div class="card">
+            <div class="card-head">👤 Informasi Client</div>
+            <div class="card-body">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nama Client *</label>
+                        <input type="text" name="client_name" required placeholder="PT ABC atau Nama Perorangan">
+                    </div>
+                    <div class="form-group">
+                        <label>No. Telepon</label>
+                        <input type="text" name="client_phone" placeholder="+62...">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="client_email" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Alamat</label>
+                        <input type="text" name="client_address" placeholder="Alamat lengkap">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Invoice Items -->
+        <div class="card">
+            <div class="card-head">📦 Item Invoice</div>
+            <div class="card-body">
+                <table class="items-table" id="itemsTable">
+                    <thead>
+                        <tr>
+                            <th class="col-desc">Deskripsi</th>
+                            <th class="col-qty">Qty</th>
+                            <th class="col-unit">Satuan</th>
+                            <th class="col-price">Harga Satuan</th>
+                            <th class="col-amount">Jumlah</th>
+                            <th class="col-action"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsBody">
+                        <tr class="item-row">
+                            <td><input type="text" name="item_desc[]" placeholder="Deskripsi item..."></td>
+                            <td><input type="number" name="item_qty[]" value="1" min="0" step="0.01" class="qty-input"></td>
+                            <td><input type="text" name="item_unit[]" value="unit" placeholder="unit"></td>
+                            <td><input type="number" name="item_price[]" value="0" min="0" class="price-input"></td>
+                            <td class="col-amount"><span class="row-amount">0</span></td>
+                            <td class="col-action"><button type="button" class="btn-remove" onclick="removeRow(this)">×</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button type="button" class="btn-add-row" onclick="addRow()">+ Tambah Item</button>
+                
+                <!-- Summary -->
+                <div class="summary-box">
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span class="value" id="subtotalDisplay">IDR 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Diskon <input type="number" name="discount_percentage" value="0" min="0" max="100" step="0.1" style="width:60px" onchange="calculateTotal()">%</span>
+                        <span class="value" id="discountDisplay">- IDR 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>PPN <input type="number" name="ppn_percentage" value="11" min="0" max="100" step="0.1" style="width:60px" onchange="calculateTotal()">%</span>
+                        <span class="value" id="ppnDisplay">+ IDR 0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>PPh <input type="number" name="pph_percentage" value="0" min="0" max="100" step="0.1" style="width:60px" onchange="calculateTotal()">%</span>
+                        <span class="value" id="pphDisplay">- IDR 0</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>TOTAL</span>
+                        <span class="value" id="totalDisplay">IDR 0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        <div class="card">
+            <div class="card-head">📝 Catatan</div>
+            <div class="card-body">
+                <div class="form-group full">
+                    <textarea name="notes" placeholder="Catatan tambahan untuk invoice..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn-save">💾 Simpan Invoice</button>
+        </div>
+    </form>
+</div>
+
+<script>
+function formatNumber(num) {
+    return new Intl.NumberFormat('id-ID').format(num);
+}
+
+function addRow() {
+    const tbody = document.getElementById('itemsBody');
+    const row = document.createElement('tr');
+    row.className = 'item-row';
+    row.innerHTML = `
+        <td><input type="text" name="item_desc[]" placeholder="Deskripsi item..."></td>
+        <td><input type="number" name="item_qty[]" value="1" min="0" step="0.01" class="qty-input"></td>
+        <td><input type="text" name="item_unit[]" value="unit" placeholder="unit"></td>
+        <td><input type="number" name="item_price[]" value="0" min="0" class="price-input"></td>
+        <td class="col-amount"><span class="row-amount">0</span></td>
+        <td class="col-action"><button type="button" class="btn-remove" onclick="removeRow(this)">×</button></td>
+    `;
+    tbody.appendChild(row);
+    attachInputListeners(row);
+}
+
+function removeRow(btn) {
+    const rows = document.querySelectorAll('.item-row');
+    if (rows.length > 1) {
+        btn.closest('tr').remove();
+        calculateTotal();
+    }
+}
+
+function attachInputListeners(row) {
+    const inputs = row.querySelectorAll('.qty-input, .price-input');
+    inputs.forEach(input => {
+        input.addEventListener('input', calculateTotal);
+    });
+}
+
+function calculateTotal() {
+    let subtotal = 0;
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        const amount = qty * price;
+        row.querySelector('.row-amount').textContent = formatNumber(amount);
+        subtotal += amount;
+    });
+    
+    const discountPct = parseFloat(document.querySelector('[name="discount_percentage"]').value) || 0;
+    const discountAmt = subtotal * discountPct / 100;
+    const afterDiscount = subtotal - discountAmt;
+    
+    const ppnPct = parseFloat(document.querySelector('[name="ppn_percentage"]').value) || 0;
+    const ppnAmt = afterDiscount * ppnPct / 100;
+    
+    const pphPct = parseFloat(document.querySelector('[name="pph_percentage"]').value) || 0;
+    const pphAmt = afterDiscount * pphPct / 100;
+    
+    const total = afterDiscount + ppnAmt - pphAmt;
+    
+    document.getElementById('subtotalDisplay').textContent = 'IDR ' + formatNumber(subtotal);
+    document.getElementById('discountDisplay').textContent = '- IDR ' + formatNumber(discountAmt);
+    document.getElementById('ppnDisplay').textContent = '+ IDR ' + formatNumber(ppnAmt);
+    document.getElementById('pphDisplay').textContent = '- IDR ' + formatNumber(pphAmt);
+    document.getElementById('totalDisplay').textContent = 'IDR ' + formatNumber(total);
+}
+
+// Initialize
+document.querySelectorAll('.item-row').forEach(attachInputListeners);
+calculateTotal();
+</script>
+
+<?php include '../../includes/footer.php'; ?>
