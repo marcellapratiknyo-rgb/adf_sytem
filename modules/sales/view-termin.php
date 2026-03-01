@@ -50,7 +50,8 @@ $companyPhone = '-';
 $companyEmail = '-';
 
 // Try to load from config
-$configFile = ROOT_PATH . '/config/businesses/cqc.php';
+$configPath = defined('ROOT_PATH') ? ROOT_PATH : dirname(dirname(__DIR__));
+$configFile = $configPath . '/config/businesses/cqc.php';
 if (file_exists($configFile)) {
     $cqcConfig = include $configFile;
     $companyName = $cqcConfig['name'] ?? $companyName;
