@@ -782,25 +782,25 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
 </style>
 
 <?php if (!empty($cqcProjects)): ?>
-<!-- CQC Project Monitoring - Elegant 2026 Style -->
-<div class="fade-in" style="margin: 16px 0; padding: 24px; background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%); border-radius: 24px; box-shadow: 0 4px 32px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04); border: 1px solid rgba(240, 180, 41, 0.15);">
-    <!-- Header with Icon -->
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
-        <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="m12 1v2m0 18v2m4.22-18.36 1.42 1.42M4.93 19.07l1.41 1.42m12.73 0 1.41-1.42M4.93 4.93l1.42 1.42M1 12h2m18 0h2"/></svg>
+<!-- CQC Project Monitoring - Compact Elegant 2026 -->
+<div class="fade-in" style="margin: 12px 0; padding: 16px; background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%); border-radius: 18px; box-shadow: 0 2px 20px rgba(0,0,0,0.04); border: 1px solid rgba(240, 180, 41, 0.12);">
+    <!-- Header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="m12 1v2m0 18v2m4.22-18.36 1.42 1.42M4.93 19.07l1.41 1.42m12.73 0 1.41-1.42M4.93 4.93l1.42 1.42M1 12h2m18 0h2"/></svg>
             </div>
             <div>
-                <div style="font-size: 10px; color: #f59e0b; font-weight: 800; text-transform: uppercase; letter-spacing: 1.8px;">CQC ENJINIRING</div>
-                <div style="font-size: 20px; font-weight: 800; color: #1f2937; letter-spacing: -0.5px; margin-top: 2px;">Pencapaian & Keuangan Per Proyek</div>
+                <div style="font-size: 8px; color: #f59e0b; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">CQC ENJINIRING</div>
+                <div style="font-size: 15px; font-weight: 800; color: #1f2937; letter-spacing: -0.3px; margin-top: 1px;">Pencapaian & Keuangan</div>
             </div>
         </div>
-        <a href="modules/cqc-projects/" style="padding: 10px 18px; background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: white; border-radius: 12px; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35); transition: all 0.25s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(245, 158, 11, 0.45)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(245, 158, 11, 0.35)';">
-            Kelola Proyek →
+        <a href="modules/cqc-projects/" style="padding: 6px 12px; background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color: white; border-radius: 8px; font-size: 11px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-1px)';" onmouseout="this.style.transform='translateY(0)';">
+            Kelola →
         </a>
     </div>
     
-    <!-- Summary Stats - Glassmorphism Style -->
+    <!-- Summary Stats - Compact -->
     <?php
     $totalBudget = array_sum(array_column($cqcProjects, 'budget_idr'));
     $totalSpent = array_sum(array_column($cqcProjects, 'spent_idr'));
@@ -808,27 +808,27 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     $avgProgress = count($cqcProjects) > 0 ? round(array_sum(array_column($cqcProjects, 'progress_percentage')) / count($cqcProjects)) : 0;
     $budgetUsedPct = $totalBudget > 0 ? round(($totalSpent / $totalBudget) * 100) : 0;
     ?>
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px;">
-        <div style="text-align: center; padding: 20px 12px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 18px; box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3);">
-            <div style="font-size: 32px; font-weight: 800; color: #fff; font-family: system-ui; line-height: 1;"><?php echo count($cqcProjects); ?></div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.6px;">Total Proyek</div>
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+        <div style="text-align: center; padding: 12px 8px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 12px; box-shadow: 0 3px 12px rgba(99, 102, 241, 0.25);">
+            <div style="font-size: 22px; font-weight: 800; color: #fff; font-family: system-ui; line-height: 1;"><?php echo count($cqcProjects); ?></div>
+            <div style="font-size: 9px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px;">Proyek</div>
         </div>
-        <div style="text-align: center; padding: 20px 12px; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 18px; box-shadow: 0 6px 18px rgba(14, 165, 233, 0.3);">
-            <div style="font-size: 16px; font-weight: 800; color: #fff; font-family: system-ui;">Rp <?php echo number_format($totalBudget/1000000000, 2); ?>M</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.6px;">Total Budget</div>
+        <div style="text-align: center; padding: 12px 8px; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 12px; box-shadow: 0 3px 12px rgba(14, 165, 233, 0.25);">
+            <div style="font-size: 13px; font-weight: 800; color: #fff; font-family: system-ui;">Rp <?php echo number_format($totalBudget/1000000000, 2); ?>M</div>
+            <div style="font-size: 9px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px;">Budget</div>
         </div>
-        <div style="text-align: center; padding: 20px 12px; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); border-radius: 18px; box-shadow: 0 6px 18px rgba(244, 63, 94, 0.3);">
-            <div style="font-size: 16px; font-weight: 800; color: #fff; font-family: system-ui;">Rp <?php echo number_format($totalSpent/1000000, 0); ?>jt</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.6px;">Terpakai (<?php echo $budgetUsedPct; ?>%)</div>
+        <div style="text-align: center; padding: 12px 8px; background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); border-radius: 12px; box-shadow: 0 3px 12px rgba(244, 63, 94, 0.25);">
+            <div style="font-size: 13px; font-weight: 800; color: #fff; font-family: system-ui;">Rp <?php echo number_format($totalSpent/1000000, 0); ?>jt</div>
+            <div style="font-size: 9px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px;">Terpakai <?php echo $budgetUsedPct; ?>%</div>
         </div>
-        <div style="text-align: center; padding: 20px 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 18px; box-shadow: 0 6px 18px rgba(16, 185, 129, 0.3);">
-            <div style="font-size: 32px; font-weight: 800; color: #fff; font-family: system-ui; line-height: 1;"><?php echo $avgProgress; ?>%</div>
-            <div style="font-size: 11px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.6px;">Avg Progress</div>
+        <div style="text-align: center; padding: 12px 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; box-shadow: 0 3px 12px rgba(16, 185, 129, 0.25);">
+            <div style="font-size: 22px; font-weight: 800; color: #fff; font-family: system-ui; line-height: 1;"><?php echo $avgProgress; ?>%</div>
+            <div style="font-size: 9px; color: rgba(255,255,255,0.85); font-weight: 700; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.4px;">Progress</div>
         </div>
     </div>
 
-    <!-- Project Cards Grid - Modern Design -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; margin-bottom: 24px;">
+    <!-- Project Cards Grid - Compact -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px;">
         <?php foreach ($cqcProjects as $idx => $proj): 
             $budget = floatval($proj['budget_idr'] ?? 0);
             $spent = floatval($proj['spent_idr'] ?? 0);
@@ -841,125 +841,126 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
             $statusColor = $statusColors[$proj['status']] ?? '#6b7280';
             $kwp = floatval($proj['solar_capacity_kwp'] ?? 0);
             $clientName = $proj['client_name'] ?? '';
-            // Modern color palette per project
             $projectColorPalette = [
-                ['#10b981', '#34d399'], // Emerald
-                ['#f59e0b', '#fbbf24'], // Amber  
-                ['#3b82f6', '#60a5fa'], // Blue
-                ['#8b5cf6', '#a78bfa'], // Violet
-                ['#ec4899', '#f472b6'], // Pink
-                ['#06b6d4', '#22d3ee'], // Cyan
-                ['#84cc16', '#a3e635'], // Lime
-                ['#f97316', '#fb923c'], // Orange
+                ['#10b981', '#34d399'],
+                ['#f59e0b', '#fbbf24'],
+                ['#3b82f6', '#60a5fa'],
+                ['#8b5cf6', '#a78bfa'],
+                ['#ec4899', '#f472b6'],
+                ['#06b6d4', '#22d3ee'],
+                ['#84cc16', '#a3e635'],
+                ['#f97316', '#fb923c'],
             ];
             $projColorIdx = $idx % count($projectColorPalette);
             $projColor = $projectColorPalette[$projColorIdx][0];
             $projColorLight = $projectColorPalette[$projColorIdx][1];
         ?>
-        <div class="cqc-project-card" style="background: #fff; border-radius: 22px; padding: 22px; border: 1px solid #e5e7eb; box-shadow: 0 6px 24px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 16px 40px rgba(0,0,0,0.12)'; this.style.borderColor='<?php echo $projColor; ?>';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 24px rgba(0,0,0,0.05)'; this.style.borderColor='#e5e7eb';">
+        <div class="cqc-project-card" style="background: #fff; border-radius: 14px; padding: 14px; border: 1px solid #e5e7eb; box-shadow: 0 2px 12px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.25s; position: relative; overflow: hidden;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.08)'; this.style.borderColor='<?php echo $projColor; ?>';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 12px rgba(0,0,0,0.04)'; this.style.borderColor='#e5e7eb';">
             
-            <!-- Accent Line Top -->
-            <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, <?php echo $projColor; ?>, <?php echo $projColorLight; ?>);"></div>
+            <!-- Accent Line -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, <?php echo $projColor; ?>, <?php echo $projColorLight; ?>);"></div>
             
             <!-- Header -->
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                 <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 11px; color: <?php echo $projColor; ?>; font-weight: 800; letter-spacing: 1.5px; font-family: system-ui; text-transform: uppercase;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
-                    <div style="font-size: 17px; font-weight: 800; color: #111827; margin-top: 5px; line-height: 1.35; letter-spacing: -0.3px;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
+                    <div style="font-size: 9px; color: <?php echo $projColor; ?>; font-weight: 800; letter-spacing: 1.2px; font-family: system-ui; text-transform: uppercase;"><?php echo htmlspecialchars($proj['project_code']); ?></div>
+                    <div style="font-size: 13px; font-weight: 700; color: #111827; margin-top: 3px; line-height: 1.3;"><?php echo htmlspecialchars($proj['project_name']); ?></div>
                     <?php if ($clientName): ?>
-                    <div style="font-size: 12px; color: #6b7280; margin-top: 4px; display: flex; align-items: center; gap: 5px;">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 2px; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                         <?php echo htmlspecialchars($clientName); ?>
                     </div>
                     <?php endif; ?>
                 </div>
-                <span style="padding: 7px 14px; border-radius: 22px; font-size: 11px; font-weight: 800; background: <?php echo $statusColor; ?>18; color: <?php echo $statusColor; ?>; letter-spacing: 0.4px; text-transform: uppercase; white-space: nowrap;"><?php echo $statusLabel; ?></span>
+                <span style="padding: 4px 8px; border-radius: 12px; font-size: 8px; font-weight: 700; background: <?php echo $statusColor; ?>15; color: <?php echo $statusColor; ?>; letter-spacing: 0.3px; text-transform: uppercase; white-space: nowrap;"><?php echo $statusLabel; ?></span>
             </div>
             
-            <!-- Main Content: Progress Chart + Financial -->
-            <div style="display: flex; gap: 22px; align-items: center; margin-bottom: 18px;">
+            <!-- Main Content: Progress + Financial -->
+            <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 10px;">
                 
-                <!-- Progress Donut Chart -->
+                <!-- Progress Donut -->
                 <div style="flex-shrink: 0; text-align: center;">
-                    <div style="position: relative; width: 110px; height: 110px;">
-                        <canvas id="cqcPie<?php echo $idx; ?>" style="filter: drop-shadow(0 6px 16px <?php echo $projColor; ?>35);"></canvas>
+                    <div style="position: relative; width: 75px; height: 75px;">
+                        <canvas id="cqcPie<?php echo $idx; ?>" style="filter: drop-shadow(0 3px 8px <?php echo $projColor; ?>25);"></canvas>
                         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                            <div style="font-size: 26px; font-weight: 900; color: <?php echo $projColor; ?>; line-height: 1; font-family: system-ui;"><?php echo $progress; ?>%</div>
-                            <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; font-weight: 700; letter-spacing: 0.6px;">Progress</div>
+                            <div style="font-size: 18px; font-weight: 800; color: <?php echo $projColor; ?>; line-height: 1; font-family: system-ui;"><?php echo $progress; ?>%</div>
+                            <div style="font-size: 7px; color: #9ca3af; text-transform: uppercase; font-weight: 700;">Progress</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Financial Details -->
+                <!-- Financial -->
                 <div style="flex: 1; min-width: 0;">
-                    <!-- Budget Progress Bar -->
-                    <div style="margin-bottom: 12px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                            <span style="font-size: 11px; color: #6b7280; font-weight: 700;">💰 Budget</span>
-                            <span style="font-size: 14px; font-weight: 800; color: #374151; font-family: system-ui;"><?php echo number_format($budget/1000000, 0); ?>jt</span>
+                    <!-- Budget Bar -->
+                    <div style="margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                            <span style="font-size: 9px; color: #6b7280; font-weight: 700;">💰 Budget</span>
+                            <span style="font-size: 12px; font-weight: 800; color: #374151; font-family: system-ui;"><?php echo number_format($budget/1000000, 0); ?>jt</span>
                         </div>
-                        <div style="height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
-                            <div style="width: <?php echo min($spentPct, 100); ?>%; height: 100%; background: linear-gradient(90deg, <?php echo $spentPct > 90 ? '#ef4444' : $projColor; ?>, <?php echo $spentPct > 90 ? '#f87171' : $projColorLight; ?>); border-radius: 4px; transition: width 0.6s ease;"></div>
+                        <div style="height: 5px; background: #e5e7eb; border-radius: 3px; overflow: hidden;">
+                            <div style="width: <?php echo min($spentPct, 100); ?>%; height: 100%; background: linear-gradient(90deg, <?php echo $spentPct > 90 ? '#ef4444' : $projColor; ?>, <?php echo $spentPct > 90 ? '#f87171' : $projColorLight; ?>); border-radius: 3px; transition: width 0.5s;"></div>
                         </div>
                     </div>
                     
-                    <!-- Spent & Remaining Grid -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div style="background: #fef2f2; padding: 10px 12px; border-radius: 12px;">
-                            <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; font-weight: 700;">Terpakai</div>
-                            <div style="font-size: 15px; font-weight: 800; color: #ef4444; font-family: system-ui; margin-top: 3px;"><?php echo number_format($spent/1000000, 1); ?>jt</div>
+                    <!-- Spent & Sisa -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                        <div style="background: #fef2f2; padding: 6px 8px; border-radius: 8px;">
+                            <div style="font-size: 7px; color: #9ca3af; text-transform: uppercase; font-weight: 700;">Terpakai</div>
+                            <div style="font-size: 12px; font-weight: 800; color: #ef4444; font-family: system-ui; margin-top: 1px;"><?php echo number_format($spent/1000000, 1); ?>jt</div>
                         </div>
-                        <div style="background: <?php echo $remaining >= 0 ? '#f0fdf4' : '#fef2f2'; ?>; padding: 10px 12px; border-radius: 12px;">
-                            <div style="font-size: 9px; color: #9ca3af; text-transform: uppercase; font-weight: 700;">Sisa</div>
-                            <div style="font-size: 15px; font-weight: 800; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>; font-family: system-ui; margin-top: 3px;"><?php echo number_format($remaining/1000000, 1); ?>jt</div>
+                        <div style="background: <?php echo $remaining >= 0 ? '#f0fdf4' : '#fef2f2'; ?>; padding: 6px 8px; border-radius: 8px;">
+                            <div style="font-size: 7px; color: #9ca3af; text-transform: uppercase; font-weight: 700;">Sisa</div>
+                            <div style="font-size: 12px; font-weight: 800; color: <?php echo $remaining >= 0 ? '#10b981' : '#ef4444'; ?>; font-family: system-ui; margin-top: 1px;"><?php echo number_format($remaining/1000000, 1); ?>jt</div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Tags Row: KWP -->
-            <?php if ($kwp > 0): ?>
-            <div style="display: flex; flex-wrap: wrap; gap: 10px; padding-top: 14px; border-top: 1px solid #f3f4f6;">
-                <span style="padding: 6px 12px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 10px; font-size: 11px; font-weight: 800; color: #92400e; display: flex; align-items: center; gap: 5px;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                    <?php echo number_format($kwp, 1); ?> kWp
-                </span>
+            <!-- Tags + View Button Row -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px solid #f3f4f6;">
+                <div style="display: flex; gap: 6px;">
+                    <?php if ($kwp > 0): ?>
+                    <span style="padding: 4px 8px; background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 6px; font-size: 9px; font-weight: 700; color: #92400e; display: flex; align-items: center; gap: 3px;">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <?php echo number_format($kwp, 1); ?> kWp
+                    </span>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- View Button - Light Style -->
+                <a href="modules/cqc-projects/detail.php?id=<?php echo $proj['id']; ?>" 
+                   style="display: flex; align-items: center; gap: 4px; padding: 6px 14px; background: <?php echo $projColor; ?>15; color: <?php echo $projColor; ?>; border-radius: 8px; text-decoration: none; font-size: 11px; font-weight: 700; transition: all 0.2s; border: 1px solid <?php echo $projColor; ?>25;"
+                   onmouseover="this.style.background='<?php echo $projColor; ?>25';"
+                   onmouseout="this.style.background='<?php echo $projColor; ?>15';">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/></svg>
+                    View
+                </a>
             </div>
-            <?php endif; ?>
-            
-            <!-- Detail Link -->
-            <a href="modules/cqc-projects/detail.php?id=<?php echo $proj['id']; ?>" 
-               style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 16px; padding: 12px; background: linear-gradient(135deg, #1f2937, #374151); color: #f59e0b; border-radius: 14px; text-decoration: none; font-size: 13px; font-weight: 800; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(31, 41, 55, 0.2);"
-               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(31, 41, 55, 0.35)';"
-               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(31, 41, 55, 0.2)';">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/></svg>
-                Lihat Detail
-            </a>
         </div>
         <?php endforeach; ?>
     </div>
 
-    <!-- Overall Budget Charts -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-        <div style="background: #fff; border-radius: 18px; padding: 22px; border: 1px solid #e5e7eb; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-            <h3 style="font-size: 15px; font-weight: 800; color: #1f2937; margin-bottom: 18px; display: flex; align-items: center; gap: 10px;">
-                <span style="width: 36px; height: 36px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+    <!-- Overall Charts - Compact -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="background: #fff; border-radius: 12px; padding: 14px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <h3 style="font-size: 12px; font-weight: 700; color: #1f2937; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 26px; height: 26px; background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 7px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
                 </span>
-                Distribusi Budget per Proyek
+                Distribusi Budget
             </h3>
-            <div style="position: relative; height: 300px;">
+            <div style="position: relative; height: 200px;">
                 <canvas id="cqcBudgetPie"></canvas>
             </div>
         </div>
-        <div style="background: #fff; border-radius: 18px; padding: 22px; border: 1px solid #e5e7eb; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
-            <h3 style="font-size: 15px; font-weight: 800; color: #1f2937; margin-bottom: 18px; display: flex; align-items: center; gap: 10px;">
-                <span style="width: 36px; height: 36px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div style="background: #fff; border-radius: 12px; padding: 14px; border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+            <h3 style="font-size: 12px; font-weight: 700; color: #1f2937; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 26px; height: 26px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 7px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </span>
-                Budget vs Pengeluaran
+                Budget vs Spent
             </h3>
-            <div style="position: relative; height: 300px;">
+            <div style="position: relative; height: 200px;">
                 <canvas id="cqcBudgetVsSpentChart"></canvas>
             </div>
         </div>
@@ -1967,9 +1968,9 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         const ctx = document.getElementById('cqcPie<?php echo $idx; ?>');
         if (!ctx) return;
         
-        // Create elegant gradient
+        // Create elegant gradient - compact size
         const chartCtx = ctx.getContext('2d');
-        const gradient = chartCtx.createLinearGradient(0, 0, 110, 110);
+        const gradient = chartCtx.createLinearGradient(0, 0, 75, 75);
         gradient.addColorStop(0, '<?php echo $color1; ?>');
         gradient.addColorStop(1, '<?php echo $color2; ?>');
         
