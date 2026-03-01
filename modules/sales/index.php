@@ -7,6 +7,13 @@ require_once '../../includes/functions.php';
 $auth = new Auth();
 $auth->requireLogin();
 
+// Redirect to CQC-specific invoice page if current business is CQC
+$currentBusiness = $_SESSION['active_business_id'] ?? '';
+if (strtoupper($currentBusiness) === 'CQC' || strpos(strtoupper($currentBusiness), 'CQC') !== false) {
+    header('Location: index-cqc.php');
+    exit;
+}
+
 $db = Database::getInstance();
 $currentUser = $auth->getCurrentUser();
 $pageTitle = 'Sales Invoices';
