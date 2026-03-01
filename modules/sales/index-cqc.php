@@ -179,15 +179,15 @@ include '../../includes/header.php';
     .cqc-header .btn-create:hover { background: #ffc942; transform: translateY(-1px); }
 
     /* Stats Grid */
-    .cqc-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+    .cqc-stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
     .cqc-stat-card {
-        background: #fff; padding: 14px 16px; border-radius: 10px;
+        background: #fff; padding: 10px 12px; border-radius: 8px;
         border: 1px solid var(--cqc-border);
         box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         position: relative; overflow: hidden;
     }
     .cqc-stat-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
         background: var(--cqc-border);
     }
     .cqc-stat-card.accent::before { background: var(--cqc-accent); }
@@ -195,16 +195,16 @@ include '../../includes/header.php';
     .cqc-stat-card.danger::before { background: var(--cqc-danger); }
     
     .cqc-stat-icon { 
-        width: 32px; height: 32px; border-radius: 8px; 
+        width: 24px; height: 24px; border-radius: 6px; 
         display: flex; align-items: center; justify-content: center;
-        font-size: 14px; margin-bottom: 10px; background: var(--cqc-bg);
+        font-size: 12px; margin-bottom: 6px; background: var(--cqc-bg);
     }
     .cqc-stat-label { 
-        font-size: 11px; color: var(--cqc-muted); text-transform: uppercase; 
-        font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; 
+        font-size: 10px; color: var(--cqc-muted); text-transform: uppercase; 
+        font-weight: 600; letter-spacing: 0.5px; margin-bottom: 2px; 
     }
     .cqc-stat-value { 
-        font-size: 20px; font-weight: 700; color: var(--cqc-primary); 
+        font-size: 16px; font-weight: 700; color: var(--cqc-primary); 
         letter-spacing: -0.5px; line-height: 1;
     }
 
@@ -306,17 +306,17 @@ include '../../includes/header.php';
     }
 
     /* Tabs */
-    .cqc-tabs { display: flex; gap: 4px; background: var(--cqc-bg); padding: 4px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--cqc-border); }
+    .cqc-tabs { display: flex; gap: 4px; background: var(--cqc-bg); padding: 3px; border-radius: 10px; margin-bottom: 12px; border: 1px solid var(--cqc-border); }
     .cqc-tab {
-        flex: 1; padding: 10px 16px; border: none; background: transparent;
+        flex: 1; padding: 8px 14px; border: none; background: transparent;
         border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12px;
         color: var(--cqc-muted); transition: all 0.2s; text-decoration: none;
         text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
     .cqc-tab:hover { background: #fff; color: var(--cqc-text); }
-    .cqc-tab.active { background: var(--cqc-primary); color: #fff; box-shadow: 0 2px 8px rgba(13,31,60,0.3); }
-    .cqc-tab .badge { background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-    .cqc-tab.active .badge { background: rgba(255,255,255,0.2); }
+    .cqc-tab.active { background: var(--cqc-accent); color: var(--cqc-primary); box-shadow: 0 2px 8px rgba(240,180,41,0.4); font-weight: 800; }
+    .cqc-tab .badge { background: rgba(0,0,0,0.08); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    .cqc-tab.active .badge { background: rgba(13,31,60,0.15); color: var(--cqc-primary); }
 </style>
 
 <?php if (isset($_SESSION['success'])): ?>
