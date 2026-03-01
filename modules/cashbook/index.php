@@ -396,41 +396,185 @@ echo getPrintCSS();
 
 <?php if ($isCQC): ?>
 <style>
+/* ===== CQC BUKU KAS - CLEAN ELEGANT DESIGN ===== */
 :root, body, body[data-theme="light"], body[data-theme="dark"] {
     --primary-color: #f0b429 !important;
     --primary-dark: #d4960d !important;
     --secondary-color: #0d1f3c !important;
 }
-.btn-primary { background: linear-gradient(135deg, #0d1f3c, #1a3a5c) !important; color: #f0b429 !important; border: none !important; }
-.btn-primary:hover { background: linear-gradient(135deg, #122a4e, #1f4570) !important; }
-.cb-table tbody tr:hover { background: rgba(240, 180, 41, 0.06) !important; }
-.cb-badge.income { background: rgba(16, 185, 129, 0.15); color: #059669; }
-.cb-badge.expense { background: rgba(239, 68, 68, 0.15); color: #dc2626; }
-.cb-ref-tag { background: rgba(13, 31, 60, 0.12) !important; color: #0d1f3c !important; }
-.cqc-project-tag { display: inline-flex; align-items: center; gap: 0.25rem; background: linear-gradient(135deg, rgba(13,31,60,0.08), rgba(240,180,41,0.12)); color: #0d1f3c; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; border-left: 3px solid #f0b429; }
-.cqc-office-tag { display: inline-flex; align-items: center; gap: 0.25rem; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.05)); color: #1d4ed8; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; border-left: 3px solid #3b82f6; }
-.cqc-desc-detail { font-size: 0.72rem; color: #6b7280; line-height: 1.4; margin-top: 0.2rem; }
-.cqc-desc-detail span { display: inline-flex; align-items: center; gap: 0.2rem; margin-right: 0.5rem; }
-.cqc-payment-info { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.3rem; }
-.cqc-info-chip { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; }
-.cqc-info-chip.method { background: rgba(59,130,246,0.1); color: #2563eb; }
-.cqc-info-chip.account { background: rgba(139,92,246,0.1); color: #7c3aed; }
-.cqc-info-chip.category { background: rgba(240,180,41,0.15); color: #92400e; }
-.cqc-info-chip.user { background: rgba(107,114,128,0.1); color: #4b5563; }
+
+/* Filter Card */
+.cqc-filter-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e5e7eb;
+    border-left: 4px solid #f0b429;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.cqc-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+.cqc-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cqc-filter-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0d1f3c;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cqc-filter-input {
+    height: 40px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0 0.75rem;
+    font-size: 0.813rem;
+    background: #f9fafb;
+    color: #0d1f3c;
+    transition: all 0.2s;
+}
+
+.cqc-filter-input:focus {
+    outline: none;
+    border-color: #f0b429;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(240, 180, 41, 0.1);
+}
+
+.cqc-filter-actions {
+    grid-column: span 5;
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.cqc-btn-filter {
+    flex: 1;
+    height: 42px;
+    background: #f0b429;
+    color: #0d1f3c;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.cqc-btn-filter:hover {
+    background: #d4960d;
+    transform: translateY(-1px);
+}
+
+.cqc-btn-reset {
+    padding: 0 1.5rem;
+    height: 42px;
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.cqc-btn-reset:hover {
+    background: #e5e7eb;
+}
+
+/* Table Header */
 .table-header-cqc {
-    background: #ffffff !important;
+    background: #fff !important;
     border-radius: 12px !important;
     padding: 1rem 1.25rem !important;
     margin-bottom: 1rem !important;
     border: 1px solid #e5e7eb !important;
     border-left: 4px solid #f0b429 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04) !important;
 }
+
 .table-header-cqc h3 { color: #0d1f3c !important; }
 .table-header-cqc p { color: #6b7280 !important; }
-.table-header-cqc h3, .table-header-cqc p { color: #f0b429 !important; }
-.table-header-cqc .btn-secondary { background: rgba(255,255,255,0.1) !important; color: #f0b429 !important; border: 1px solid rgba(240,180,41,0.3) !important; }
-.table-header-cqc .btn-secondary:hover { background: rgba(255,255,255,0.2) !important; }
-.cb-table th { background: linear-gradient(135deg, #0d1f3c, #122a4e) !important; color: #f0b429 !important; }
+
+/* Buttons */
+.btn-primary { background: #f0b429 !important; color: #0d1f3c !important; border: none !important; font-weight: 700 !important; }
+.btn-primary:hover { background: #d4960d !important; }
+.btn-secondary { background: #f3f4f6 !important; color: #374151 !important; border: 1px solid #e5e7eb !important; }
+.btn-secondary:hover { background: #e5e7eb !important; }
+
+/* Table Styling */
+.cb-table { border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
+.cb-table th { 
+    background: #f9fafb !important; 
+    color: #0d1f3c !important; 
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 2px solid #f0b429 !important;
+    padding: 0.75rem 0.5rem !important;
+}
+.cb-table td { border-bottom: 1px solid #f3f4f6 !important; }
+.cb-table tbody tr:hover { background: rgba(240, 180, 41, 0.04) !important; }
+
+/* Date Header Row */
+.cb-table .date-header-row td {
+    background: linear-gradient(90deg, rgba(240, 180, 41, 0.1), transparent) !important;
+    font-weight: 700 !important;
+    color: #0d1f3c !important;
+    border-bottom: 1px solid rgba(240, 180, 41, 0.3) !important;
+}
+
+/* Tags */
+.cb-badge.income { background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; }
+.cb-badge.expense { background: rgba(239, 68, 68, 0.12); color: #dc2626; font-weight: 700; }
+.cb-ref-tag { background: rgba(240, 180, 41, 0.15) !important; color: #92400e !important; }
+.cqc-project-tag { display: inline-flex; align-items: center; gap: 0.25rem; background: linear-gradient(135deg, rgba(240,180,41,0.15), rgba(240,180,41,0.08)); color: #0d1f3c; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; border-left: 3px solid #f0b429; }
+.cqc-office-tag { display: inline-flex; align-items: center; gap: 0.25rem; background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.06)); color: #1d4ed8; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.72rem; font-weight: 700; border-left: 3px solid #3b82f6; }
+
+/* Info Chips */
+.cqc-payment-info { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+.cqc-info-chip { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.2rem 0.5rem; border-radius: 5px; font-size: 0.68rem; font-weight: 600; }
+.cqc-info-chip.method { background: rgba(59,130,246,0.1); color: #2563eb; }
+.cqc-info-chip.account { background: rgba(139,92,246,0.1); color: #7c3aed; }
+.cqc-info-chip.category { background: rgba(240,180,41,0.12); color: #92400e; }
+.cqc-info-chip.user { background: rgba(107,114,128,0.1); color: #4b5563; }
+
+/* Action Buttons */
+.cb-action-btn.edit { background: rgba(240, 180, 41, 0.15); color: #92400e; }
+.cb-action-btn.edit:hover { background: #f0b429; color: #0d1f3c; }
+.cb-action-btn.delete { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.cb-action-btn.delete:hover { background: #ef4444; color: #fff; }
+
+@media (max-width: 1024px) {
+    .cqc-filter-grid { grid-template-columns: repeat(2, 1fr); }
+    .cqc-filter-actions { grid-column: span 2; }
+}
+
+@media (max-width: 640px) {
+    .cqc-filter-grid { grid-template-columns: 1fr; }
+    .cqc-filter-actions { grid-column: span 1; flex-direction: column; }
+}
 </style>
 <?php endif; ?>
 
@@ -1048,6 +1192,64 @@ echo getPrintCSS();
     </div>
     
     <!-- Filters -->
+    <?php if ($isCQC): ?>
+    <form method="GET" action="" autocomplete="off" class="cqc-filter-card">
+        <div class="cqc-filter-grid">
+            <div class="cqc-filter-group">
+                <label class="cqc-filter-label">📅 Tanggal</label>
+                <input type="date" id="filterDate" name="date" value="<?php echo htmlspecialchars($filterDate); ?>" class="cqc-filter-input" autocomplete="off" onchange="if(this.value) document.getElementById('filterMonth').value=''"<?php echo empty($filterDate) ? ' placeholder="Pilih tanggal"' : ''; ?>>
+            </div>
+            
+            <div class="cqc-filter-group">
+                <label class="cqc-filter-label">📆 Bulan</label>
+                <input type="month" id="filterMonth" name="month" value="<?php echo htmlspecialchars($filterMonth); ?>" class="cqc-filter-input" autocomplete="off" placeholder="YYYY-MM" pattern="\d{4}-\d{2}" onchange="if(this.value) document.getElementById('filterDate').value=''">
+            </div>
+            
+            <div class="cqc-filter-group">
+                <label class="cqc-filter-label">📊 Tipe</label>
+                <select name="type" class="cqc-filter-input">
+                    <option value="all" <?php echo ($filterType === 'all' || empty($filterType)) ? 'selected' : ''; ?>>Semua</option>
+                    <option value="income" <?php echo $filterType === 'income' ? 'selected' : ''; ?>>Pemasukan</option>
+                    <option value="expense" <?php echo $filterType === 'expense' ? 'selected' : ''; ?>>Pengeluaran</option>
+                </select>
+            </div>
+            
+            <div class="cqc-filter-group">
+                <label class="cqc-filter-label">☀️ Proyek</label>
+                <select name="division" class="cqc-filter-input">
+                    <option value="all">Semua Proyek</option>
+                    <?php foreach ($divisions as $div): ?>
+                        <option value="<?php echo $div['id']; ?>" <?php echo $filterDivision == $div['id'] ? 'selected' : ''; ?>>
+                            <?php echo $div['division_name']; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="cqc-filter-group">
+                <label class="cqc-filter-label">💳 Pembayaran</label>
+                <select name="payment" class="cqc-filter-input">
+                    <option value="all" <?php echo ($filterPayment === 'all' || empty($filterPayment)) ? 'selected' : ''; ?>>Semua</option>
+                    <option value="cash" <?php echo $filterPayment === 'cash' ? 'selected' : ''; ?>>Cash</option>
+                    <option value="transfer" <?php echo $filterPayment === 'transfer' ? 'selected' : ''; ?>>Transfer</option>
+                    <option value="debit" <?php echo $filterPayment === 'debit' ? 'selected' : ''; ?>>Debit</option>
+                    <option value="qr" <?php echo $filterPayment === 'qr' ? 'selected' : ''; ?>>QR Code</option>
+                </select>
+            </div>
+            
+            <div class="cqc-filter-actions">
+                <button type="submit" class="cqc-btn-filter">
+                    <i data-feather="filter" style="width: 16px; height: 16px;"></i> 
+                    <span>Filter Data</span>
+                </button>
+                <a href="index.php" class="cqc-btn-reset">
+                    <i data-feather="x" style="width: 16px; height: 16px;"></i> 
+                    <span>Reset</span>
+                </a>
+            </div>
+        </div>
+    </form>
+    <?php else: ?>
     <form method="GET" action="" autocomplete="off" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; padding: 1.25rem; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--bg-tertiary);">
         <div class="form-group" style="margin-bottom: 0;">
             <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.25rem;">Tanggal</label>
@@ -1104,6 +1306,7 @@ echo getPrintCSS();
             </a>
         </div>
     </form>
+    <?php endif; ?>
     
     <!-- Table -->
     <div style="overflow-x: auto;">
