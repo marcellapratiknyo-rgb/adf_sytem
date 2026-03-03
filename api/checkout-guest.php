@@ -160,11 +160,15 @@ try {
         $syncCount = 0;
         foreach ($payments as $pmt) {
             try {
-            // Fallback dedup if no sync column
-            if (!$hasSyncCol) {
-                $exists = $db->fetchOne("SELECT id FROM cash_book WHERE description LIKE ? AND ABS(amount - ?) < 1 AND transaction_type = 'income' LIMIT 1",
-                    ['%' . $booking['booking_code'] . '%', $pmt['amount']]);
-                if ($exists) continue;
+            // ALWAYS dedup: check if ANY entry exists for this booking_code + payment
+            $exists = $db->fetchOne("SELECT id FROM cash_book WHERE description LIKE ? AND transaction_type = 'income' LIMIT 1",
+                ['%' . $booking['booking_code'] . '%']);
+            if ($exists) {
+                // Mark as synced if possible
+                if ($hasSyncCol) {
+                    try { $db->query("UPDATE booking_payments SET synced_to_cashbook = 1, cashbook_id = ? WHERE id = ?", [$exists['id'], $pmt['id']]); } catch (\Throwable $e) {}
+                }
+                continue;
             }
 
             // Calculate net amount (OTA fee)

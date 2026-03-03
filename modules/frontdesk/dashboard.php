@@ -72,297 +72,40 @@ try {
     }
 
     // ==========================================
-    // AUTO-SYNC BOOKING PAYMENTS TO CASHBOOK
-    // Works on both local AND hosting (with/without synced_to_cashbook column)
+    // ==========================================
+    // AUTO-CLEANUP DUPLICATE CASH_BOOK ENTRIES
+    // Sync is handled by API endpoints (add-booking-payment, checkin-guest, checkout-guest)
+    // Dashboard only cleans up duplicates - does NOT create new entries
     // ==========================================
     try {
-        // ---- AUTO-CLEANUP DUPLICATE CASH_BOOK ENTRIES ----
-        // Find booking-related entries with same booking_code on same date
-        // Keep only the OLDEST entry (lowest id) per booking_code per date
-        try {
-            $dupGroups = $db->fetchAll("
-                SELECT 
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(description, 'BK-', -1), ' ', 1) as booking_code,
-                    transaction_date,
-                    MIN(id) as keep_id,
-                    GROUP_CONCAT(id ORDER BY id) as all_ids,
-                    COUNT(*) as cnt
-                FROM cash_book
-                WHERE description LIKE '%BK-%'
-                AND transaction_type = 'income'
-                GROUP BY SUBSTRING_INDEX(SUBSTRING_INDEX(description, 'BK-', -1), ' ', 1), transaction_date
-                HAVING cnt > 1
-            ");
-            if ($dupGroups && count($dupGroups) > 0) {
-                foreach ($dupGroups as $dg) {
-                    $allIds = explode(',', $dg['all_ids']);
-                    $keepId = (int)$dg['keep_id'];
-                    $deleteIds = array_filter($allIds, fn($id) => (int)$id !== $keepId);
-                    if (count($deleteIds) > 0) {
-                        $placeholders = implode(',', array_fill(0, count($deleteIds), '?'));
-                        $db->query("DELETE FROM cash_book WHERE id IN ({$placeholders})", array_values($deleteIds));
-                        error_log("Auto-cleanup: Deleted " . count($deleteIds) . " duplicate cash_book entries for BK-{$dg['booking_code']}");
-                    }
+        // Find booking-related entries with same booking_code (regardless of date)
+        // Keep only the OLDEST entry (lowest id) per booking_code
+        $dupGroups = $db->fetchAll("
+            SELECT 
+                SUBSTRING_INDEX(SUBSTRING_INDEX(description, 'BK-', -1), ' ', 1) as booking_code,
+                MIN(id) as keep_id,
+                GROUP_CONCAT(id ORDER BY id) as all_ids,
+                COUNT(*) as cnt
+            FROM cash_book
+            WHERE description LIKE '%BK-%'
+            AND transaction_type = 'income'
+            GROUP BY SUBSTRING_INDEX(SUBSTRING_INDEX(description, 'BK-', -1), ' ', 1)
+            HAVING cnt > 1
+        ");
+        if ($dupGroups && count($dupGroups) > 0) {
+            foreach ($dupGroups as $dg) {
+                $allIds = explode(',', $dg['all_ids']);
+                $keepId = (int)$dg['keep_id'];
+                $deleteIds = array_filter($allIds, fn($id) => (int)$id !== $keepId);
+                if (count($deleteIds) > 0) {
+                    $placeholders = implode(',', array_fill(0, count($deleteIds), '?'));
+                    $db->query("DELETE FROM cash_book WHERE id IN ({$placeholders})", array_values($deleteIds));
+                    error_log("Auto-cleanup: Deleted " . count($deleteIds) . " duplicate cash_book entries for BK-{$dg['booking_code']}");
                 }
             }
-        } catch (\Throwable $cleanupErr) {
-            error_log("Cash_book auto-cleanup error: " . $cleanupErr->getMessage());
         }
-        // ---- END AUTO-CLEANUP ----
-
-        // Get master database name (handles hosting vs local via MASTER_DB_NAME constant)
-        $masterDbName = defined('MASTER_DB_NAME') ? MASTER_DB_NAME : 'adf_system';
-        $masterDb = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . $masterDbName . ";charset=" . DB_CHARSET,
-            DB_USER, DB_PASS,
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-
-        $businessId = $_SESSION['business_id'] ?? 1;
-
-        // Validate created_by user exists in business DB
-        $cbUserId = $currentUser['id'] ?? 1;
-        $userExists = $db->fetchOne("SELECT id FROM users WHERE id = ? LIMIT 1", [$cbUserId]);
-        if (!$userExists) {
-            $firstUser = $db->fetchOne("SELECT id FROM users ORDER BY id ASC LIMIT 1");
-            $cbUserId = $firstUser['id'] ?? 1;
-        }
-
-        // Check if synced_to_cashbook column exists (try to create it)
-        $hasSyncCol = false;
-        try {
-            $syncColChk = $db->getConnection()->query("SHOW COLUMNS FROM booking_payments LIKE 'synced_to_cashbook'");
-            $hasSyncCol = $syncColChk && $syncColChk->rowCount() > 0;
-        } catch (\Throwable $e) {}
-        if (!$hasSyncCol) {
-            try {
-                $db->getConnection()->exec("ALTER TABLE booking_payments ADD COLUMN synced_to_cashbook TINYINT(1) NOT NULL DEFAULT 0");
-                $db->getConnection()->exec("ALTER TABLE booking_payments ADD COLUMN cashbook_id INT(11) DEFAULT NULL");
-                $hasSyncCol = true; // ALTER succeeded
-            } catch (\Throwable $e) {
-                error_log("Cannot add synced_to_cashbook column (hosting?): " . $e->getMessage());
-                $hasSyncCol = false; // Will use fallback method
-            }
-        }
-
-        // Check if cash_account_id column exists in cash_book
-        $hasCashAccountId = false;
-        try {
-            $colChk = $db->getConnection()->query("SHOW COLUMNS FROM cash_book LIKE 'cash_account_id'");
-            $hasCashAccountId = $colChk && $colChk->rowCount() > 0;
-        } catch (\Throwable $e) {}
-
-        // Detect payment_method valid ENUM values on cash_book
-        $allowedPaymentMethods = null; // null = varchar, accepts anything
-        try {
-            $pmColInfo = $db->getConnection()->query("SHOW COLUMNS FROM cash_book LIKE 'payment_method'")->fetch(PDO::FETCH_ASSOC);
-            if ($pmColInfo && strpos($pmColInfo['Type'], 'enum') === 0) {
-                preg_match_all("/'([^']+)'/", $pmColInfo['Type'], $enumMatches);
-                $allowedPaymentMethods = $enumMatches[1] ?? ['cash'];
-            }
-        } catch (\Throwable $e) {}
-
-        // Get booking payments to sync - method depends on whether column exists
-        // SKIP OTA bookings - they sync at check-in time, not here
-        // Use LIKE patterns to catch variations like tiket.com, booking.com etc
-        $otaExcludeSQL = "AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%agoda%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%booking%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%tiket%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%airbnb%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%traveloka%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%pegipegi%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%expedia%'
-                AND LOWER(COALESCE(b.booking_source, '')) NOT LIKE '%ota%'";
-        
-        if ($hasSyncCol) {
-            // FAST: Use synced_to_cashbook flag, exclude OTA bookings
-            $unsyncedPayments = $db->fetchAll("
-                SELECT bp.id as payment_id, bp.booking_id, bp.amount, bp.payment_method, bp.payment_date,
-                       b.booking_code, b.booking_source, b.final_price,
-                       g.guest_name, r.room_number
-                FROM booking_payments bp
-                JOIN bookings b ON bp.booking_id = b.id
-                LEFT JOIN guests g ON b.guest_id = g.id
-                LEFT JOIN rooms r ON b.room_id = r.id
-                WHERE bp.synced_to_cashbook = 0
-                {$otaExcludeSQL}
-                ORDER BY bp.id ASC
-            ");
-        } else {
-            // FALLBACK: Get all recent payments and check each against cash_book, exclude OTA
-            $unsyncedPayments = $db->fetchAll("
-                SELECT bp.id as payment_id, bp.booking_id, bp.amount, bp.payment_method, bp.payment_date,
-                       b.booking_code, b.booking_source, b.final_price,
-                       g.guest_name, r.room_number
-                FROM booking_payments bp
-                JOIN bookings b ON bp.booking_id = b.id
-                LEFT JOIN guests g ON b.guest_id = g.id
-                LEFT JOIN rooms r ON b.room_id = r.id
-                WHERE bp.payment_date >= DATE_SUB(NOW(), INTERVAL 60 DAY)
-                {$otaExcludeSQL}
-                ORDER BY bp.id ASC
-            ");
-        }
-
-        // Pre-fetch division and category (once, not per payment)
-        $division = $db->fetchOne("SELECT id FROM divisions WHERE LOWER(division_name) LIKE '%hotel%' OR LOWER(division_name) LIKE '%frontdesk%' ORDER BY id ASC LIMIT 1");
-        if (!$division) $division = $db->fetchOne("SELECT id FROM divisions ORDER BY id ASC LIMIT 1");
-        $divisionId = $division['id'] ?? 1;
-
-        $category = $db->fetchOne("SELECT id FROM categories WHERE category_type = 'income' AND (LOWER(category_name) LIKE '%room%' OR LOWER(category_name) LIKE '%kamar%') ORDER BY id ASC LIMIT 1");
-        if (!$category) $category = $db->fetchOne("SELECT id FROM categories WHERE category_type = 'income' ORDER BY id ASC LIMIT 1");
-        $categoryId = $category['id'] ?? 1;
-
-        $syncCount = 0;
-        foreach ($unsyncedPayments as $payment) {
-            // Per-payment try-catch so one failure doesn't block others
-            try {
-                // ALWAYS dedup: check cash_book for existing entry (regardless of sync column)
-                $existing = $db->fetchOne("
-                    SELECT id FROM cash_book 
-                    WHERE description LIKE ? AND transaction_type = 'income' LIMIT 1
-                ", ['%' . $payment['booking_code'] . '%payment_id_' . $payment['payment_id'] . '%']);
-                if ($existing) {
-                    // Mark as synced if column exists (so we don't re-check next time)
-                    if ($hasSyncCol) {
-                        try { $db->query("UPDATE booking_payments SET synced_to_cashbook = 1, cashbook_id = ? WHERE id = ?", [$existing['id'], $payment['payment_id']]); } catch (\Throwable $e) {}
-                    }
-                    continue;
-                }
-                // Also check by booking_code + approximate amount (legacy entries without payment_id)
-                $existingLegacy = $db->fetchOne("
-                    SELECT id FROM cash_book 
-                    WHERE description LIKE ? AND ABS(amount - ?) < 1 AND transaction_type = 'income' LIMIT 1
-                ", ['%' . $payment['booking_code'] . '%', $payment['amount']]);
-                if ($existingLegacy) {
-                    if ($hasSyncCol) {
-                        try { $db->query("UPDATE booking_payments SET synced_to_cashbook = 1, cashbook_id = ? WHERE id = ?", [$existingLegacy['id'], $payment['payment_id']]); } catch (\Throwable $e) {}
-                    }
-                    continue;
-                }
-
-                // Calculate OTA fee if applicable
-                $netAmount = (float)$payment['amount'];
-                if (in_array(strtolower($payment['payment_method']), ['ota', 'agoda', 'booking'])) {
-                    $feeStmt = $masterDb->prepare("SELECT setting_value FROM settings WHERE setting_key = 'ota_fee_other_ota'");
-                    $feeStmt->execute();
-                    $feeQuery = $feeStmt->fetch(PDO::FETCH_ASSOC);
-                    if ($feeQuery && (float)($feeQuery['setting_value'] ?? 0) > 0) {
-                        $netAmount = $payment['amount'] - ($payment['amount'] * (float)$feeQuery['setting_value'] / 100);
-                    }
-                }
-
-                // Find cash account
-                $accountType = ($payment['payment_method'] === 'cash') ? 'cash' : 'bank';
-                $accountStmt = $masterDb->prepare("
-                    SELECT id, account_name, current_balance FROM cash_accounts 
-                    WHERE business_id = ? AND account_type = ? AND is_active = 1 
-                    ORDER BY is_default_account DESC LIMIT 1
-                ");
-                $accountStmt->execute([$businessId, $accountType]);
-                $account = $accountStmt->fetch(PDO::FETCH_ASSOC);
-
-                if (!$account) {
-                    error_log("Cashbook sync skip payment#{$payment['payment_id']}: no account for type '{$accountType}'");
-                    continue;
-                }
-
-                // Build description (include payment_id for unique dedup in fallback mode)
-                $guestName = $payment['guest_name'] ?? 'Guest';
-                $roomNum = $payment['room_number'] ?? '';
-                $desc = "Pembayaran Reservasi - {$guestName}";
-                if ($roomNum) $desc .= " (Room {$roomNum})";
-                $desc .= " - {$payment['booking_code']}";
-                $desc .= " [payment_id_{$payment['payment_id']}]";  // Add payment_id for dedup
-
-                // Check if fully paid
-                $totalPaid = $db->fetchOne("SELECT COALESCE(SUM(amount),0) as total FROM booking_payments WHERE booking_id = ?", [$payment['booking_id']]);
-                $desc .= ((float)$totalPaid['total'] >= (float)$payment['final_price']) ? ' [LUNAS]' : ' [CICILAN]';
-
-                // Map payment_method - respect hosting ENUM if detected
-                $pmMap = ['bank_transfer'=>'transfer','credit_card'=>'debit','credit'=>'debit'];
-                $cbMethod = strtolower($payment['payment_method'] ?? 'cash');
-                $cbMethod = $pmMap[$cbMethod] ?? $cbMethod;
-                // If hosting uses ENUM, ensure value is allowed
-                if ($allowedPaymentMethods !== null) {
-                    if (!in_array($cbMethod, $allowedPaymentMethods)) {
-                        // Try 'other', then 'cash' as safe fallback
-                        $cbMethod = in_array('other', $allowedPaymentMethods) ? 'other' : 
-                                   (in_array('cash', $allowedPaymentMethods) ? 'cash' : $allowedPaymentMethods[0]);
-                    }
-                }
-
-                // Insert into cash_book
-                if ($hasCashAccountId) {
-                    $cashBookInsert = $db->getConnection()->prepare("
-                        INSERT INTO cash_book (
-                            transaction_date, transaction_time, division_id, category_id,
-                            description, transaction_type, amount, payment_method,
-                            cash_account_id, created_by, created_at
-                        ) VALUES (DATE(?), TIME(?), ?, ?, ?, 'income', ?, ?, ?, ?, NOW())
-                    ");
-                    $cashBookInsert->execute([
-                        $payment['payment_date'], $payment['payment_date'],
-                        $divisionId, $categoryId, $desc, $netAmount,
-                        $cbMethod, $account['id'], $cbUserId
-                    ]);
-                } else {
-                    $cashBookInsert = $db->getConnection()->prepare("
-                        INSERT INTO cash_book (
-                            transaction_date, transaction_time, division_id, category_id,
-                            description, transaction_type, amount, payment_method,
-                            created_by, created_at
-                        ) VALUES (DATE(?), TIME(?), ?, ?, ?, 'income', ?, ?, ?, NOW())
-                    ");
-                    $cashBookInsert->execute([
-                        $payment['payment_date'], $payment['payment_date'],
-                        $divisionId, $categoryId, $desc, $netAmount,
-                        $cbMethod, $cbUserId
-                    ]);
-                }
-
-                $transactionId = $db->getConnection()->lastInsertId();
-
-                // Mark payment as synced (only if column exists)
-                if ($hasSyncCol) {
-                    try {
-                        $db->query("UPDATE booking_payments SET synced_to_cashbook = 1, cashbook_id = ? WHERE id = ?", [$transactionId, $payment['payment_id']]);
-                    } catch (\Throwable $e) {}
-                }
-
-                // Insert into master cash_account_transactions
-                try {
-                    $masterTransInsert = $masterDb->prepare("
-                        INSERT INTO cash_account_transactions (
-                            cash_account_id, transaction_id, transaction_date,
-                            description, amount, transaction_type,
-                            reference_number, created_by, created_at
-                        ) VALUES (?, ?, DATE(?), ?, ?, 'income', ?, ?, NOW())
-                    ");
-                    $masterTransInsert->execute([
-                        $account['id'], $transactionId, $payment['payment_date'],
-                        $desc, $netAmount, $payment['booking_code'], $cbUserId
-                    ]);
-
-                    // Update cash account balance
-                    $updateBal = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance + ? WHERE id = ?");
-                    $updateBal->execute([$netAmount, $account['id']]);
-                } catch (\Throwable $masterErr) {
-                    error_log("Master DB sync error payment#{$payment['payment_id']}: " . $masterErr->getMessage());
-                }
-
-                $syncCount++;
-            } catch (\Throwable $paymentError) {
-                error_log("Cashbook sync error payment#{$payment['payment_id']}: " . $paymentError->getMessage());
-                continue;
-            }
-        }
-
-        if ($syncCount > 0) {
-            error_log("Cashbook auto-sync: {$syncCount} payments synced to cashbook");
-        }
-    } catch (\Throwable $syncError) {
-        error_log("Cashbook sync setup error: " . $syncError->getMessage());
+    } catch (\Throwable $cleanupErr) {
+        error_log("Cash_book auto-cleanup error: " . $cleanupErr->getMessage());
     }
 
     // 1. Total In-House Guests (checked in, currently staying)

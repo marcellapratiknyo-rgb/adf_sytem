@@ -467,6 +467,23 @@ class CashbookHelper {
             
             $result['account_name'] = $account['account_name'];
             
+            // ---- DEDUP CHECK: prevent duplicate cash_book entries ----
+            $bookingCode = $paymentData['booking_code'] ?? '';
+            if ($bookingCode) {
+                $existingEntry = $this->db->fetchOne("
+                    SELECT id FROM cash_book 
+                    WHERE description LIKE ? AND transaction_type = 'income' LIMIT 1
+                ", ['%' . $bookingCode . '%']);
+                if ($existingEntry) {
+                    $result['success'] = true;
+                    $result['transaction_id'] = $existingEntry['id'];
+                    $result['message'] = 'Entry sudah ada di buku kas (skip duplikat)';
+                    error_log("CashbookHelper: DEDUP - Entry already exists for {$bookingCode}, id={$existingEntry['id']}");
+                    return $result;
+                }
+            }
+            // ---- END DEDUP CHECK ----
+            
             // Calculate OTA fee if applicable
             $bookingSource = $paymentData['booking_source'] ?? '';
             $otaCalc = $this->calculateOtaFee($paymentData['amount'], $bookingSource);
