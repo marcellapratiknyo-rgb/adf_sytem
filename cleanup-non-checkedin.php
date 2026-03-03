@@ -57,7 +57,7 @@ if ($action === 'view') {
         SELECT cb.id, cb.transaction_date, cb.amount, cb.payment_method, cb.description,
                b.booking_code, b.status as booking_status, b.booking_source, g.guest_name
         FROM cash_book cb
-        JOIN bookings b ON cb.description LIKE CONCAT('%', b.booking_code, '%')
+        JOIN bookings b ON cb.description COLLATE utf8mb4_unicode_ci LIKE CONCAT('%', b.booking_code COLLATE utf8mb4_unicode_ci, '%')
         LEFT JOIN guests g ON b.guest_id = g.id
         WHERE cb.transaction_type = 'income'
         AND cb.description LIKE '%BK-%'
@@ -97,7 +97,7 @@ if ($action === 'view') {
         SELECT cb.id, cb.transaction_date, cb.amount, cb.description,
                b.booking_code, b.status as booking_status, g.guest_name
         FROM cash_book cb
-        JOIN bookings b ON cb.description LIKE CONCAT('%', b.booking_code, '%')
+        JOIN bookings b ON cb.description COLLATE utf8mb4_unicode_ci LIKE CONCAT('%', b.booking_code COLLATE utf8mb4_unicode_ci, '%')
         LEFT JOIN guests g ON b.guest_id = g.id
         WHERE cb.transaction_type = 'income'
         AND cb.description LIKE '%BK-%'
@@ -132,7 +132,7 @@ if ($action === 'delete') {
     $toDelete = $conn->query("
         SELECT cb.id, cb.amount, b.booking_code, b.status
         FROM cash_book cb
-        JOIN bookings b ON cb.description LIKE CONCAT('%', b.booking_code, '%')
+        JOIN bookings b ON cb.description COLLATE utf8mb4_unicode_ci LIKE CONCAT('%', b.booking_code COLLATE utf8mb4_unicode_ci, '%')
         WHERE cb.transaction_type = 'income'
         AND cb.description LIKE '%BK-%'
         AND b.status NOT IN ('checked_in', 'checked_out')
