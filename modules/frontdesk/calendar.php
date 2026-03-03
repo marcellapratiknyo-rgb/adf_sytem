@@ -750,6 +750,7 @@ body[data-theme="light"] .grid-date-cell {
     overflow: visible;
     pointer-events: auto;
     z-index: 10;
+    margin-left: 5px; /* Gap from previous booking */
 }
 
 .booking-bar {
@@ -2075,8 +2076,8 @@ body[data-theme="dark"] .stats-list li {
                                 $totalNights = ceil(($checkoutDate - $checkinDate) / 86400);
                                 
                                 // Calculate width: start from 50% of check-in cell, end at 50% of check-out cell
-                                // Width = (nights × 130px) = full span from noon to noon (Matches CSS Grid Column Width)
-                                $barWidth = ($totalNights * 130); // 130px per day
+                                // Width = (nights × 130px) - 10px gap = span from noon to noon with spacing
+                                $barWidth = ($totalNights * 130) - 10; // 130px per day minus 10px gap for visual separation
                                 
                                 $statusClass = 'booking-' . str_replace('_', '-', $booking['status']);
                                 
