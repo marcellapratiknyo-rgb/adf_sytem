@@ -81,11 +81,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reset_data_submit']))
                 'reset_type' => $type
             ]);
             
+            // Build session cookie header for API authentication
+            $sessionCookie = session_name() . '=' . session_id();
+            
             $context = stream_context_create([
                 'http' => [
                     'method' => 'POST',
-                    'header' => 'Content-Type: application/json',
-                    'content' => $postData
+                    'header' => "Content-Type: application/json\r\nCookie: $sessionCookie",
+                    'content' => $postData,
+                    'ignore_errors' => true
                 ]
             ]);
             
