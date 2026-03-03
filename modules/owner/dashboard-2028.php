@@ -898,6 +898,127 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             text-decoration: none;
         }
         
+        /* Kas Harian Section - Elegant & Compact */
+        .kas-harian-section {
+            margin: 16px 0;
+            background: linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(30,41,59,0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .kas-harian-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .kas-harian-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .kas-harian-date {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+        
+        .kas-summary-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        
+        .kas-summary-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        
+        .kas-summary-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+        
+        .kas-summary-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        .kas-summary-value.saldo { color: #60a5fa; }
+        .kas-summary-value.masuk { color: #10b981; }
+        .kas-summary-value.keluar { color: #ef4444; }
+        
+        .kas-table-wrapper {
+            max-height: 220px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        
+        .kas-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .kas-table th {
+            background: rgba(255,255,255,0.05);
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #9ca3af;
+            position: sticky;
+            top: 0;
+        }
+        
+        .kas-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            color: #e5e7eb;
+        }
+        
+        .kas-table tr:last-child td { border-bottom: none; }
+        
+        .kas-table .text-right { text-align: right; }
+        
+        .kas-badge-masuk, .kas-badge-keluar {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+        
+        .kas-badge-masuk { background: rgba(16,185,129,0.2); color: #10b981; }
+        .kas-badge-keluar { background: rgba(239,68,68,0.2); color: #ef4444; }
+        
+        .kas-amount-masuk { color: #10b981; font-weight: 600; }
+        .kas-amount-keluar { color: #ef4444; font-weight: 600; }
+        
+        .kas-empty { text-align: center; padding: 20px; color: #9ca3af; font-style: italic; }
+        
+        @media (max-width: 480px) {
+            .kas-summary-row { grid-template-columns: 1fr; gap: 8px; }
+            .kas-summary-value { font-size: 14px; }
+            .kas-table { font-size: 11px; }
+            .kas-table th, .kas-table td { padding: 6px 8px; }
+        }
+
         /* Stats Grid */
         .stats-grid {
             display: grid;
@@ -1587,6 +1708,111 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                         <span class="hero-today-value"><?= number_format($expenseRatio, 1) ?>%</span>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Kas Harian (Today's Cash Book) -->
+        <?php
+        // Fetch today's cash book entries
+        $todayKas = [];
+        $todaySaldoAwal = 0;
+        $todayMasuk = 0;
+        $todayKeluar = 0;
+        
+        try {
+            $businessDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . BUSINESS_DB . ";charset=utf8mb4", DB_USER, DB_PASS);
+            $businessDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            // Get yesterday's closing balance as today's opening
+            $stmtSaldo = $businessDb->prepare("
+                SELECT closing_balance FROM cash_book 
+                WHERE DATE(transaction_date) < CURDATE() 
+                ORDER BY transaction_date DESC, id DESC LIMIT 1
+            ");
+            $stmtSaldo->execute();
+            $todaySaldoAwal = (float)($stmtSaldo->fetchColumn() ?: 0);
+            
+            // Get today's transactions
+            $stmtKas = $businessDb->prepare("
+                SELECT id, account_type, description, 
+                       COALESCE(debit, 0) as debit, 
+                       COALESCE(credit, 0) as credit,
+                       closing_balance,
+                       TIME_FORMAT(transaction_date, '%H:%i') as jam
+                FROM cash_book 
+                WHERE DATE(transaction_date) = CURDATE()
+                ORDER BY transaction_date DESC, id DESC
+                LIMIT 8
+            ");
+            $stmtKas->execute();
+            $todayKas = $stmtKas->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Calculate totals
+            foreach ($todayKas as $row) {
+                $todayMasuk += (float)$row['debit'];
+                $todayKeluar += (float)$row['credit'];
+            }
+        } catch (PDOException $e) {
+            // Silent fail
+        }
+        
+        $currentSaldo = $todaySaldoAwal + $todayMasuk - $todayKeluar;
+        ?>
+        <div class="kas-harian-section">
+            <div class="kas-harian-header">
+                <div class="kas-harian-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+                    Kas Harian
+                </div>
+                <div class="kas-harian-date"><?= date('d M Y') ?></div>
+            </div>
+            
+            <div class="kas-summary-row">
+                <div class="kas-summary-box">
+                    <div class="kas-summary-label">Saldo</div>
+                    <div class="kas-summary-value saldo"><?= number_format($currentSaldo, 0, ',', '.') ?></div>
+                </div>
+                <div class="kas-summary-box">
+                    <div class="kas-summary-label">Masuk</div>
+                    <div class="kas-summary-value masuk"><?= number_format($todayMasuk, 0, ',', '.') ?></div>
+                </div>
+                <div class="kas-summary-box">
+                    <div class="kas-summary-label">Keluar</div>
+                    <div class="kas-summary-value keluar"><?= number_format($todayKeluar, 0, ',', '.') ?></div>
+                </div>
+            </div>
+            
+            <div class="kas-table-wrapper">
+                <?php if (empty($todayKas)): ?>
+                <div class="kas-empty">Belum ada transaksi hari ini</div>
+                <?php else: ?>
+                <table class="kas-table">
+                    <thead>
+                        <tr>
+                            <th>Jam</th>
+                            <th>Keterangan</th>
+                            <th class="text-right">Jumlah</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($todayKas as $kas): 
+                            $isMasuk = $kas['debit'] > 0;
+                            $amount = $isMasuk ? $kas['debit'] : $kas['credit'];
+                        ?>
+                        <tr>
+                            <td><?= $kas['jam'] ?></td>
+                            <td>
+                                <span class="<?= $isMasuk ? 'kas-badge-masuk' : 'kas-badge-keluar' ?>"><?= $isMasuk ? 'IN' : 'OUT' ?></span>
+                                <?= htmlspecialchars(mb_substr($kas['description'], 0, 30)) ?>
+                            </td>
+                            <td class="text-right <?= $isMasuk ? 'kas-amount-masuk' : 'kas-amount-keluar' ?>">
+                                <?= $isMasuk ? '+' : '-' ?><?= number_format($amount, 0, ',', '.') ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php endif; ?>
             </div>
         </div>
         
