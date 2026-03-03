@@ -1014,39 +1014,54 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         </div>
     </div>
     
-    <!-- Recent Bank Expenses -->
+    <!-- Recent Bank Expenses + Transfers -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Expenses <!-- DEBUG: bankAccountId=<?php echo $bankAccountId ?? 'NULL'; ?> --></div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Transactions</div>
         <?php
-        // Get recent expenses from Bank
+        // Get recent expenses from Bank + Transfers to Petty Cash
         $recentBankExpenses = [];
-        if ($bankAccountId > 0) {
+        if ($bankAccountId > 0 || $pettyCashAccountId > 0) {
+            // Query expenses from bank + transfers to petty cash
             $recentBankExpenses = $db->fetchAll(
-                "SELECT cb.description, cb.amount, cb.transaction_date, c.name as category
+                "(SELECT cb.description, cb.amount, cb.transaction_date, c.name as category, 'expense' as record_type
                  FROM cash_book cb
                  LEFT JOIN categories c ON cb.category_id = c.id
                  WHERE cb.transaction_type = 'expense' 
+                 AND cb.cash_account_id = ?)
+                UNION ALL
+                (SELECT cb.description, cb.amount, cb.transaction_date, 'Transfer' as category, 'transfer' as record_type
+                 FROM cash_book cb
+                 WHERE cb.transaction_type = 'income' 
                  AND cb.cash_account_id = ?
-                 ORDER BY cb.transaction_date DESC, cb.id DESC
-                 LIMIT 5",
-                [$bankAccountId]
+                 AND cb.description LIKE '%Transfer%')
+                ORDER BY transaction_date DESC
+                LIMIT 5",
+                [$bankAccountId, $pettyCashAccountId]
             );
         }
         ?>
         <?php if (!empty($recentBankExpenses)): ?>
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <?php foreach ($recentBankExpenses as $exp): ?>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #fef2f2; border-radius: 8px;">
+            <?php foreach ($recentBankExpenses as $exp): 
+                $isTransfer = ($exp['record_type'] ?? '') === 'transfer';
+                $bgColor = $isTransfer ? '#eff6ff' : '#fef2f2';
+                $textColor = $isTransfer ? '#2563eb' : '#dc2626';
+                $icon = $isTransfer ? '➡️' : '-';
+            ?>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: <?php echo $bgColor; ?>; border-radius: 8px;">
                 <div>
-                    <div style="font-size: 0.8rem; font-weight: 600; color: #374151;"><?php echo htmlspecialchars($exp['description']); ?></div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #374151;">
+                        <?php if ($isTransfer): ?><span style="background: #dbeafe; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; color: #1d4ed8; margin-right: 0.3rem;">TRANSFER</span><?php endif; ?>
+                        <?php echo htmlspecialchars(preg_replace('/\[.*?\]\s*/', '', $exp['description'])); ?>
+                    </div>
                     <div style="font-size: 0.65rem; color: #9ca3af;"><?php echo date('d M', strtotime($exp['transaction_date'])); ?> • <?php echo htmlspecialchars($exp['category'] ?? 'Uncategorized'); ?></div>
                 </div>
-                <div style="font-size: 0.85rem; font-weight: 700; color: #dc2626;">-<?php echo formatCurrency($exp['amount']); ?></div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: <?php echo $textColor; ?>;"><?php echo $icon; ?><?php echo formatCurrency($exp['amount']); ?></div>
             </div>
             <?php endforeach; ?>
         </div>
         <?php else: ?>
-        <div style="padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.8rem;">No bank expenses yet</div>
+        <div style="padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.8rem;">No bank transactions yet</div>
         <?php endif; ?>
     </div>
 </div>
@@ -1089,7 +1104,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     
     <!-- Recent Petty Cash Expenses -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses <!-- DEBUG: pettyCashAccountId=<?php echo $pettyCashAccountId ?? 'NULL'; ?> --></div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses</div>
         <?php
         // Get recent expenses from Petty Cash
         $recentPettyExpenses = [];
