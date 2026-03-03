@@ -140,22 +140,10 @@ if (isPost()) {
                 }
             }
             
-            // FOR ALL BUSINESSES: If income goes to 'cash' type account (Kas Operasional/Petty Cash)
-            // This is owner fund injection, NOT company revenue
-            if ($transactionType === 'income' && !empty($cashAccountId)) {
-                try {
-                    $masterDbCheck = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-                    $stmtAccType = $masterDbCheck->prepare("SELECT account_type FROM cash_accounts WHERE id = ?");
-                    $stmtAccType->execute([$cashAccountId]);
-                    $accInfo = $stmtAccType->fetch(PDO::FETCH_ASSOC);
-                    if ($accInfo && $accInfo['account_type'] === 'cash') {
-                        $sourceType = 'owner_fund';
-                        error_log("SMART LOGIC: Income to Kas Operasional = owner_fund (not company income)");
-                    }
-                } catch (Exception $e) {
-                    // Keep default if check fails
-                }
-            }
+            // NOTE: source_type is determined by payment method later:
+            // - Cash payment → manual (real income, goes to petty cash)
+            // - Non-cash payment → manual (real income, goes to bank)
+            // - Owner fund is ONLY set explicitly via CQC topup_owner
 
             $data = [
                 'transaction_date' => $transactionDate,
@@ -171,6 +159,51 @@ if (isPost()) {
                 'source_type' => $sourceType,
                 'is_editable' => 1
             ];
+            
+            // ============================================
+            // SMART LOGIC - INCOME BASED ON PAYMENT METHOD
+            // Cash payment → goes to Petty Cash (operational)
+            // Non-cash payment → goes to Bank (not operational cash)
+            // ============================================
+            if ($transactionType === 'income') {
+                try {
+                    $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+                    $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                    $businessId = getMasterBusinessId();
+                    
+                    if ($paymentMethod === 'cash') {
+                        // CASH PAYMENT: Income goes to Petty Cash (operational cash)
+                        $stmt = $masterDb->prepare("SELECT id, account_name FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
+                        $stmt->execute([$businessId]);
+                        $pettyCashAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($pettyCashAccount) {
+                            $cashAccountId = $pettyCashAccount['id'];
+                            $data['cash_account_id'] = $cashAccountId;
+                            $data['source_type'] = 'manual'; // Real income, not owner fund
+                            error_log("SMART LOGIC - CASH payment: Income goes to Petty Cash ({$pettyCashAccount['account_name']})");
+                        }
+                    } else {
+                        // NON-CASH PAYMENT (Debit, Transfer, QR, EDC): Income goes to Bank account
+                        $stmt = $masterDb->prepare("SELECT id, account_name FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' ORDER BY id LIMIT 1");
+                        $stmt->execute([$businessId]);
+                        $bankAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($bankAccount) {
+                            $cashAccountId = $bankAccount['id'];
+                            $data['cash_account_id'] = $cashAccountId;
+                            $data['source_type'] = 'manual'; // Real income
+                            error_log("SMART LOGIC - NON-CASH payment ({$paymentMethod}): Income goes to Bank ({$bankAccount['account_name']})");
+                        } else {
+                            // No bank account, just record without cash_account_id
+                            $data['cash_account_id'] = null;
+                            error_log("SMART LOGIC - NON-CASH payment: No bank account, recording without cash_account_id");
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log("Income smart logic error: " . $e->getMessage());
+                }
+            }
             
             // ============================================
             // SMART LOGIC - ALWAYS Use Petty Cash First for Expense
@@ -244,16 +277,14 @@ if (isPost()) {
                             // Determine transaction type for cash_account_transactions
                             $accountTransactionType = $transactionType; // Default: 'income' or 'expense'
                             
-                            // ALL BUSINESSES: If Petty Cash/Kas Operasional and income = owner sending operational funds
-                            // This is NOT company income, it's capital/operational fund injection
-                            if ($account && $account['account_type'] === 'cash' && $transactionType === 'income') {
+                            // ONLY owner_capital account income = capital_injection
+                            // Petty Cash income from customers = real income (not capital_injection)
+                            if ($account && $account['account_type'] === 'owner_capital' && $transactionType === 'income') {
                                 $accountTransactionType = 'capital_injection';
-                                error_log("SMART LOGIC - Petty Cash income = operational fund injection (not company income)");
+                                error_log("SMART LOGIC - Owner Capital income = capital injection");
                             }
-                            // If this is owner_capital account and income = capital injection (legacy support)
-                            elseif ($account && $account['account_type'] === 'owner_capital' && $transactionType === 'income') {
-                                $accountTransactionType = 'capital_injection';
-                            }
+                            // Cash account income from customers via cash payment = real income
+                            // This adds to petty cash balance for operational use
                             
                             // Insert to cash_account_transactions
                             $stmt = $masterDb->prepare("

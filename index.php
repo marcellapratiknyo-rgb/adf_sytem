@@ -103,12 +103,12 @@ try {
     
     $businessId = getMasterBusinessId();
     
-    // Get owner_capital account IDs
+    // Get owner_capital account IDs (for legacy support)
     $stmt = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'owner_capital'");
     $stmt->execute([$businessId]);
     $ownerCapitalAccountIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // Get cash (Kas Operasional) account IDs - income to these = owner fund, NOT real income
+    // Get cash (Kas Operasional) account IDs
     $stmt = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'cash'");
     $stmt->execute([$businessId]);
     $kasOperasionalAccountIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -116,14 +116,24 @@ try {
     error_log("Error fetching owner capital accounts: " . $e->getMessage());
 }
 
-// Build exclusion clause - ONLY if cash_account_id column exists in cash_book
-// Exclude income from:
-// 1. owner_capital accounts
-// 2. cash accounts (Kas Operasional) - income here is owner fund, not real income
+// Build exclusion clause - exclude ONLY explicit owner fund
+// Cash payment income to Petty Cash IS real income (from customers)
+// Only source_type = 'owner_fund' should be excluded from income stats
 $excludeOwnerCapital = '';
-$allOwnerFundAccounts = array_merge($ownerCapitalAccountIds ?? [], $kasOperasionalAccountIds ?? []);
-if ($hasCashAccountIdCol && !empty($allOwnerFundAccounts)) {
-    $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $allOwnerFundAccounts) . "))";
+$hasSourceTypeCol = false;
+try {
+    $colCheck = $db->getConnection()->query("SHOW COLUMNS FROM cash_book LIKE 'source_type'");
+    $hasSourceTypeCol = $colCheck && $colCheck->rowCount() > 0;
+} catch (\Throwable $e) {
+    $hasSourceTypeCol = false;
+}
+
+if ($hasSourceTypeCol) {
+    // Use source_type to exclude owner fund
+    $excludeOwnerCapital = " AND (source_type IS NULL OR source_type != 'owner_fund')";
+} elseif ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
+    // Fallback: only exclude owner_capital accounts (not petty cash)
+    $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
 // Colors for divisions
