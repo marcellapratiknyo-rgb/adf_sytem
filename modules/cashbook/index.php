@@ -1397,7 +1397,7 @@ echo getPrintCSS();
     <div class="card">
         <div class="card-header">
             <div>
-                <div class="card-title"><?php echo $isCQC ? 'Pengeluaran Office' : 'Total Pengeluaran'; ?></div>
+                <div class="card-title"><?php echo $isCQC ? 'Pengeluaran Office & Proyek' : 'Total Pengeluaran'; ?></div>
                 <div class="card-value text-danger"><?php echo formatCurrency($isCQC ? $totalOfficeExpense : $totalExpense); ?></div>
             </div>
             <div class="card-icon expense">
@@ -1443,7 +1443,7 @@ echo getPrintCSS();
         <div class="cqc-daily-card expense">
             <div class="cqc-daily-label">
                 <i data-feather="upload" style="width: 14px; height: 14px;"></i>
-                Pengeluaran Office
+                Pengeluaran Office & Proyek
             </div>
             <div class="cqc-daily-value">Rp <?php echo number_format($totalOfficeExpense, 0, ',', '.'); ?></div>
             <div class="cqc-daily-desc">Biaya operasional harian</div>
@@ -1456,7 +1456,7 @@ echo getPrintCSS();
             <div class="cqc-daily-value" style="color: <?php echo $saldoKasOperasional >= 0 ? '#2563eb' : '#dc2626'; ?>;">
                 Rp <?php echo number_format($saldoKasOperasional, 0, ',', '.'); ?>
             </div>
-            <div class="cqc-daily-desc">Transfer petty cash − pengeluaran office</div>
+            <div class="cqc-daily-desc">Transfer petty cash − pengeluaran office & proyek</div>
         </div>
     </div>
 </div>
