@@ -538,6 +538,95 @@ body[data-theme="light"] .grid-date-cell.today {
     display: none;
 }
 
+/* Footer Row - Bottom Date Reference */
+.calendar-grid-footer {
+    display: contents;
+}
+
+.grid-footer-room {
+    background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 100%);
+    border-right: 2px solid #94a3b8;
+    border-top: 2px solid #cbd5e1;
+    padding: 0.15rem 0.4rem;
+    font-weight: 800;
+    text-align: center;
+    position: sticky;
+    left: 0;
+    z-index: 40;
+    font-size: 0.62rem;
+    color: #475569;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    min-width: 130px;
+}
+
+body[data-theme="light"] .grid-footer-room {
+    background: linear-gradient(135deg, #cbd5e1 0%, #e2e8f0 100%);
+    font-weight: 900;
+    border-right: 2px solid #94a3b8;
+    border-top: 2px solid #94a3b8;
+    color: #0f172a;
+}
+
+body[data-theme="dark"] .grid-footer-room {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-right: 2px solid #475569;
+    border-top: 2px solid #475569;
+    color: #94a3b8;
+}
+
+.grid-footer-date {
+    background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+    border-right: 1px solid #e2e8f0;
+    border-top: 2px solid #cbd5e1;
+    padding: 0.25rem 0.2rem;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.7rem;
+    color: #334155;
+    min-height: 28px;
+}
+
+body[data-theme="light"] .grid-footer-date {
+    border-right: 1px solid #cbd5e1;
+    border-top: 2px solid #94a3b8;
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    color: #1e293b;
+}
+
+body[data-theme="dark"] .grid-footer-date {
+    background: linear-gradient(180deg, #1e293b, #0f172a);
+    border-right: 1px solid #334155;
+    border-top: 2px solid #475569;
+    color: #e2e8f0;
+}
+
+.grid-footer-date.today {
+    background: rgba(99, 102, 241, 0.15) !important;
+}
+
+.grid-footer-date-day {
+    display: inline;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: #64748b;
+}
+
+.grid-footer-date-num {
+    display: inline;
+    font-size: 0.8rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #1e293b;
+    margin-left: 0.15rem;
+}
+
 /* Room Row */
 .grid-room-label {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -751,8 +840,8 @@ body[data-theme="light"] .grid-date-cell {
 
 .booking-bar {
     width: 100%;
-    height: 20px;
-    padding: 0 0.3rem;
+    height: 22px;
+    padding: 0 0.4rem;
     cursor: pointer;
     overflow: visible;
     display: flex;
@@ -762,7 +851,7 @@ body[data-theme="light"] .grid-date-cell {
     transition: all 0.2s ease;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1);
     font-weight: 700;
-    font-size: 0.62rem;
+    font-size: 0.72rem;
     line-height: 1.1;
     position: relative;
     pointer-events: auto;
@@ -778,7 +867,7 @@ body[data-theme="light"] .grid-date-cell {
     color: #ffffff !important;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
     font-weight: 800;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     display: block;
 }
 
@@ -2136,6 +2225,21 @@ body[data-theme="dark"] .stats-list li {
                 <?php endforeach; // End individual rooms loop ?>
             <?php endforeach; // End room types loop
             ?>
+            
+            <!-- FOOTER DATE ROW - Same as header for easy reference when scrolling -->
+            <div class="calendar-grid-footer">
+                <div class="grid-footer-room">ROOMS</div>
+                <?php foreach ($dates as $date): ?>
+                <div class="grid-footer-date<?php echo ($date === date('Y-m-d')) ? ' today' : ''; ?>">
+                    <span class="grid-footer-date-day">
+                        <?php echo date('D', strtotime($date)); ?>
+                    </span>
+                    <span class="grid-footer-date-num">
+                        <?php echo date('d', strtotime($date)); ?>
+                    </span>
+                </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
     </div>
