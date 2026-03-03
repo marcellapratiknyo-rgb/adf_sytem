@@ -251,7 +251,7 @@ try {
         $capitalStats['balance'] = $result['balance'] ?? 0;
     }
     
-    // Query Petty Cash stats (Only cash payment method) - only if cash_account_id column exists
+    // Query Petty Cash / Kas Operasional stats - based on cash_account_id, NOT payment_method
     if ($hasCashAccountIdCol && !empty($pettyCashAccounts)) {
         $placeholders = implode(',', array_fill(0, count($pettyCashAccounts), '?'));
         
@@ -264,7 +264,6 @@ try {
             FROM cash_book 
             WHERE cash_account_id IN ($placeholders)
             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?
-            AND payment_method = 'cash'
         ";
         
         $params = array_merge($pettyCashAccounts, [$thisMonth]);
@@ -304,13 +303,13 @@ try {
         $startKasOwner = $rStart['bal'] ?? 0;
     }
     
-    // Petty Cash: all cash transactions before today
+    // Petty Cash / Kas Operasional: all transactions before today
     if ($hasCashAccountIdCol && !empty($pettyCashAccounts)) {
         $placeholders = implode(',', array_fill(0, count($pettyCashAccounts), '?'));
         $qStart = "SELECT 
             COALESCE(SUM(CASE WHEN transaction_type='income' THEN amount ELSE 0 END),0) -
             COALESCE(SUM(CASE WHEN transaction_type='expense' THEN amount ELSE 0 END),0) as bal
-            FROM cash_book WHERE cash_account_id IN ($placeholders) AND payment_method='cash' AND transaction_date < ?";
+            FROM cash_book WHERE cash_account_id IN ($placeholders) AND transaction_date < ?";
         $pStart = array_merge($pettyCashAccounts, [$today]);
         $rStart = $db->fetchOne($qStart, $pStart);
         $startKasPetty = $rStart['bal'] ?? 0;
