@@ -167,11 +167,12 @@ try {
                 try {
                     // ============================================
                     // FIX: Enhanced duplicate prevention
-                    // Always check cash_book for existing entry BEFORE insert
+                    // Check if ANY entry exists for this booking code (regardless of amount/date)
+                    // This prevents duplicates from check-in + auto-sync
                     // ============================================
                     $existingEntry = $db->fetchOne(
-                        "SELECT id FROM cash_book WHERE description LIKE ? AND ABS(amount - ?) < 1 AND transaction_type = 'income' AND transaction_date = DATE(?) LIMIT 1",
-                        ['%' . $payment['booking_code'] . '%', $payment['amount'], $payment['payment_date']]
+                        "SELECT id FROM cash_book WHERE description LIKE ? AND transaction_type = 'income' LIMIT 1",
+                        ['%' . $payment['booking_code'] . '%']
                     );
                     if ($existingEntry) {
                         // Mark as synced even if entry already exists (prevent retry loop)
