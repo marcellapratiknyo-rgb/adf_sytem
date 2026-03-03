@@ -17,7 +17,22 @@ $db = Database::getInstance();
 // Get month parameter (default to current month)
 $month = isset($_GET['month']) ? $_GET['month'] : date('Y-m');
 
-// Get income data by division for the selected month
+// Check if source_type column exists
+$hasSourceTypeCol = false;
+try {
+    $colCheck = $db->getConnection()->query("SHOW COLUMNS FROM cash_book LIKE 'source_type'");
+    $hasSourceTypeCol = $colCheck && $colCheck->rowCount() > 0;
+} catch (\Throwable $e) {
+    $hasSourceTypeCol = false;
+}
+
+// Build exclusion filter for owner fund (not hotel income)
+$ownerFundFilter = '';
+if ($hasSourceTypeCol) {
+    $ownerFundFilter = " AND (cb.source_type IS NULL OR cb.source_type != 'owner_fund')";
+}
+
+// Get income data by division for the selected month (excluding owner fund)
 $divisionIncomeData = $db->fetchAll(
     "SELECT 
         d.division_name,
@@ -26,7 +41,7 @@ $divisionIncomeData = $db->fetchAll(
     FROM divisions d
     LEFT JOIN cash_book cb ON d.id = cb.division_id 
         AND cb.transaction_type = 'income'
-        AND DATE_FORMAT(cb.transaction_date, '%Y-%m') = :month
+        AND DATE_FORMAT(cb.transaction_date, '%Y-%m') = :month" . $ownerFundFilter . "
     WHERE d.is_active = 1
     GROUP BY d.id, d.division_name, d.division_code
     HAVING total > 0

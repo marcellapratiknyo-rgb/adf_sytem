@@ -826,10 +826,34 @@ function fillOwnerFund() {
     document.querySelector('input[name="transaction_date"]').value = '<?php echo date("Y-m-d"); ?>';
     document.querySelector('input[name="transaction_time"]').value = '<?php echo date("H:i"); ?>';
     
-    // Set division to first available (or Hotel if exists)
+    // Set division - try to find "Kas", "Modal", "Owner", "Finance" division
+    // If not found, use Hotel or first available (will be excluded from pie chart anyway)
     const divisionSelect = document.querySelector('select[name="division_id"]');
     if (divisionSelect) {
-        divisionSelect.value = divisionSelect.options[1]?.value || '';
+        let foundKasDiv = false;
+        const keywords = ['kas', 'modal', 'owner', 'finance', 'keuangan', 'petty'];
+        for (let opt of divisionSelect.options) {
+            const text = opt.text.toLowerCase();
+            if (keywords.some(kw => text.includes(kw))) {
+                divisionSelect.value = opt.value;
+                foundKasDiv = true;
+                break;
+            }
+        }
+        // If no special division found, look for Hotel
+        if (!foundKasDiv) {
+            for (let opt of divisionSelect.options) {
+                if (opt.text.toLowerCase().includes('hotel')) {
+                    divisionSelect.value = opt.value;
+                    foundKasDiv = true;
+                    break;
+                }
+            }
+        }
+        // Still not found, use first non-placeholder
+        if (!foundKasDiv && divisionSelect.options.length > 1) {
+            divisionSelect.selectedIndex = 1;
+        }
     }
     
     // Set category to "Modal Operasional"

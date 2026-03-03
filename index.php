@@ -401,9 +401,13 @@ $recentTransactions = $db->fetchAll(
 // ============================================
 // CHART DATA - Division Income (Pie Chart)
 // ============================================
-// Exclude owner capital from income
+// Exclude owner fund from division income chart (not hotel profit)
 $divisionIncomeFilter = '';
-if ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
+if ($hasSourceTypeCol) {
+    // Exclude owner_fund using source_type
+    $divisionIncomeFilter = " AND (cb.source_type IS NULL OR cb.source_type != 'owner_fund')";
+} elseif ($hasCashAccountIdCol && !empty($ownerCapitalAccountIds)) {
+    // Fallback: exclude owner_capital accounts
     $divisionIncomeFilter = " AND (cb.cash_account_id IS NULL OR cb.cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
