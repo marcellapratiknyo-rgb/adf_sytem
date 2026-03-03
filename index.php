@@ -820,22 +820,6 @@ if ($trialStatus) {
                     ?>
                 </div>
             </div>
-            <?php if ($isCQC): ?>
-            <!-- CQC: Petty Cash Container - Actual Balance -->
-            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.08)); border-radius: 8px; border-left: 4px solid #f59e0b;">
-                <div style="font-size: 0.75rem; color: #d97706; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">💰 Petty Cash</div>
-                <div id="totalPettyCash" style="font-size: 1.5rem; font-weight: 800; color: #d97706;">
-                    <?php echo formatCurrency($cqcPettyCashBalance ?? 0); ?>
-                </div>
-            </div>
-            <!-- CQC: Bank (Kas Besar) Container -->
-            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(37, 99, 235, 0.05)); border-radius: 8px; border-left: 4px solid #3b82f6;">
-                <div style="font-size: 0.75rem; color: #2563eb; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">🏦 Kas Besar</div>
-                <div id="totalKasBesar" style="font-size: 1.5rem; font-weight: 800; color: #2563eb;">
-                    <?php echo formatCurrency($cqcBankBalance ?? 0); ?>
-                </div>
-            </div>
-            <?php endif; ?>
             <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.05)); border-radius: 8px; border-left: 4px solid var(--danger);">
                 <div style="font-size: 0.75rem; color: var(--danger); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;"><?php echo $isCQC ? 'Total Pengeluaran' : 'Total Pengeluaran'; ?></div>
                 <div id="totalExpense" style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">
