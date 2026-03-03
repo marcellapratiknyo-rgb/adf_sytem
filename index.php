@@ -356,6 +356,26 @@ try {
 }
 
 // ============================================
+// GUEST CASH INCOME (Cash payments from guests this month)
+// ============================================
+$guestCashIncome = 0;
+try {
+    $thisMonth = date('Y-m');
+    $guestCashResult = $db->fetchOne(
+        "SELECT COALESCE(SUM(bp.amount), 0) as total 
+         FROM booking_payments bp 
+         INNER JOIN bookings b ON bp.booking_id = b.id 
+         WHERE bp.payment_method = 'cash' 
+         AND b.status IN ('checked_in', 'checked_out')
+         AND DATE_FORMAT(bp.payment_date, '%Y-%m') = ?",
+        [$thisMonth]
+    );
+    $guestCashIncome = $guestCashResult['total'] ?? 0;
+} catch (Exception $e) {
+    error_log("Error fetching guest cash income: " . $e->getMessage());
+}
+
+// ============================================
 // TOP DIVISIONS (This Month)
 // ============================================
 // Exclude owner capital ONLY from income, not from expense
@@ -729,12 +749,12 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
 </style>
 
 <?php if (!$isCQC): ?>
-<!-- KAS OPERASIONAL HARIAN Widget -->
+<!-- DAILY CASH Widget -->
 <div class="card fade-in" style="margin-bottom: 1rem; background: #fff; border: 1px solid #e5e7eb;">
     <div style="padding: 0.875rem 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.625rem;">
             <h3 style="font-size: 0.85rem; color: #111827; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                💰 Kas Harian
+                💰 Daily Cash
                 <span style="font-size: 0.7rem; color: #9ca3af; font-weight: 500;"><?php echo date('M Y'); ?></span>
             </h3>
             <a href="modules/owner/owner-capital-monitor.php" style="padding: 0.4rem 0.75rem; background: linear-gradient(135deg, <?php echo $cAccent; ?> 0%, <?php echo $cAccentDark; ?> 100%); color: white; border-radius: 6px; text-decoration: none; font-size: 0.7rem; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(<?php echo $cAccentRgb; ?>, 0.25);" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -744,47 +764,63 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         
         <!-- Compact Kas Summary -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
-            <!-- Start Kas -->
+            <!-- Start Cash -->
             <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 0.875rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0;">
-                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Start Kas (<?php echo date('d M'); ?>)</div>
+                <div style="font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Start Cash (<?php echo date('d M'); ?>)</div>
                 <div style="font-size: 1.125rem; font-weight: 700; color: #334155; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($startKasHariIni); ?></div>
             </div>
-            <!-- Kas Tersedia -->
+            <!-- Cash Available -->
             <div style="background: linear-gradient(135deg, <?php echo $totalOperationalCash >= 0 ? '#ecfdf5' : '#fef2f2'; ?> 0%, <?php echo $totalOperationalCash >= 0 ? '#d1fae5' : '#fee2e2'; ?> 100%); padding: 0.875rem 1rem; border-radius: 10px; border: 1px solid <?php echo $totalOperationalCash >= 0 ? '#a7f3d0' : '#fecaca'; ?>;">
-                <div style="font-size: 0.65rem; color: <?php echo $totalOperationalCash >= 0 ? '#047857' : '#b91c1c'; ?>; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Kas Tersedia</div>
+                <div style="font-size: 0.65rem; color: <?php echo $totalOperationalCash >= 0 ? '#047857' : '#b91c1c'; ?>; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.25rem;">Cash Available</div>
                 <div style="font-size: 1.125rem; font-weight: 700; color: <?php echo $totalOperationalCash >= 0 ? '#059669' : '#dc2626'; ?>; font-family: 'Monaco', 'Courier New', monospace;"><?php echo formatCurrency($totalOperationalCash); ?></div>
             </div>
         </div>
         
+        <!-- Guest Cash Income -->
+        <?php if ($guestCashIncome > 0): ?>
+        <div style="margin-bottom: 0.75rem; padding: 0.75rem 1rem; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 10px; border: 1px solid #93c5fd; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 0.6rem; color: #1e40af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Guest Cash Income</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a; font-family: 'Monaco', monospace; display: flex; align-items: center; gap: 0.35rem;">
+                    <span style="color: #059669;">+</span><?php echo formatCurrency($guestCashIncome); ?>
+                </div>
+            </div>
+            <div style="font-size: 0.65rem; color: #3b82f6; background: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: 600;">Cash</div>
+        </div>
+        <?php endif; ?>
+        
         <!-- Detail: 3 compact cards -->
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.625rem;">
-            <!-- Saldo Kas -->
+            <!-- Cash Balance -->
             <div style="background: #fff; padding: 0.75rem 0.875rem; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0.625rem;">
                 <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #fbbf24, #f59e0b); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
                 </div>
                 <div>
-                    <div style="font-size: 0.6rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Saldo Kas</div>
+                    <div style="font-size: 0.6rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Balance</div>
                     <div style="font-size: 1rem; font-weight: 700; color: #1f2937; font-family: 'Monaco', monospace;"><?php echo formatCurrency($pettyCashStats['balance']); ?></div>
                 </div>
             </div>
-            <!-- Uang Masuk -->
+            <!-- Income -->
             <div style="background: #fff; padding: 0.75rem 0.875rem; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0.625rem;">
                 <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #34d399, #10b981); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="7 13 12 8 17 13"/><line x1="12" y1="8" x2="12" y2="20"/></svg>
                 </div>
                 <div>
-                    <div style="font-size: 0.6rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Masuk</div>
+                    <div style="font-size: 0.6rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Income</div>
                     <div style="font-size: 1rem; font-weight: 700; color: #059669; font-family: 'Monaco', monospace;"><?php echo formatCurrency($totalOperationalIncome); ?></div>
                 </div>
             </div>
-            <!-- Uang Keluar -->
+            <!-- Expense -->
             <div style="background: #fff; padding: 0.75rem 0.875rem; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 0.625rem;">
                 <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #f87171, #ef4444); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="7 11 12 16 17 11"/><line x1="12" y1="16" x2="12" y2="4"/></svg>
                 </div>
                 <div>
-                    <div style="font-size: 0.6rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Keluar</div>
+                    <div style="font-size: 0.6rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">Expense</div>
                     <div style="font-size: 1rem; font-weight: 700; color: #dc2626; font-family: 'Monaco', monospace;"><?php echo formatCurrency($totalOperationalExpense); ?></div>
                 </div>
             </div>
@@ -792,7 +828,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         
         <?php if ($totalOperationalCash < 0): ?>
         <div style="margin-top: 0.5rem; padding: 0.4rem 0.75rem; background: #fef2f2; border-left: 2px solid #dc2626; border-radius: 4px;">
-            <div style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">⚠️ Kas negatif!</div>
+            <div style="font-size: 0.7rem; color: #dc2626; font-weight: 600;">⚠️ Negative cash!</div>
         </div>
         <?php endif; ?>
     </div>

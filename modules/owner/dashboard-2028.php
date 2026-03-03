@@ -1711,7 +1711,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             </div>
         </div>
         
-        <!-- Kas Harian (Today's Cash Book) -->
+        <!-- Daily Cash Section -->
         <?php
         // Fetch this month's cash book entries - SAME LOGIC AS index.php
         // Only count owner_capital + petty_cash accounts
@@ -1720,6 +1720,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         $monthMasuk = 0;
         $monthKeluar = 0;
         $kasAvailable = 0;
+        $guestCashIncome = 0;
         
         try {
             // Connect to master DB to get cash account IDs
@@ -1787,6 +1788,18 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                 $stmtAll->execute($allAccounts);
                 $kasAvailable = (float)($stmtAll->fetchColumn() ?: 0);
                 
+                // Get Guest Cash Income this month (cash payments from guests)
+                $stmtGuest = $kasDb->prepare("
+                    SELECT COALESCE(SUM(bp.amount), 0) as total 
+                    FROM booking_payments bp 
+                    INNER JOIN bookings b ON bp.booking_id = b.id 
+                    WHERE bp.payment_method = 'cash' 
+                    AND b.status IN ('checked_in', 'checked_out')
+                    AND DATE_FORMAT(bp.payment_date, '%Y-%m') = ?
+                ");
+                $stmtGuest->execute([$thisMonth]);
+                $guestCashIncome = (float)($stmtGuest->fetchColumn() ?: 0);
+                
                 // Get recent transactions - filtered by accounts
                 $sqlKas = "
                     SELECT id, transaction_type, description, amount,
@@ -1804,17 +1817,32 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             
         } catch (PDOException $e) {
             // Silent fail - error_log for debugging
-            error_log("Kas Harian Error: " . $e->getMessage());
+            error_log("Daily Cash Error: " . $e->getMessage());
         }
         ?>
         <div class="kas-harian-section">
             <div class="kas-harian-header">
                 <div class="kas-harian-title">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
-                    Owner Cash
+                    Daily Cash
                 </div>
                 <div class="kas-harian-date"><?= date('M Y') ?></div>
             </div>
+            
+            <?php if ($guestCashIncome > 0): ?>
+            <div style="margin-bottom: 12px; padding: 10px 12px; background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.1) 100%); border-radius: 10px; border: 1px solid rgba(59,130,246,0.3); display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 9px; color: #60a5fa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Guest Cash Income</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #93c5fd; display: flex; align-items: center; gap: 4px;">
+                        <span style="color: #10b981;">+</span><?= number_format($guestCashIncome, 0, ',', '.') ?>
+                    </div>
+                </div>
+                <div style="font-size: 10px; color: #3b82f6; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 4px; font-weight: 600;">Cash</div>
+            </div>
+            <?php endif; ?>
             
             <div class="kas-summary-row">
                 <div class="kas-summary-box">
