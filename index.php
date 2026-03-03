@@ -668,8 +668,46 @@ if ($isCQC) {
         );
         $cqcPettyCashTransfers = (float)($pettyCashMonth['total'] ?? 0);
         
+        // Get Petty Cash account ID for expense summary
+        $stmtPettyId = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' LIMIT 1");
+        $stmtPettyId->execute([$businessId]);
+        $pettyCashAccountId = (int)($stmtPettyId->fetchColumn() ?? 0);
+        
+        // Get Bank account ID for expense summary  
+        $stmtBankId = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' LIMIT 1");
+        $stmtBankId->execute([$businessId]);
+        $bankAccountId = (int)($stmtBankId->fetchColumn() ?? 0);
+        
     } catch (Exception $e) {
         error_log('CQC Petty Cash balance error: ' . $e->getMessage());
+    }
+    
+    // Get expenses from Petty Cash this month
+    $cqcExpenseFromPettyCash = 0;
+    $cqcExpenseFromBank = 0;
+    
+    if (isset($pettyCashAccountId) && $pettyCashAccountId > 0) {
+        $expPetty = $db->fetchOne(
+            "SELECT COALESCE(SUM(amount), 0) as total 
+             FROM cash_book 
+             WHERE transaction_type = 'expense' 
+             AND cash_account_id = ?
+             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
+            [$pettyCashAccountId, $thisMonth]
+        );
+        $cqcExpenseFromPettyCash = (float)($expPetty['total'] ?? 0);
+    }
+    
+    if (isset($bankAccountId) && $bankAccountId > 0) {
+        $expBank = $db->fetchOne(
+            "SELECT COALESCE(SUM(amount), 0) as total 
+             FROM cash_book 
+             WHERE transaction_type = 'expense' 
+             AND cash_account_id = ?
+             AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
+            [$bankAccountId, $thisMonth]
+        );
+        $cqcExpenseFromBank = (float)($expBank['total'] ?? 0);
     }
 }
 
@@ -788,6 +826,20 @@ if ($trialStatus) {
                 <div style="font-size: 0.75rem; color: #d97706; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">💰 Petty Cash</div>
                 <div id="totalPettyCash" style="font-size: 1.5rem; font-weight: 800; color: #d97706;">
                     <?php echo formatCurrency($cqcPettyCashBalance ?? 0); ?>
+                </div>
+            </div>
+            <!-- CQC: Expense from Bank Besar -->
+            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(37, 99, 235, 0.05)); border-radius: 8px; border-left: 4px solid #3b82f6;">
+                <div style="font-size: 0.75rem; color: #2563eb; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">🏦 Expense dari Bank</div>
+                <div id="expenseFromBank" style="font-size: 1.5rem; font-weight: 800; color: #2563eb;">
+                    <?php echo formatCurrency($cqcExpenseFromBank ?? 0); ?>
+                </div>
+            </div>
+            <!-- CQC: Expense from Petty Cash -->
+            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(139, 92, 246, 0.05)); border-radius: 8px; border-left: 4px solid #a855f7;">
+                <div style="font-size: 0.75rem; color: #9333ea; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">💸 Expense dari Petty</div>
+                <div id="expenseFromPettyCash" style="font-size: 1.5rem; font-weight: 800; color: #9333ea;">
+                    <?php echo formatCurrency($cqcExpenseFromPettyCash ?? 0); ?>
                 </div>
             </div>
             <?php endif; ?>
@@ -2023,6 +2075,8 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                         const pettyCashTransfers = data.cqc.petty_cash_transfers || 0;
                         const pettyCashBalance = data.cqc.petty_cash_balance || 0;
                         const bankBalance = data.cqc.bank_balance || 0;
+                        const expenseFromPettyCash = data.cqc.expense_from_petty_cash || 0;
+                        const expenseFromBank = data.cqc.expense_from_bank || 0;
                         displayIncome = totalIncome - pettyCashTransfers;
                         // CQC: Saldo Bersih = Petty Cash + Bank (actual cash position)
                         netBalance = pettyCashBalance + bankBalance;
@@ -2030,6 +2084,15 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                         const pettyCashEl = document.getElementById('totalPettyCash');
                         if (pettyCashEl) {
                             pettyCashEl.textContent = formatRupiah(pettyCashBalance);
+                        }
+                        // Update expense summary containers
+                        const expBankEl = document.getElementById('expenseFromBank');
+                        if (expBankEl) {
+                            expBankEl.textContent = formatRupiah(expenseFromBank);
+                        }
+                        const expPettyEl = document.getElementById('expenseFromPettyCash');
+                        if (expPettyEl) {
+                            expPettyEl.textContent = formatRupiah(expenseFromPettyCash);
                         }
                     }
                     
@@ -2079,12 +2142,23 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                         const pettyCashTransfers = data.cqc.petty_cash_transfers || 0;
                         const pettyCashBalance = data.cqc.petty_cash_balance || 0;
                         const bankBalance = data.cqc.bank_balance || 0;
+                        const expenseFromPettyCash = data.cqc.expense_from_petty_cash || 0;
+                        const expenseFromBank = data.cqc.expense_from_bank || 0;
                         displayIncome = totalIncome - pettyCashTransfers;
                         // CQC: Saldo Bersih = Petty Cash + Bank (actual cash position)
                         netBalance = pettyCashBalance + bankBalance;
                         const pettyCashEl = document.getElementById('totalPettyCash');
                         if (pettyCashEl) {
                             pettyCashEl.textContent = formatRupiah(pettyCashBalance);
+                        }
+                        // Update expense summary containers
+                        const expBankEl = document.getElementById('expenseFromBank');
+                        if (expBankEl) {
+                            expBankEl.textContent = formatRupiah(expenseFromBank);
+                        }
+                        const expPettyEl = document.getElementById('expenseFromPettyCash');
+                        if (expPettyEl) {
+                            expPettyEl.textContent = formatRupiah(expenseFromPettyCash);
                         }
                     }
                     

@@ -134,10 +134,50 @@ if ($isCQC) {
         );
         $pettyCashTransfers = (float)($pettyCashMonth['total'] ?? 0);
         
+        // Get Petty Cash account ID
+        $stmtPettyId = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' LIMIT 1");
+        $stmtPettyId->execute([$bizId]);
+        $pettyCashAccountId = (int)($stmtPettyId->fetchColumn() ?? 0);
+        
+        // Get Bank account ID
+        $stmtBankId = $masterDb->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' LIMIT 1");
+        $stmtBankId->execute([$bizId]);
+        $bankAccountId = (int)($stmtBankId->fetchColumn() ?? 0);
+        
+        // Get expenses from Petty Cash this month
+        $expenseFromPettyCash = 0;
+        if ($pettyCashAccountId > 0) {
+            $expPetty = $db->fetchOne(
+                "SELECT COALESCE(SUM(amount), 0) as total 
+                 FROM cash_book 
+                 WHERE transaction_type = 'expense' 
+                 AND cash_account_id = ?
+                 AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
+                [$pettyCashAccountId, $selectedMonth]
+            );
+            $expenseFromPettyCash = (float)($expPetty['total'] ?? 0);
+        }
+        
+        // Get expenses from Bank this month
+        $expenseFromBank = 0;
+        if ($bankAccountId > 0) {
+            $expBank = $db->fetchOne(
+                "SELECT COALESCE(SUM(amount), 0) as total 
+                 FROM cash_book 
+                 WHERE transaction_type = 'expense' 
+                 AND cash_account_id = ?
+                 AND DATE_FORMAT(transaction_date, '%Y-%m') = ?",
+                [$bankAccountId, $selectedMonth]
+            );
+            $expenseFromBank = (float)($expBank['total'] ?? 0);
+        }
+        
         $cqcData = [
             'petty_cash_balance' => $pettyCashBalance,
             'bank_balance' => $bankBalance,
-            'petty_cash_transfers' => $pettyCashTransfers
+            'petty_cash_transfers' => $pettyCashTransfers,
+            'expense_from_petty_cash' => $expenseFromPettyCash,
+            'expense_from_bank' => $expenseFromBank
         ];
     } catch (Exception $e) {
         error_log("CQC live data error: " . $e->getMessage());
