@@ -1024,7 +1024,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     
     <!-- Recent Bank Expenses + Transfers -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Transactions</div>
+        <div style="font-size: 0.9rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Transactions</div>
         <?php
         // Get recent expenses from Bank + Transfers to Petty Cash
         $recentBankExpenses = [];
@@ -1056,15 +1056,15 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                 $textColor = $isTransfer ? '#2563eb' : '#dc2626';
                 $icon = $isTransfer ? '➡️' : '-';
             ?>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: <?php echo $bgColor; ?>; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: <?php echo $bgColor; ?>; border-radius: 8px;">
                 <div>
-                    <div style="font-size: 0.8rem; font-weight: 600; color: #374151;">
-                        <?php if ($isTransfer): ?><span style="background: #dbeafe; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; color: #1d4ed8; margin-right: 0.3rem;">TRANSFER</span><?php endif; ?>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #374151;">
+                        <?php if ($isTransfer): ?><span style="background: #dbeafe; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; color: #1d4ed8; margin-right: 0.4rem;">TRANSFER</span><?php endif; ?>
                         <?php echo htmlspecialchars(preg_replace('/\[.*?\]\s*/', '', $exp['description'])); ?>
                     </div>
-                    <div style="font-size: 0.65rem; color: #9ca3af;"><?php echo date('d M', strtotime($exp['transaction_date'])); ?> • <?php echo htmlspecialchars($exp['category'] ?? 'Uncategorized'); ?></div>
+                    <div style="font-size: 0.8rem; color: #9ca3af;"><?php echo date('d M', strtotime($exp['transaction_date'])); ?> • <?php echo htmlspecialchars($exp['category'] ?? 'Uncategorized'); ?></div>
                 </div>
-                <div style="font-size: 0.85rem; font-weight: 700; color: <?php echo $textColor; ?>;"><?php echo $icon; ?><?php echo formatCurrency($exp['amount']); ?></div>
+                <div style="font-size: 1rem; font-weight: 700; color: <?php echo $textColor; ?>;"><?php echo $icon; ?><?php echo formatCurrency($exp['amount']); ?></div>
             </div>
             <?php endforeach; ?>
         </div>
@@ -1112,7 +1112,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     
     <!-- Recent Petty Cash Expenses -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses</div>
+        <div style="font-size: 0.9rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses</div>
         <?php
         // Get recent expenses from Petty Cash
         $recentPettyExpenses = [];
@@ -1132,12 +1132,12 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         <?php if (!empty($recentPettyExpenses)): ?>
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
             <?php foreach ($recentPettyExpenses as $exp): ?>
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #fef2f2; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: #fef2f2; border-radius: 8px;">
                 <div>
-                    <div style="font-size: 0.8rem; font-weight: 600; color: #374151;"><?php echo htmlspecialchars($exp['description']); ?></div>
-                    <div style="font-size: 0.65rem; color: #9ca3af;"><?php echo date('d M', strtotime($exp['transaction_date'])); ?> • <?php echo htmlspecialchars($exp['category'] ?? 'Uncategorized'); ?></div>
+                    <div style="font-size: 0.95rem; font-weight: 600; color: #374151;"><?php echo htmlspecialchars($exp['description']); ?></div>
+                    <div style="font-size: 0.8rem; color: #9ca3af;"><?php echo date('d M', strtotime($exp['transaction_date'])); ?> • <?php echo htmlspecialchars($exp['category'] ?? 'Uncategorized'); ?></div>
                 </div>
-                <div style="font-size: 0.85rem; font-weight: 700; color: #dc2626;">-<?php echo formatCurrency($exp['amount']); ?></div>
+                <div style="font-size: 1rem; font-weight: 700; color: #dc2626;">-<?php echo formatCurrency($exp['amount']); ?></div>
             </div>
             <?php endforeach; ?>
         </div>
