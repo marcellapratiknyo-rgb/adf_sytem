@@ -75,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $expenseDate = $_POST['expense_date'];
         $expenseDesc = $_POST['description'] ?? '';
         $categoryId = $_POST['category_id'];
+        $fundSource = $_POST['fund_source'] ?? 'petty_cash';
         
         // Get category name for cashbook
         $stmtCat = $pdo->prepare("SELECT category_name FROM cqc_expense_categories WHERE id = ?");
@@ -168,7 +169,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
             
             // Build description with project reference
-            $fullDescription = '[CQC_PROJECT:' . $projectId . '] [' . $project['project_code'] . '] ' . $expenseDesc;
+            $fundSourceLabel = $fundSource === 'petty_cash' ? 'Petty Cash' : 'Kas Besar';
+            $fullDescription = '[CQC_PROJECT:' . $projectId . '] [' . $project['project_code'] . '] [' . $fundSourceLabel . '] ' . $expenseDesc;
             
             // Insert to cash_book
             $stmtCashbook = $pdo->prepare("
@@ -186,7 +188,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $_SESSION['user_id']
             ]);
             
-            error_log("CQC expense synced to cash_book: Project {$project['project_code']}, Amount: {$expenseAmount}");
+            // ============================================
+            // DEDUCT FROM APPROPRIATE ACCOUNT IN MASTER DB
+            // ============================================
+            try {
+                $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+                $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                
+                // Get business ID
+                $businessId = getMasterBusinessId();
+                
+                // Determine account type based on fund source
+                $accountType = ($fundSource === 'petty_cash') ? 'cash' : 'owner_capital';
+                
+                // Get the appropriate account
+                $stmtAccount = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = ? ORDER BY id LIMIT 1");
+                $stmtAccount->execute([$businessId, $accountType]);
+                $account = $stmtAccount->fetch(PDO::FETCH_ASSOC);
+                
+                if ($account) {
+                    // Record expense transaction
+                    $stmtTrans = $masterDb->prepare("
+                        INSERT INTO cash_account_transactions 
+                        (cash_account_id, transaction_date, description, amount, transaction_type, created_by) 
+                        VALUES (?, ?, ?, ?, 'expense', ?)
+                    ");
+                    $stmtTrans->execute([
+                        $account['id'],
+                        $expenseDate,
+                        'Pengeluaran Proyek: ' . $project['project_code'] . ' - ' . ($expenseDesc ?: $categoryName),
+                        $expenseAmount,
+                        $_SESSION['user_id']
+                    ]);
+                    
+                    // Deduct from account balance
+                    $stmtBalance = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance - ? WHERE id = ?");
+                    $stmtBalance->execute([$expenseAmount, $account['id']]);
+                    
+                    error_log("CQC expense deducted from {$account['account_name']}: -{$expenseAmount}");
+                }
+            } catch (Exception $accountError) {
+                error_log("CQC account deduction error: " . $accountError->getMessage());
+            }
+            
+            error_log("CQC expense synced to cash_book: Project {$project['project_code']}, Amount: {$expenseAmount}, Fund: {$fundSource}");
         } catch (Exception $syncError) {
             error_log("CQC cashbook sync error: " . $syncError->getMessage());
             // Don't fail the main operation, just log the sync error
@@ -515,6 +560,15 @@ include '../../includes/header.php';
             <div class="cqc-modal-header">➕ Tambah Pengeluaran</div>
             <form method="POST">
                 <input type="hidden" name="action" value="add_expense">
+
+                <div class="cqc-form-group">
+                    <label>Sumber Dana</label>
+                    <select name="fund_source" required style="background: linear-gradient(135deg, #f0f9ff, #e0f2fe); font-weight: 600;">
+                        <option value="petty_cash" selected>💰 Petty Cash (Operasional)</option>
+                        <option value="general_invoice">📄 General Invoice (Kas Besar)</option>
+                    </select>
+                    <small style="color: #64748b; font-size: 0.75rem;">Pilih dari mana dana untuk pengeluaran ini</small>
+                </div>
 
                 <div class="cqc-form-group">
                     <label>Kategori Pengeluaran</label>
