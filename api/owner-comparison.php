@@ -59,6 +59,34 @@ try {
             $bizPdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . getDbName($business['database_name']) . ";charset=utf8mb4", DB_USER, DB_PASS);
             $bizPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
+            // Get categories to exclude (modal, transfer dana, petty cash, etc.)
+            // These are capital/operational funds, not actual business income
+            $excludeCategories = [];
+            try {
+                $catStmt = $bizPdo->query("
+                    SELECT id FROM categories 
+                    WHERE LOWER(category_name) LIKE '%modal%' 
+                    OR LOWER(category_name) LIKE '%transfer%dana%'
+                    OR LOWER(category_name) LIKE '%petty%cash%'
+                    OR LOWER(category_name) LIKE '%kas%kecil%'
+                    OR LOWER(category_name) LIKE '%capital%'
+                ");
+                $excludeCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
+            } catch (Exception $e) {}
+            
+            $excludeClause = "";
+            if (!empty($excludeCategories)) {
+                $excludeClause = " AND (category_id IS NULL OR category_id NOT IN (" . implode(',', $excludeCategories) . "))";
+            }
+            
+            // Also exclude by description for entries without proper category
+            $excludeDescClause = " AND (
+                LOWER(description) NOT LIKE '%modal operasional%'
+                AND LOWER(description) NOT LIKE '%transfer dana%'
+                AND LOWER(description) NOT LIKE '%petty cash%'
+                AND LOWER(description) NOT LIKE '%kas kecil%'
+            )";
+            
             $stmt = $bizPdo->query(
                 "SELECT 
                     COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END), 0) as income,
@@ -66,7 +94,7 @@ try {
                     COUNT(CASE WHEN transaction_type = 'income' THEN 1 END) as income_count,
                     COUNT(CASE WHEN transaction_type = 'expense' THEN 1 END) as expense_count
                  FROM cash_book 
-                 WHERE $dateFilter"
+                 WHERE $dateFilter $excludeClause $excludeDescClause"
             );
             $stats = $stmt->fetch(PDO::FETCH_ASSOC);
             

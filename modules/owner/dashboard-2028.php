@@ -132,8 +132,37 @@ try {
         $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $capitalAccounts) . "))";
     }
     
-    // Today Income (exclude owner capital)
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE(transaction_date) = ? AND transaction_type = 'income'" . $excludeOwnerCapital);
+    // Additional: Exclude modal/transfer entries by category or description
+    // These are capital/operational funds, not actual business income
+    $excludeModalCategories = [];
+    try {
+        $catStmt = $pdo->query("
+            SELECT id FROM categories 
+            WHERE LOWER(category_name) LIKE '%modal%' 
+            OR LOWER(category_name) LIKE '%transfer%dana%'
+            OR LOWER(category_name) LIKE '%petty%cash%'
+            OR LOWER(category_name) LIKE '%capital%'
+        ");
+        $excludeModalCategories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (Exception $e) {}
+    
+    $excludeModalClause = "";
+    if (!empty($excludeModalCategories)) {
+        $excludeModalClause = " AND (category_id IS NULL OR category_id NOT IN (" . implode(',', $excludeModalCategories) . "))";
+    }
+    
+    // Also exclude by description patterns
+    $excludeDescClause = " AND (
+        LOWER(description) NOT LIKE '%modal operasional%'
+        AND LOWER(description) NOT LIKE '%transfer dana%'
+        AND LOWER(description) NOT LIKE '%setoran modal%'
+    )";
+    
+    // Combine all exclusions
+    $fullExclude = $excludeOwnerCapital . $excludeModalClause . $excludeDescClause;
+    
+    // Today Income (exclude owner capital and modal entries)
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE(transaction_date) = ? AND transaction_type = 'income'" . $fullExclude);
     $stmt->execute([$today]);
     $stats['today_income'] = (float)$stmt->fetchColumn();
     
@@ -142,8 +171,8 @@ try {
     $stmt->execute([$today]);
     $stats['today_expense'] = (float)$stmt->fetchColumn();
     
-    // Month Income (exclude owner capital)
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ? AND transaction_type = 'income'" . $excludeOwnerCapital);
+    // Month Income (exclude owner capital and modal entries)
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM cash_book WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ? AND transaction_type = 'income'" . $fullExclude);
     $stmt->execute([$thisMonth]);
     $stats['month_income'] = (float)$stmt->fetchColumn();
     
