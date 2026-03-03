@@ -624,6 +624,7 @@ include '../../includes/header.php';
         
         let successCount = 0;
         let totalDeleted = 0;
+        let errorMessages = [];
         
         for (const type of types) {
             try {
@@ -632,17 +633,21 @@ include '../../includes/header.php';
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ reset_type: type })
+                    body: JSON.stringify({ reset_type: type }),
+                    credentials: 'same-origin'
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
                     successCount++;
-                    totalDeleted += data.deleted_count;
+                    totalDeleted += data.deleted_count || 0;
+                } else {
+                    errorMessages.push(`${type}: ${data.message || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('Error resetting:', type, error);
+                errorMessages.push(`${type}: ${error.message}`);
             }
         }
         
@@ -663,7 +668,17 @@ include '../../includes/header.php';
             // Uncheck all
             checkboxes.forEach(cb => cb.checked = false);
         } else {
-            statusDiv.innerHTML = '<div style="color: var(--danger);">❌ Error saat reset data.</div>';
+            let errorHtml = '<div style="color: var(--danger); padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: var(--radius-md);">';
+            errorHtml += '<div style="font-weight: 600;">❌ Error saat reset data.</div>';
+            if (errorMessages.length > 0) {
+                errorHtml += '<ul style="font-size: 0.813rem; margin-top: 0.5rem; margin-bottom: 0; padding-left: 1.25rem;">';
+                errorMessages.forEach(msg => {
+                    errorHtml += `<li>${msg}</li>`;
+                });
+                errorHtml += '</ul>';
+            }
+            errorHtml += '</div>';
+            statusDiv.innerHTML = errorHtml;
         }
     }
 </script>

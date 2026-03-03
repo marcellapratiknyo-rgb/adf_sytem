@@ -54,7 +54,8 @@ function columnExists($conn, $tableName, $columnName) {
  */
 function safeDelete($conn, $table, $where = null, $params = []) {
     if (!tableExists($conn, $table)) {
-        return ['deleted' => 0, 'error' => "Table {$table} tidak ditemukan"];
+        // Table doesn't exist - not an error, just no data to delete
+        return ['deleted' => 0, 'error' => null];
     }
     
     try {
@@ -269,14 +270,26 @@ try {
             
         case 'employees':
             // Reset employees
-            if ($businessId && tableExists($conn, 'employees') && columnExists($conn, 'employees', 'business_id')) {
-                $result = safeDelete($conn, 'employees', 'business_id = :business_id', ['business_id' => $businessId]);
-            } else {
-                $result = safeDelete($conn, 'employees');
+            $empTables = ['employees', 'staff', 'karyawan']; // Check multiple possible table names
+            $foundTable = false;
+            foreach ($empTables as $empTable) {
+                if (tableExists($conn, $empTable)) {
+                    $foundTable = true;
+                    if ($businessId && columnExists($conn, $empTable, 'business_id')) {
+                        $result = safeDelete($conn, $empTable, 'business_id = :business_id', ['business_id' => $businessId]);
+                    } else {
+                        $result = safeDelete($conn, $empTable);
+                    }
+                    $deletedCount += $result['deleted'];
+                    if ($result['error']) $errors[] = $result['error'];
+                    $tables[] = $empTable;
+                    break;
+                }
             }
-            $deletedCount = $result['deleted'];
-            if ($result['error']) $errors[] = $result['error'];
-            $tables[] = 'employees';
+            if (!$foundTable) {
+                // No employees table found - not an error, just no data
+                $deletedCount = 0;
+            }
             $message = "Data karyawan berhasil direset. {$deletedCount} karyawan dihapus.";
             break;
             
