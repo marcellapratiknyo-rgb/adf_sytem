@@ -1443,47 +1443,6 @@ echo getPrintCSS();
     <?php endif; ?>
 </div>
 
-<?php if ($isCQC): ?>
-<!-- CQC Kas Operasional -->
-<div class="cqc-daily-expenses">
-    <div class="cqc-daily-header">
-        <div class="cqc-daily-icon">💰</div>
-        <div>
-            <div class="cqc-daily-title">Petty Cash CQC</div>
-            <div class="cqc-daily-subtitle">Kas operasional untuk office & proyek • Dompet terpisah dari kas invoice</div>
-        </div>
-    </div>
-    <div class="cqc-daily-grid" style="grid-template-columns: repeat(3, 1fr);">
-        <div class="cqc-daily-card owner">
-            <div class="cqc-daily-label">
-                <i data-feather="download" style="width: 14px; height: 14px;"></i>
-                Transfer Petty Cash
-            </div>
-            <div class="cqc-daily-value">Rp <?php echo number_format($totalOwnerFund, 0, ',', '.'); ?></div>
-            <div class="cqc-daily-desc">Total transfer ke petty cash</div>
-        </div>
-        <div class="cqc-daily-card expense">
-            <div class="cqc-daily-label">
-                <i data-feather="upload" style="width: 14px; height: 14px;"></i>
-                Pengeluaran dari Petty Cash
-            </div>
-            <div class="cqc-daily-value">Rp <?php echo number_format($totalPettyCashExpense, 0, ',', '.'); ?></div>
-            <div class="cqc-daily-desc">Office & proyek (sumber: petty cash)</div>
-        </div>
-        <div class="cqc-daily-card balance">
-            <div class="cqc-daily-label">
-                <i data-feather="credit-card" style="width: 14px; height: 14px;"></i>
-                Saldo Petty Cash
-            </div>
-            <div class="cqc-daily-value" style="color: <?php echo $saldoKasOperasional >= 0 ? '#2563eb' : '#dc2626'; ?>;">
-                Rp <?php echo number_format($saldoKasOperasional, 0, ',', '.'); ?>
-            </div>
-            <div class="cqc-daily-desc">Saldo aktual petty cash</div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
 <!-- Transactions Table -->
 <div class="table-container">
     <div class="table-header <?php echo $isCQC ? 'table-header-cqc' : ''; ?>" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -1848,6 +1807,47 @@ echo getPrintCSS();
     </div>
 </div>
 </div>
+
+<?php if ($isCQC): ?>
+<!-- CQC Kas Operasional -->
+<div class="cqc-daily-expenses">
+    <div class="cqc-daily-header">
+        <div class="cqc-daily-icon">💰</div>
+        <div>
+            <div class="cqc-daily-title">Petty Cash CQC</div>
+            <div class="cqc-daily-subtitle">Kas operasional untuk office & proyek • Dompet terpisah dari kas invoice</div>
+        </div>
+    </div>
+    <div class="cqc-daily-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="cqc-daily-card owner">
+            <div class="cqc-daily-label">
+                <i data-feather="download" style="width: 14px; height: 14px;"></i>
+                Transfer Petty Cash
+            </div>
+            <div class="cqc-daily-value">Rp <?php echo number_format($totalOwnerFund, 0, ',', '.'); ?></div>
+            <div class="cqc-daily-desc">Total transfer ke petty cash</div>
+        </div>
+        <div class="cqc-daily-card expense">
+            <div class="cqc-daily-label">
+                <i data-feather="upload" style="width: 14px; height: 14px;"></i>
+                Pengeluaran dari Petty Cash
+            </div>
+            <div class="cqc-daily-value">Rp <?php echo number_format($totalPettyCashExpense, 0, ',', '.'); ?></div>
+            <div class="cqc-daily-desc">Office & proyek (sumber: petty cash)</div>
+        </div>
+        <div class="cqc-daily-card balance">
+            <div class="cqc-daily-label">
+                <i data-feather="credit-card" style="width: 14px; height: 14px;"></i>
+                Saldo Petty Cash
+            </div>
+            <div class="cqc-daily-value" style="color: <?php echo $saldoKasOperasional >= 0 ? '#2563eb' : '#dc2626'; ?>;">
+                Rp <?php echo number_format($saldoKasOperasional, 0, ',', '.'); ?>
+            </div>
+            <div class="cqc-daily-desc">Saldo aktual petty cash</div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- JavaScript for Print Handling -->
 <script>
