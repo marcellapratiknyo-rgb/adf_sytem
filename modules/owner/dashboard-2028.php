@@ -1720,11 +1720,11 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         $todayKeluar = 0;
         
         try {
-            $businessDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . BUSINESS_DB . ";charset=utf8mb4", DB_USER, DB_PASS);
-            $businessDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $kasDb = new PDO("mysql:host=" . $dbHost . ";dbname=" . $businessDbName . ";charset=utf8mb4", $dbUser, $dbPass);
+            $kasDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
             // Get yesterday's closing balance as today's opening
-            $stmtSaldo = $businessDb->prepare("
+            $stmtSaldo = $kasDb->prepare("
                 SELECT closing_balance FROM cash_book 
                 WHERE DATE(transaction_date) < CURDATE() 
                 ORDER BY transaction_date DESC, id DESC LIMIT 1
@@ -1733,7 +1733,7 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
             $todaySaldoAwal = (float)($stmtSaldo->fetchColumn() ?: 0);
             
             // Get today's transactions
-            $stmtKas = $businessDb->prepare("
+            $stmtKas = $kasDb->prepare("
                 SELECT id, account_type, description, 
                        COALESCE(debit, 0) as debit, 
                        COALESCE(credit, 0) as credit,
