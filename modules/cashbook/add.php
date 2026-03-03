@@ -169,6 +169,7 @@ if (isPost()) {
             // SMART LOGIC - INCOME BASED ON PAYMENT METHOD
             // Cash payment → goes to Petty Cash (operational)
             // Non-cash payment → goes to Bank (not operational cash)
+            // EXCEPTION: owner_fund (Transfer Petty Cash) ALWAYS goes to Petty Cash
             // ============================================
             if ($transactionType === 'income') {
                 try {
@@ -176,7 +177,18 @@ if (isPost()) {
                     $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     $businessId = getMasterBusinessId();
                     
-                    if ($paymentMethod === 'cash') {
+                    // OWNER_FUND: Always goes to Petty Cash regardless of payment method
+                    if ($sourceType === 'owner_fund') {
+                        $stmt = $masterDb->prepare("SELECT id, account_name FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
+                        $stmt->execute([$businessId]);
+                        $pettyCashAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($pettyCashAccount) {
+                            $cashAccountId = $pettyCashAccount['id'];
+                            $data['cash_account_id'] = $cashAccountId;
+                            error_log("TRANSFER PETTY CASH: Always goes to Petty Cash ({$pettyCashAccount['account_name']})");
+                        }
+                    } elseif ($paymentMethod === 'cash') {
                         // CASH PAYMENT: Income goes to Petty Cash (operational cash)
                         $stmt = $masterDb->prepare("SELECT id, account_name FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
                         $stmt->execute([$businessId]);
