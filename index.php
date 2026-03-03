@@ -826,9 +826,9 @@ if ($trialStatus) {
             </div>
             <?php if ($isCQC): ?>
             <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.05)); border-radius: 8px; border-left: 4px solid #f0b429;">
-                <div style="font-size: 0.75rem; color: #b45309; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Petty Cash</div>
+                <div style="font-size: 0.75rem; color: #b45309; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Dana Petty Cash</div>
                 <div style="font-size: 1.5rem; font-weight: 800; color: #b45309;">
-                    <?php echo formatCurrency($cqcPettyCashBalance ?? 0); ?>
+                    <?php echo formatCurrency($cqcPettyCashTransfers ?? 0); ?>
                 </div>
             </div>
             <?php endif; ?>
