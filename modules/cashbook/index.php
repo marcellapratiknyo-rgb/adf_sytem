@@ -480,8 +480,13 @@ foreach ($transactions as $trans) {
                 }
             } else {
                 $totalOfficeExpense += $trans['amount'];
-                // Office expenses default to Petty Cash
-                $totalPettyCashExpense += $trans['amount'];
+                // Track fund source from description tag for office expenses too
+                if (strpos($desc, '[Kas Besar]') !== false) {
+                    $totalKasBesarExpense += $trans['amount'];
+                } else {
+                    // Default to Petty Cash if no tag (legacy data)
+                    $totalPettyCashExpense += $trans['amount'];
+                }
             }
         }
     }

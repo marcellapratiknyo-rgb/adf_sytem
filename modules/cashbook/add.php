@@ -229,7 +229,8 @@ if (isPost()) {
             }
             
             // ============================================
-            // SMART LOGIC - ALWAYS Use Petty Cash First for Expense
+            // SMART LOGIC - Route Expense to correct account based on payment method
+            // Cash → Petty Cash, Transfer/Bank → Bank account
             // ============================================
             $autoSwitched = false;
             if ($transactionType === 'expense') {
@@ -240,38 +241,54 @@ if (isPost()) {
                     // Get business ID
                     $businessId = getMasterBusinessId();
                     
-                    // ALWAYS get Petty Cash account first
-                    $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
-                    $stmt->execute([$businessId]);
-                    $pettyCashAccount = $stmt->fetch(PDO::FETCH_ASSOC);
-                    
-                    if ($pettyCashAccount) {
-                        error_log("SMART LOGIC - Petty Cash: {$pettyCashAccount['account_name']}, Balance: {$pettyCashAccount['current_balance']}, Expense Amount: {$amount}");
+                    if ($paymentMethod === 'cash') {
+                        // CASH: Use Petty Cash account
+                        $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
+                        $stmt->execute([$businessId]);
+                        $pettyCashAccount = $stmt->fetch(PDO::FETCH_ASSOC);
                         
-                        // Check if Petty Cash is enough
-                        if ($pettyCashAccount['current_balance'] >= $amount) {
-                            // Petty Cash cukup, pakai Petty Cash
+                        if ($pettyCashAccount) {
                             $cashAccountId = $pettyCashAccount['id'];
                             $data['cash_account_id'] = $cashAccountId;
-                            error_log("SMART LOGIC - Using Petty Cash (sufficient balance)");
-                        } else {
-                            // Petty Cash tidak cukup - tetap pakai Petty Cash, saldo bisa minus
-                            error_log("SMART LOGIC - Petty Cash insufficient, but still using it (will go negative)");
-                            $cashAccountId = $pettyCashAccount['id'];
-                            $data['cash_account_id'] = $cashAccountId;
-                            
-                            // Add warning to description
-                            $originalDesc = $description ?: '';
-                            $autoNote = '[WARNING: Petty Cash kurang (Saldo: ' . number_format($pettyCashAccount['current_balance']) . ')]';
-                            $data['description'] = trim($originalDesc . ' ' . $autoNote);
-                            $description = $data['description'];
+                            error_log("EXPENSE ROUTING - CASH payment: Using Petty Cash ({$pettyCashAccount['account_name']})");
                         }
                     } else {
-                        error_log("PETTY CASH NOT FOUND - Using original account selection");
+                        // TRANSFER/DEBIT/QR/EDC: Use Bank account
+                        $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' ORDER BY id LIMIT 1");
+                        $stmt->execute([$businessId]);
+                        $bankAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($bankAccount) {
+                            $cashAccountId = $bankAccount['id'];
+                            $data['cash_account_id'] = $cashAccountId;
+                            error_log("EXPENSE ROUTING - {$paymentMethod} payment: Using Bank ({$bankAccount['account_name']})");
+                        } else {
+                            // Fallback to Petty Cash if no bank account
+                            $stmt = $masterDb->prepare("SELECT id, account_name FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
+                            $stmt->execute([$businessId]);
+                            $fallback = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($fallback) {
+                                $cashAccountId = $fallback['id'];
+                                $data['cash_account_id'] = $cashAccountId;
+                                error_log("EXPENSE ROUTING - No bank account, fallback to Petty Cash");
+                            }
+                        }
                     }
                 } catch (Exception $e) {
                     error_log("Smart logic error: " . $e->getMessage());
                     // Continue with original account if error
+                }
+                
+                // Add fund source tag to description for tracking
+                if ($paymentMethod === 'cash') {
+                    $fundTag = '[Petty Cash]';
+                } else {
+                    $fundTag = '[Kas Besar]';
+                }
+                // Only add tag if not already present
+                if (strpos($data['description'] ?? '', '[Petty Cash]') === false && strpos($data['description'] ?? '', '[Kas Besar]') === false) {
+                    $data['description'] = trim(($data['description'] ?? '') . ' ' . $fundTag);
+                    $description = $data['description'];
                 }
             }
             // ============================================
