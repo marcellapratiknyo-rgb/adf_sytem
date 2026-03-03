@@ -824,6 +824,14 @@ if ($trialStatus) {
                     ?>
                 </div>
             </div>
+            <?php if ($isCQC): ?>
+            <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.05)); border-radius: 8px; border-left: 4px solid #f0b429;">
+                <div style="font-size: 0.75rem; color: #b45309; font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Petty Cash</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #b45309;">
+                    <?php echo formatCurrency($cqcPettyCashBalance ?? 0); ?>
+                </div>
+            </div>
+            <?php endif; ?>
             <div style="padding: 0.75rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.05)); border-radius: 8px; border-left: 4px solid var(--danger);">
                 <div style="font-size: 0.75rem; color: var(--danger); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;"><?php echo $isCQC ? 'Total Pengeluaran' : 'Total Pengeluaran'; ?></div>
                 <div id="totalExpense" style="font-size: 1.5rem; font-weight: 800; color: var(--danger);">
@@ -1023,7 +1031,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         if ($bankAccountId > 0 || $pettyCashAccountId > 0) {
             // Query expenses from bank + transfers to petty cash
             $recentBankExpenses = $db->fetchAll(
-                "(SELECT cb.description, cb.amount, cb.transaction_date, c.name as category, 'expense' as record_type
+                "(SELECT cb.description, cb.amount, cb.transaction_date, c.category_name as category, 'expense' as record_type
                  FROM cash_book cb
                  LEFT JOIN categories c ON cb.category_id = c.id
                  WHERE cb.transaction_type = 'expense' 
@@ -1110,7 +1118,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         $recentPettyExpenses = [];
         if ($pettyCashAccountId > 0) {
             $recentPettyExpenses = $db->fetchAll(
-                "SELECT cb.description, cb.amount, cb.transaction_date, c.name as category
+                "SELECT cb.description, cb.amount, cb.transaction_date, c.category_name as category
                  FROM cash_book cb
                  LEFT JOIN categories c ON cb.category_id = c.id
                  WHERE cb.transaction_type = 'expense' 
