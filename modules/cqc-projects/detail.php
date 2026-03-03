@@ -173,10 +173,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $fullDescription = '[CQC_PROJECT:' . $projectId . '] [' . $project['project_code'] . '] [' . $fundSourceLabel . '] ' . $expenseDesc;
             
             // Insert to cash_book
+            // Determine cash_account_id for the cash_book record
+            $cashAccountIdForCashbook = null;
+            $paymentMethodForCashbook = ($fundSource === 'petty_cash') ? 'cash' : 'transfer';
+            try {
+                $masterDbTemp = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+                $masterDbTemp->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $bizIdTemp = getMasterBusinessId();
+                $accType = ($fundSource === 'petty_cash') ? 'cash' : 'bank';
+                $stmtAcc = $masterDbTemp->prepare("SELECT id FROM cash_accounts WHERE business_id = ? AND account_type = ? ORDER BY id LIMIT 1");
+                $stmtAcc->execute([$bizIdTemp, $accType]);
+                $accRow = $stmtAcc->fetch(PDO::FETCH_ASSOC);
+                if ($accRow) $cashAccountIdForCashbook = $accRow['id'];
+            } catch (Exception $e) {
+                error_log("CQC detail: Error getting cash_account_id: " . $e->getMessage());
+            }
+            
             $stmtCashbook = $pdo->prepare("
                 INSERT INTO cash_book 
-                (transaction_date, transaction_time, division_id, category_id, transaction_type, amount, description, payment_method, source_type, is_editable, created_by)
-                VALUES (?, ?, ?, ?, 'expense', ?, ?, 'cash', 'cqc_project', 1, ?)
+                (transaction_date, transaction_time, division_id, category_id, transaction_type, amount, description, payment_method, cash_account_id, source_type, is_editable, created_by)
+                VALUES (?, ?, ?, ?, 'expense', ?, ?, ?, ?, 'cqc_project', 1, ?)
             ");
             $stmtCashbook->execute([
                 $expenseDate,
@@ -185,6 +201,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $mainCategoryId,
                 $expenseAmount,
                 $fullDescription,
+                $paymentMethodForCashbook,
+                $cashAccountIdForCashbook,
                 $_SESSION['user_id']
             ]);
             
@@ -199,7 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $businessId = getMasterBusinessId();
                 
                 // Determine account type based on fund source
-                $accountType = ($fundSource === 'petty_cash') ? 'cash' : 'owner_capital';
+                // Petty Cash → cash account, Kas Besar → bank account (where invoice income goes)
+                $accountType = ($fundSource === 'petty_cash') ? 'cash' : 'bank';
                 
                 // Get the appropriate account
                 $stmtAccount = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = ? ORDER BY id LIMIT 1");

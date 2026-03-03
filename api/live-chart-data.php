@@ -100,10 +100,13 @@ try {
     $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
     $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $bizId = getMasterBusinessId();
-    $stmtBiz = $masterDb->prepare("SELECT business_type FROM businesses WHERE id = ?");
-    $stmtBiz->execute([$bizId]);
-    $bizRow = $stmtBiz->fetch(PDO::FETCH_ASSOC);
-    $isCQC = ($bizRow && $bizRow['business_type'] === 'contractor');
+    
+    // Detect CQC using config file (same method as dashboard)
+    $configFile = __DIR__ . '/../config/businesses/' . ACTIVE_BUSINESS_ID . '.php';
+    if (file_exists($configFile)) {
+        $businessConfig = require $configFile;
+        $isCQC = in_array('cqc-projects', $businessConfig['enabled_modules'] ?? []);
+    }
 } catch (Exception $e) {}
 
 if ($isCQC) {
