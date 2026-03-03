@@ -229,63 +229,37 @@ if (isPost()) {
             }
             
             // ============================================
-            // SMART LOGIC - Route Expense to correct account based on payment method
-            // Cash → Petty Cash, Transfer/Bank → Bank account
+            // USE USER'S ACCOUNT SELECTION DIRECTLY
+            // User explicitly selects Petty Cash or Bank from dropdown
+            // DO NOT override based on payment method
             // ============================================
-            $autoSwitched = false;
             if ($transactionType === 'expense') {
-                try {
-                    $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-                    $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    
-                    // Get business ID
-                    $businessId = getMasterBusinessId();
-                    
-                    if ($paymentMethod === 'cash') {
-                        // CASH: Use Petty Cash account
-                        $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
-                        $stmt->execute([$businessId]);
-                        $pettyCashAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+                // Get the selected account type to determine fund source tag
+                $fundTag = '[Petty Cash]'; // Default
+                if (!empty($cashAccountId)) {
+                    try {
+                        $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+                        $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                        $stmt = $masterDb->prepare("SELECT account_type, account_name FROM cash_accounts WHERE id = ?");
+                        $stmt->execute([$cashAccountId]);
+                        $selectedAccount = $stmt->fetch(PDO::FETCH_ASSOC);
                         
-                        if ($pettyCashAccount) {
-                            $cashAccountId = $pettyCashAccount['id'];
-                            $data['cash_account_id'] = $cashAccountId;
-                            error_log("EXPENSE ROUTING - CASH payment: Using Petty Cash ({$pettyCashAccount['account_name']})");
-                        }
-                    } else {
-                        // TRANSFER/DEBIT/QR/EDC: Use Bank account
-                        $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' ORDER BY id LIMIT 1");
-                        $stmt->execute([$businessId]);
-                        $bankAccount = $stmt->fetch(PDO::FETCH_ASSOC);
-                        
-                        if ($bankAccount) {
-                            $cashAccountId = $bankAccount['id'];
-                            $data['cash_account_id'] = $cashAccountId;
-                            error_log("EXPENSE ROUTING - {$paymentMethod} payment: Using Bank ({$bankAccount['account_name']})");
-                        } else {
-                            // Fallback to Petty Cash if no bank account
-                            $stmt = $masterDb->prepare("SELECT id, account_name FROM cash_accounts WHERE business_id = ? AND account_type = 'cash' ORDER BY id LIMIT 1");
-                            $stmt->execute([$businessId]);
-                            $fallback = $stmt->fetch(PDO::FETCH_ASSOC);
-                            if ($fallback) {
-                                $cashAccountId = $fallback['id'];
-                                $data['cash_account_id'] = $cashAccountId;
-                                error_log("EXPENSE ROUTING - No bank account, fallback to Petty Cash");
+                        if ($selectedAccount) {
+                            // Determine fund source tag based on account type
+                            if ($selectedAccount['account_type'] === 'cash') {
+                                $fundTag = '[Petty Cash]';
+                                error_log("EXPENSE: User selected Petty Cash ({$selectedAccount['account_name']})");
+                            } else {
+                                $fundTag = '[Kas Besar]';
+                                error_log("EXPENSE: User selected Kas Besar ({$selectedAccount['account_name']})");
                             }
                         }
+                    } catch (Exception $e) {
+                        error_log("Error checking account type: " . $e->getMessage());
                     }
-                } catch (Exception $e) {
-                    error_log("Smart logic error: " . $e->getMessage());
-                    // Continue with original account if error
                 }
                 
                 // Add fund source tag to description for tracking
-                if ($paymentMethod === 'cash') {
-                    $fundTag = '[Petty Cash]';
-                } else {
-                    $fundTag = '[Kas Besar]';
-                }
-                // Only add tag if not already present
                 if (strpos($data['description'] ?? '', '[Petty Cash]') === false && strpos($data['description'] ?? '', '[Kas Besar]') === false) {
                     $data['description'] = trim(($data['description'] ?? '') . ' ' . $fundTag);
                     $description = $data['description'];
@@ -352,38 +326,39 @@ if (isPost()) {
                                 error_log("BALANCE UPDATED - Account ID: {$cashAccountId} - INCOME +{$amount}");
                                 
                                 // ============================================
-                                // TRANSFER PETTY CASH: DEDUCT FROM KAS BESAR
-                                // When owner_fund, also deduct from owner_capital
+                                // TRANSFER PETTY CASH: DEDUCT FROM BANK (KAS BESAR)
+                                // Transfer to Petty Cash comes from Bank account (invoice income)
+                                // NOT from owner_capital
                                 // ============================================
                                 if ($sourceType === 'owner_fund') {
-                                    // Get owner_capital account (Kas Besar)
+                                    // Get Bank account (Kas Besar - where invoice income goes)
                                     $bizId = getMasterBusinessId();
-                                    $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'owner_capital' ORDER BY id LIMIT 1");
+                                    $stmt = $masterDb->prepare("SELECT id, account_name, current_balance FROM cash_accounts WHERE business_id = ? AND account_type = 'bank' ORDER BY id LIMIT 1");
                                     $stmt->execute([$bizId]);
-                                    $ownerCapitalAccount = $stmt->fetch(PDO::FETCH_ASSOC);
+                                    $bankAccount = $stmt->fetch(PDO::FETCH_ASSOC);
                                     
-                                    if ($ownerCapitalAccount) {
-                                        // Record expense transaction from Kas Besar
+                                    if ($bankAccount) {
+                                        // Record expense transaction from Bank (Kas Besar)
                                         $stmt = $masterDb->prepare("
                                             INSERT INTO cash_account_transactions 
                                             (cash_account_id, transaction_date, description, amount, transaction_type, created_by) 
                                             VALUES (?, ?, ?, ?, 'expense', ?)
                                         ");
                                         $stmt->execute([
-                                            $ownerCapitalAccount['id'],
+                                            $bankAccount['id'],
                                             $transactionDate,
                                             'Transfer ke Petty Cash' . ($data['description'] ? ': ' . $data['description'] : ''),
                                             $amount,
                                             $_SESSION['user_id']
                                         ]);
                                         
-                                        // Deduct from Kas Besar (owner_capital)
+                                        // Deduct from Bank (Kas Besar)
                                         $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance - ? WHERE id = ?");
-                                        $stmt->execute([$amount, $ownerCapitalAccount['id']]);
+                                        $stmt->execute([$amount, $bankAccount['id']]);
                                         
-                                        error_log("TRANSFER PETTY CASH: Kas Besar ({$ownerCapitalAccount['account_name']}) -{$amount}, Petty Cash +{$amount}");
+                                        error_log("TRANSFER PETTY CASH: Bank ({$bankAccount['account_name']}) -{$amount}, Petty Cash +{$amount}");
                                     } else {
-                                        error_log("WARNING: No owner_capital account found for Transfer Petty Cash deduction");
+                                        error_log("WARNING: No bank account found for Transfer Petty Cash deduction");
                                     }
                                 }
                                 // ============================================
