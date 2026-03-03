@@ -141,7 +141,23 @@ try {
             $syncCount = 0;
             foreach ($unsyncedPayments as $payment) {
                 try {
-                    // Fallback dedup if no sync column
+                    // ============================================
+                    // FIX: Enhanced duplicate prevention
+                    // Always check cash_book for existing entry BEFORE insert
+                    // ============================================
+                    $existingEntry = $db->fetchOne(
+                        "SELECT id FROM cash_book WHERE description LIKE ? AND ABS(amount - ?) < 1 AND transaction_type = 'income' AND transaction_date = DATE(?) LIMIT 1",
+                        ['%' . $payment['booking_code'] . '%', $payment['amount'], $payment['payment_date']]
+                    );
+                    if ($existingEntry) {
+                        // Mark as synced even if entry already exists (prevent retry loop)
+                        if ($hasSyncCol) {
+                            try { $db->query("UPDATE booking_payments SET synced_to_cashbook = 1, cashbook_id = ? WHERE id = ?", [$existingEntry['id'], $payment['payment_id']]); } catch (\Throwable $e) {}
+                        }
+                        continue;
+                    }
+                    
+                    // Fallback dedup if no sync column (legacy support)
                     if (!$hasSyncCol) {
                         $existingLegacy = $db->fetchOne("SELECT id FROM cash_book WHERE description LIKE ? AND ABS(amount - ?) < 1 AND transaction_type = 'income' LIMIT 1",
                             ['%' . $payment['booking_code'] . '%', $payment['amount']]);

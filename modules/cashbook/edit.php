@@ -142,6 +142,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'cash_account_id' => $cash_account_id
             ], 'id = :id', ['id' => $id]);
             
+            // ============================================
+            // FIX: Update cash_accounts balance when editing
+            // 1. Reverse old transaction from old account
+            // 2. Apply new transaction to new account
+            // ============================================
+            try {
+                $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+                $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                
+                $oldAmount = floatval($transaction['amount']);
+                $oldType = $transaction['transaction_type'];
+                $oldAccountId = $transaction['cash_account_id'] ?? null;
+                $newAmount = $amount;
+                $newType = $transaction_type;
+                $newAccountId = $cash_account_id;
+                
+                // Step 1: Reverse old transaction from old account
+                if (!empty($oldAccountId)) {
+                    if ($oldType === 'income') {
+                        // Old income: subtract from old account
+                        $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance - ? WHERE id = ?");
+                        $stmt->execute([$oldAmount, $oldAccountId]);
+                    } else {
+                        // Old expense: add back to old account
+                        $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance + ? WHERE id = ?");
+                        $stmt->execute([$oldAmount, $oldAccountId]);
+                    }
+                    
+                    // Delete old cash_account_transactions record
+                    $stmt = $masterDb->prepare("DELETE FROM cash_account_transactions WHERE cash_account_id = ? AND description LIKE ? AND ABS(amount - ?) < 1 ORDER BY id DESC LIMIT 1");
+                    $stmt->execute([$oldAccountId, '%' . substr($transaction['description'] ?? '', 0, 50) . '%', $oldAmount]);
+                    
+                    error_log("EDIT REVERSE: Account #{$oldAccountId}, Type: {$oldType}, Amount: {$oldAmount}");
+                }
+                
+                // Step 2: Apply new transaction to new account
+                if (!empty($newAccountId)) {
+                    if ($newType === 'income') {
+                        // New income: add to new account
+                        $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance + ? WHERE id = ?");
+                        $stmt->execute([$newAmount, $newAccountId]);
+                    } else {
+                        // New expense: subtract from new account
+                        $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance - ? WHERE id = ?");
+                        $stmt->execute([$newAmount, $newAccountId]);
+                    }
+                    
+                    // Insert new cash_account_transactions record
+                    $stmt = $masterDb->prepare("INSERT INTO cash_account_transactions (cash_account_id, transaction_date, description, amount, transaction_type, created_by) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->execute([$newAccountId, $transaction_date, $description ?: $category_name_input, $newAmount, $newType, $currentUser['id']]);
+                    
+                    error_log("EDIT APPLY: Account #{$newAccountId}, Type: {$newType}, Amount: {$newAmount}");
+                }
+            } catch (Exception $balanceErr) {
+                error_log("Edit balance update error: " . $balanceErr->getMessage());
+                // Don't fail the edit, just log the error
+            }
+            
             $db->commit();
             
             $_SESSION['success'] = '✅ Transaksi berhasil diupdate';

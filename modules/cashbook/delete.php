@@ -109,6 +109,39 @@ try {
         ], 'id = :id', ['id' => $poId]);
     }
     
+    // ============================================
+    // FIX: Reverse balance in cash_accounts when deleting
+    // ============================================
+    $cashAccountId = $transaction['cash_account_id'] ?? null;
+    $amount = floatval($transaction['amount'] ?? 0);
+    $transactionType = $transaction['transaction_type'] ?? '';
+    
+    if (!empty($cashAccountId) && $amount > 0) {
+        try {
+            $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+            $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            if ($transactionType === 'income') {
+                // Was income: subtract from balance (reverse the add)
+                $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance - ? WHERE id = ?");
+                $stmt->execute([$amount, $cashAccountId]);
+            } else {
+                // Was expense: add back to balance (reverse the subtract)
+                $stmt = $masterDb->prepare("UPDATE cash_accounts SET current_balance = current_balance + ? WHERE id = ?");
+                $stmt->execute([$amount, $cashAccountId]);
+            }
+            
+            // Delete related cash_account_transactions record
+            $stmt = $masterDb->prepare("DELETE FROM cash_account_transactions WHERE cash_account_id = ? AND ABS(amount - ?) < 1 AND transaction_type = ? ORDER BY id DESC LIMIT 1");
+            $stmt->execute([$cashAccountId, $amount, $transactionType]);
+            
+            error_log("DELETE REVERSE: Account #{$cashAccountId}, Type: {$transactionType}, Amount: {$amount} - Balance restored");
+        } catch (Exception $balanceErr) {
+            error_log("Delete balance reverse error: " . $balanceErr->getMessage());
+            // Don't fail the delete, just log the error
+        }
+    }
+    
     // Delete the transaction
     $db->delete('cash_book', 'id = :id', ['id' => $id]);
     
