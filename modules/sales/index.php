@@ -68,7 +68,7 @@ $stats = [
         return $inv['payment_status'] === 'paid' ? $inv['total_amount'] : 0;
     }, $invoices)),
     'unpaid_amount' => array_sum(array_map(function($inv) {
-        return $inv['payment_status'] === 'unpaid' ? $inv['total_amount'] : 0;
+        return in_array($inv['payment_status'], ['draft', 'unpaid']) ? $inv['total_amount'] : 0;
     }, $invoices))
 ];
 
@@ -170,6 +170,7 @@ include '../../includes/header.php';
             <label class="form-label">Status Pembayaran</label>
             <select name="payment_status" class="form-control">
                 <option value="">Semua Status</option>
+                <option value="draft" <?php echo $payment_status === 'draft' ? 'selected' : ''; ?>>Draft</option>
                 <option value="paid" <?php echo $payment_status === 'paid' ? 'selected' : ''; ?>>Lunas</option>
                 <option value="partial" <?php echo $payment_status === 'partial' ? 'selected' : ''; ?>>Sebagian</option>
                 <option value="unpaid" <?php echo $payment_status === 'unpaid' ? 'selected' : ''; ?>>Belum Bayar</option>
@@ -249,19 +250,30 @@ include '../../includes/header.php';
                             <td>
                                 <?php
                                 $status_colors = [
+                                    'draft' => 'secondary',
                                     'paid' => 'success',
                                     'partial' => 'warning',
                                     'unpaid' => 'danger'
                                 ];
                                 $status_labels = [
-                                    'paid' => '✓ Lunas',
+                                    'draft' => 'DRAFT',
+                                    'paid' => '✓ LUNAS',
                                     'partial' => '⏱ Sebagian',
                                     'unpaid' => '⏳ Belum Bayar'
                                 ];
                                 $badge_color = $status_colors[$invoice['payment_status']] ?? 'secondary';
                                 $badge_label = $status_labels[$invoice['payment_status']] ?? ucfirst($invoice['payment_status']);
+                                
+                                // Define badge styles for each status
+                                $badge_styles = [
+                                    'draft' => 'background: #94a3b8; color: white;',
+                                    'paid' => 'background: #10b981; color: white;',
+                                    'partial' => 'background: #f59e0b; color: white;',
+                                    'unpaid' => 'background: #ef4444; color: white;'
+                                ];
+                                $badge_style = $badge_styles[$invoice['payment_status']] ?? 'background: #94a3b8; color: white;';
                                 ?>
-                                <span class="badge badge-<?php echo $badge_color; ?>" style="font-size: 0.875rem;">
+                                <span style="<?php echo $badge_style; ?> padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">
                                     <?php echo $badge_label; ?>
                                 </span>
                             </td>
@@ -270,7 +282,7 @@ include '../../includes/header.php';
                                     <a href="view-invoice.php?id=<?php echo $invoice['id']; ?>" class="btn btn-sm btn-primary" title="View & Print">
                                         <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                                     </a>
-                                    <a href="view-invoice.php?id=<?php echo $invoice['id']; ?>&print=1" target="_blank" class="btn btn-sm btn-info" title="Print">
+                                    <a href="view-invoice.php?id=<?php echo $invoice['id']; ?>&print=1" target="_blank" class="btn btn-sm" style="background: #f59e0b; color: white;" title="Print">
                                         <i data-feather="printer" style="width: 14px; height: 14px;"></i>
                                     </a>
                                     

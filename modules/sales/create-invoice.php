@@ -142,56 +142,8 @@ if (isPost()) {
         }
         error_log("All items inserted successfully");
         
-        // If paid, create cash book entry
-        if ($payment_status === 'paid') {
-            // Get category for the division
-            $category = $db->fetchOne(
-                "SELECT id FROM categories WHERE division_id = ? AND category_name = 'Penjualan' AND category_type = 'income'",
-                [$division_id]
-            );
-            
-            if (!$category) {
-                $category_id = $db->insert('categories', [
-                    'division_id' => $division_id,
-                    'category_name' => 'Penjualan',
-                    'category_type' => 'income',
-                    'is_active' => 1
-                ]);
-            } else {
-                $category_id = $category['id'];
-            }
-            
-            // Map payment method from form to database enum
-            $payment_method_map = [
-                'cash' => 'cash',
-                'debit' => 'card',
-                'transfer' => 'bank_transfer',
-                'qr' => 'card',
-                'other' => 'other'
-            ];
-            
-            $db_payment_method = $payment_method_map[$payment_method] ?? 'other';
-            
-            $cash_book_id = $db->insert('cash_book', [
-                'transaction_date' => $invoice_date,
-                'transaction_time' => date('H:i:s'),
-                'division_id' => $division_id,
-                'category_id' => $category_id,
-                'transaction_type' => 'income',
-                'amount' => $total_amount,
-                'description' => "Invoice $invoice_number - $customer_name",
-                'payment_method' => $db_payment_method,
-                'reference_no' => 'INV-' . $invoice_number,
-                'created_by' => $currentUser['id']
-            ]);
-            
-            // Update invoice with cash_book reference
-            $db->update('sales_invoices_header', 
-                ['cash_book_id' => $cash_book_id],
-                'id = :id',
-                ['id' => $invoice_id]
-            );
-        }
+        // CASHBOOK: Only create entry when Pay action is clicked (pay-invoice.php)
+        // Draft invoices do NOT go to cashbook until paid
         
         $db->getConnection()->commit();
         
@@ -611,10 +563,10 @@ include '../../includes/header.php';
                 <div class="form-group">
                     <label class="form-label">📊 Status Pembayaran</label>
                     <select name="payment_status" class="form-control input-small" required>
-                        <option value="paid">✅ Lunas</option>
-                        <option value="partial">⏳ Sebagian</option>
-                        <option value="unpaid">❌ Belum Bayar</option>
+                        <option value="draft" selected>📝 Draft</option>
+                        <option value="unpaid">⏳ Belum Bayar</option>
                     </select>
+                    <small style="color: var(--text-muted); font-size: 0.75rem;">💡 Invoice masuk ke Buku Kas saat dibayar (klik tombol bayar)</small>
                 </div>
             </div>
 
