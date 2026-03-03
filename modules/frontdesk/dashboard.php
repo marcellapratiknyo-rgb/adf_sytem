@@ -222,6 +222,7 @@ try {
                 $desc = "Pembayaran Reservasi - {$guestName}";
                 if ($roomNum) $desc .= " (Room {$roomNum})";
                 $desc .= " - {$payment['booking_code']}";
+                $desc .= " [payment_id_{$payment['payment_id']}]";  // Add payment_id for dedup
 
                 // Check if fully paid
                 $totalPaid = $db->fetchOne("SELECT COALESCE(SUM(amount),0) as total FROM booking_payments WHERE booking_id = ?", [$payment['booking_id']]);
