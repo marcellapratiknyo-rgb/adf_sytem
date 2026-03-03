@@ -960,45 +960,59 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
 <?php endif; // !$isCQC - end kas operasional + charts hide ?>
 
 <?php if ($isCQC): ?>
-<!-- CQC Kas Besar (Bank) Summary -->
+<!-- CQC Transaction Summary Title -->
+<div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+    <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #f0b429, #d4960d); display: flex; align-items: center; justify-content: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </div>
+    <div>
+        <div style="font-size: 1.1rem; font-weight: 800; color: #0d1f3c;">CQC Transaction Summary</div>
+        <div style="font-size: 0.75rem; color: #6b7280;">Main Bank & Petty Cash Overview</div>
+    </div>
+</div>
+
+<!-- CQC Main Bank Summary -->
 <div style="background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 1.25rem; margin-bottom: 1.5rem; border-left: 4px solid #3b82f6; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
         <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #3b82f6, #2563eb); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🏦</div>
         <div>
-            <div style="font-size: 1rem; font-weight: 700; color: #0d1f3c;">Kas Besar (Bank)</div>
-            <div style="font-size: 0.75rem; color: #6b7280;">Kas utama dari pembayaran invoice • Sumber dana untuk operasional</div>
+            <div style="font-size: 1rem; font-weight: 700; color: #0d1f3c;">Main Bank Account</div>
+            <div style="font-size: 0.75rem; color: #6b7280;">Primary fund from invoice payments • Source for operations</div>
         </div>
     </div>
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
         <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); padding: 1rem; border-radius: 12px; border: 1px solid #a7f3d0;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #047857; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 8 17 13"/><line x1="12" y1="8" x2="12" y2="20"/></svg>
-                Pemasukan Invoice
+                Invoice Income
             </div>
             <div style="font-size: 1.35rem; font-weight: 800; color: #065f46;"><?php echo formatCurrency($totalIncome ?? 0); ?></div>
-            <div style="font-size: 0.7rem; color: #059669; margin-top: 0.25rem;">Total pembayaran invoice bulan ini</div>
+            <div style="font-size: 0.7rem; color: #059669; margin-top: 0.25rem;">Total invoice payments this month</div>
         </div>
         <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); padding: 1rem; border-radius: 12px; border: 1px solid #fecaca;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 16 7 11"/><line x1="12" y1="16" x2="12" y2="4"/></svg>
-                Pengeluaran dari Bank
+                Bank Expenses
             </div>
             <div id="expenseFromBank" style="font-size: 1.35rem; font-weight: 800; color: #991b1b;"><?php echo formatCurrency($cqcExpenseFromBank ?? 0); ?></div>
-            <div style="font-size: 0.7rem; color: #dc2626; margin-top: 0.25rem;">Termasuk transfer ke Petty Cash</div>
+            <div style="font-size: 0.7rem; color: #dc2626; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.25rem;">
+                <span style="background: #fef3c7; color: #d97706; padding: 0.1rem 0.35rem; border-radius: 4px; font-weight: 600;">+ <?php echo formatCurrency($cqcPettyCashTransfers ?? 0); ?></span>
+                <span>to Petty Cash</span>
+            </div>
         </div>
         <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 1rem; border-radius: 12px; border: 1px solid #bfdbfe;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Saldo Kas Besar
+                Bank Balance
             </div>
             <div id="dashboardBankBalance" style="font-size: 1.35rem; font-weight: 800; color: <?php echo ($cqcBankBalance ?? 0) >= 0 ? '#1e40af' : '#dc2626'; ?>;"><?php echo formatCurrency($cqcBankBalance ?? 0); ?></div>
-            <div style="font-size: 0.7rem; color: #3b82f6; margin-top: 0.25rem;">Saldo aktual kas besar</div>
+            <div style="font-size: 0.7rem; color: #3b82f6; margin-top: 0.25rem;">Current bank balance</div>
         </div>
     </div>
     
-    <!-- Detail Pengeluaran Kas Besar -->
+    <!-- Recent Bank Expenses -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Pengeluaran Terakhir dari Kas Besar</div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Expenses</div>
         <?php
         // Get recent expenses from Bank
         $recentBankExpenses = [];
@@ -1028,7 +1042,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
             <?php endforeach; ?>
         </div>
         <?php else: ?>
-        <div style="padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.8rem;">Belum ada pengeluaran dari Kas Besar</div>
+        <div style="padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.8rem;">No bank expenses yet</div>
         <?php endif; ?>
     </div>
 </div>
@@ -1038,40 +1052,40 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
         <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #fbbf24, #f59e0b); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">💰</div>
         <div>
-            <div style="font-size: 1rem; font-weight: 700; color: #0d1f3c;">Petty Cash CQC</div>
-            <div style="font-size: 0.75rem; color: #6b7280;">Kas operasional untuk office & proyek • Dompet terpisah dari kas invoice</div>
+            <div style="font-size: 1rem; font-weight: 700; color: #0d1f3c;">Petty Cash</div>
+            <div style="font-size: 0.75rem; color: #6b7280;">Operational cash for office & projects • Separate wallet from invoice</div>
         </div>
     </div>
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
         <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); padding: 1rem; border-radius: 12px; border: 1px solid #fde68a;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 8 17 13"/><line x1="12" y1="8" x2="12" y2="20"/></svg>
-                Transfer Petty Cash
+                Transfer In
             </div>
             <div style="font-size: 1.35rem; font-weight: 800; color: #78350f;"><?php echo formatCurrency($cqcPettyCashTransfers ?? 0); ?></div>
-            <div style="font-size: 0.7rem; color: #a16207; margin-top: 0.25rem;">Total transfer ke petty cash</div>
+            <div style="font-size: 0.7rem; color: #a16207; margin-top: 0.25rem;">From main bank to petty cash</div>
         </div>
         <div style="background: linear-gradient(135deg, #fef2f2, #fee2e2); padding: 1rem; border-radius: 12px; border: 1px solid #fecaca;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 11 12 16 7 11"/><line x1="12" y1="16" x2="12" y2="4"/></svg>
-                Pengeluaran dari Petty Cash
+                Petty Cash Spent
             </div>
             <div style="font-size: 1.35rem; font-weight: 800; color: #991b1b;"><?php echo formatCurrency(($cqcPettyCashTransfers ?? 0) - ($cqcPettyCashBalance ?? 0)); ?></div>
-            <div style="font-size: 0.7rem; color: #dc2626; margin-top: 0.25rem;">Office & proyek (sumber: petty cash)</div>
+            <div style="font-size: 0.7rem; color: #dc2626; margin-top: 0.25rem;">Office & project expenses</div>
         </div>
         <div style="background: linear-gradient(135deg, #eff6ff, #dbeafe); padding: 1rem; border-radius: 12px; border: 1px solid #bfdbfe;">
             <div style="font-size: 0.7rem; font-weight: 700; color: #1d4ed8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Saldo Petty Cash
+                Petty Cash Balance
             </div>
             <div id="dashboardPettyCashBalance" style="font-size: 1.35rem; font-weight: 800; color: <?php echo ($cqcPettyCashBalance ?? 0) >= 0 ? '#1e40af' : '#dc2626'; ?>;"><?php echo formatCurrency($cqcPettyCashBalance ?? 0); ?></div>
-            <div style="font-size: 0.7rem; color: #3b82f6; margin-top: 0.25rem;">Saldo aktual petty cash</div>
+            <div style="font-size: 0.7rem; color: #3b82f6; margin-top: 0.25rem;">Current petty cash balance</div>
         </div>
     </div>
     
-    <!-- Detail Pengeluaran Petty Cash -->
+    <!-- Recent Petty Cash Expenses -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Pengeluaran Terakhir dari Petty Cash</div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses</div>
         <?php
         // Get recent expenses from Petty Cash
         $recentPettyExpenses = [];
@@ -1101,7 +1115,7 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
             <?php endforeach; ?>
         </div>
         <?php else: ?>
-        <div style="padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.8rem;">Belum ada pengeluaran dari Petty Cash</div>
+        <div style="padding: 1rem; text-align: center; color: #9ca3af; font-size: 0.8rem;">No petty cash expenses yet</div>
         <?php endif; ?>
     </div>
 </div>
