@@ -123,16 +123,37 @@ if (isPost()) {
                 }
             }
 
-            // CQC: Determine source_type for income
-            // Owner top-up = 'owner_fund' (NOT company income)
-            // Invoice payment = 'invoice_payment' (REAL income)
+            // ============================================
+            // SMART SOURCE_TYPE DETECTION FOR ALL BUSINESSES
+            // Owner top-up to Kas Operasional = 'owner_fund' (NOT company income)
+            // Regular income (from customers) = 'manual' or 'invoice_payment'
+            // ============================================
             $sourceType = 'manual';
-            if ($isCQC && $transactionType === 'income') {
+            
+            // For CQC with project module: use cqc_income_type field
+            if ($hasProjectModule && $transactionType === 'income') {
                 $cqcIncomeType = getPost('cqc_income_type') ?? '';
                 if ($cqcIncomeType === 'topup_owner') {
                     $sourceType = 'owner_fund';
                 } elseif (in_array($cqcIncomeType, ['dp', 'termin', 'pelunasan', 'retensi'])) {
                     $sourceType = 'invoice_payment';
+                }
+            }
+            
+            // FOR ALL BUSINESSES: If income goes to 'cash' type account (Kas Operasional/Petty Cash)
+            // This is owner fund injection, NOT company revenue
+            if ($transactionType === 'income' && !empty($cashAccountId)) {
+                try {
+                    $masterDbCheck = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
+                    $stmtAccType = $masterDbCheck->prepare("SELECT account_type FROM cash_accounts WHERE id = ?");
+                    $stmtAccType->execute([$cashAccountId]);
+                    $accInfo = $stmtAccType->fetch(PDO::FETCH_ASSOC);
+                    if ($accInfo && $accInfo['account_type'] === 'cash') {
+                        $sourceType = 'owner_fund';
+                        error_log("SMART LOGIC: Income to Kas Operasional = owner_fund (not company income)");
+                    }
+                } catch (Exception $e) {
+                    // Keep default if check fails
                 }
             }
 
@@ -223,11 +244,11 @@ if (isPost()) {
                             // Determine transaction type for cash_account_transactions
                             $accountTransactionType = $transactionType; // Default: 'income' or 'expense'
                             
-                            // CQC Special Logic: If Petty Cash and income = owner sending operational funds
+                            // ALL BUSINESSES: If Petty Cash/Kas Operasional and income = owner sending operational funds
                             // This is NOT company income, it's capital/operational fund injection
-                            if ($isCQC && $account && $account['account_type'] === 'cash' && $transactionType === 'income') {
+                            if ($account && $account['account_type'] === 'cash' && $transactionType === 'income') {
                                 $accountTransactionType = 'capital_injection';
-                                error_log("CQC LOGIC - Petty Cash income = operational fund injection (not company income)");
+                                error_log("SMART LOGIC - Petty Cash income = operational fund injection (not company income)");
                             }
                             // If this is owner_capital account and income = capital injection (legacy support)
                             elseif ($account && $account['account_type'] === 'owner_capital' && $transactionType === 'income') {

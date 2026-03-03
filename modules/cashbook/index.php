@@ -425,23 +425,23 @@ try {
 // Calculate totals
 $totalIncome = 0;
 $totalExpense = 0;
-$totalOwnerFund = 0; // CQC: Owner top-up (NOT income)
-$totalRealIncome = 0; // CQC: Real income from invoice payments
-$totalOfficeExpense = 0; // CQC: Office/operational expenses only (no project)
-$totalProjectExpense = 0; // CQC: Project-linked expenses (potong kas besar)
+$totalOwnerFund = 0; // ALL BUSINESSES: Owner top-up to Kas Operasional (NOT income)
+$totalRealIncome = 0; // Real income from customers/invoices
+$totalOfficeExpense = 0; // Office/operational expenses only (no project)
+$totalProjectExpense = 0; // Project-linked expenses (for contractor businesses)
 foreach ($transactions as $trans) {
     if ($trans['transaction_type'] === 'income') {
         $totalIncome += $trans['amount'];
-        // CQC: Separate owner fund from real income
-        if ($isCQC && isset($trans['source_type']) && $trans['source_type'] === 'owner_fund') {
+        // ALL BUSINESSES: Separate owner fund from real income
+        if (isset($trans['source_type']) && $trans['source_type'] === 'owner_fund') {
             $totalOwnerFund += $trans['amount'];
         } else {
             $totalRealIncome += $trans['amount'];
         }
     } else {
         $totalExpense += $trans['amount'];
-        // CQC: Separate office vs project expenses
-        if ($isCQC) {
+        // Contractor businesses: Separate office vs project expenses
+        if ($isContractor) {
             $desc = $trans['description'] ?? '';
             if (preg_match('/\[CQC_PROJECT:\d+\]/', $desc)) {
                 $totalProjectExpense += $trans['amount'];

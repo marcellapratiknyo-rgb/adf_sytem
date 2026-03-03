@@ -441,12 +441,12 @@ for ($i = 1; $i <= $daysInMonth; $i++) {
 
 // Get actual transaction data for the month
 // IMPORTANT: Exclude owner capital ONLY from income (not from expense!)
-// CQC: Also exclude owner_fund (petty cash top-up from owner = NOT real income)
-$cqcOwnerFundFilter = $isCQC ? " AND source_type != 'owner_fund'" : "";
+// ALL BUSINESSES: Exclude owner_fund (kas operasional top-up from owner = NOT real income)
+$ownerFundFilter = " AND (source_type IS NULL OR source_type != 'owner_fund')";
 $transData = $db->fetchAll(
     "SELECT 
         DATE(transaction_date) as date,
-        SUM(CASE WHEN transaction_type = 'income'" . $excludeOwnerCapital . $cqcOwnerFundFilter . " THEN amount ELSE 0 END) as income,
+        SUM(CASE WHEN transaction_type = 'income'" . $excludeOwnerCapital . $ownerFundFilter . " THEN amount ELSE 0 END) as income,
         SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as expense
     FROM cash_book
     WHERE DATE_FORMAT(transaction_date, '%Y-%m') = :month
