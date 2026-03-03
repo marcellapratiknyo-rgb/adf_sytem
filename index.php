@@ -1462,8 +1462,8 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '68%',
-            radius: '90%',
+            cutout: '50%',
+            radius: '95%',
             animation: {
                 animateScale: true,
                 animateRotate: true,
@@ -1558,8 +1558,8 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '68%',
-            radius: '90%',
+            cutout: '50%',
+            radius: '95%',
             animation: {
                 animateScale: true,
                 animateRotate: true,
