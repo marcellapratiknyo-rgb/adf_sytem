@@ -136,10 +136,10 @@ if ($hasSourceTypeCol) {
     $excludeOwnerCapital = " AND (cash_account_id IS NULL OR cash_account_id NOT IN (" . implode(',', $ownerCapitalAccountIds) . "))";
 }
 
-// Colors for divisions
+// Colors for divisions - Sharp Neon Digital Palette
 $divisionColors = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', 
-    '#3b82f6', '#ef4444', '#14b8a6', '#f97316', '#06b6d4', '#8b5cf6'
+    '#00D4FF', '#FF3CAC', '#00F5A0', '#FFD93D', '#FF6B6B', 
+    '#6C5CE7', '#00CEC9', '#FD79A8', '#81ECEC', '#A29BFE', '#55EFC4'
 ];
 
 // ============================================
@@ -1452,39 +1452,53 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                         '<?php echo $divisionColors[$index % count($divisionColors)]; ?>',
                     <?php endforeach; ?>
                 ],
-                borderWidth: 0,
-                hoverOffset: 20
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.15)',
+                hoverOffset: 12,
+                hoverBorderWidth: 3,
+                hoverBorderColor: '#fff'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '60%',
+            cutout: '68%',
+            radius: '90%',
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 800,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 12,
+                        padding: 10,
                         font: { 
                             size: 10, 
-                            weight: '400',
+                            weight: '600',
                             family: "'Inter', sans-serif"
                         },
                         color: getLegendTextColor(),
                         usePointStyle: true,
-                        pointStyle: 'circle',
-                        boxWidth: 8,
-                        boxHeight: 8
+                        pointStyle: 'rectRounded',
+                        boxWidth: 10,
+                        boxHeight: 10
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    padding: 10,
-                    titleFont: { size: 11, weight: '500' },
-                    bodyFont: { size: 10, weight: '400' },
-                    titleColor: 'rgba(255, 255, 255, 0.9)',
-                    bodyColor: 'rgba(255, 255, 255, 0.85)',
-                    cornerRadius: 6,
+                    backgroundColor: 'rgba(13, 31, 60, 0.95)',
+                    padding: 12,
+                    titleFont: { size: 11, weight: '700' },
+                    bodyFont: { size: 11, weight: '500' },
+                    titleColor: '#fff',
+                    bodyColor: 'rgba(255, 255, 255, 0.9)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    boxPadding: 4,
                     callbacks: {
                         label: function(context) {
                             let label = context.label || '';
@@ -1521,51 +1535,65 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
                     <?php endforeach; ?>
                 ],
                 backgroundColor: [
-                    'rgba(239, 68, 68, 0.8)',
-                    'rgba(251, 146, 60, 0.8)',
-                    'rgba(245, 158, 11, 0.8)',
-                    'rgba(234, 179, 8, 0.8)',
-                    'rgba(132, 204, 22, 0.8)',
-                    'rgba(34, 197, 94, 0.8)',
-                    'rgba(20, 184, 166, 0.8)',
-                    'rgba(6, 182, 212, 0.8)',
-                    'rgba(59, 130, 246, 0.8)',
-                    'rgba(99, 102, 241, 0.8)',
-                    'rgba(139, 92, 246, 0.8)',
-                    'rgba(168, 85, 247, 0.8)'
+                    '#FF3D71',
+                    '#FF9F43',
+                    '#FECA57',
+                    '#1DD1A1',
+                    '#54A0FF',
+                    '#5F27CD',
+                    '#00D2D3',
+                    '#FF6B81',
+                    '#2ED573',
+                    '#7158E2',
+                    '#3AE374',
+                    '#FF4757'
                 ],
-                borderWidth: 0,
-                hoverOffset: 20
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.15)',
+                hoverOffset: 12,
+                hoverBorderWidth: 3,
+                hoverBorderColor: '#fff'
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            cutout: '60%',
+            cutout: '68%',
+            radius: '90%',
+            animation: {
+                animateScale: true,
+                animateRotate: true,
+                duration: 800,
+                easing: 'easeOutQuart'
+            },
             plugins: {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 12,
+                        padding: 10,
                         font: { 
                             size: 10, 
-                            weight: '400' 
+                            weight: '600' 
                         },
                         color: getLegendTextColor(),
                         usePointStyle: true,
-                        pointStyle: 'circle',
-                        boxWidth: 8,
-                        boxHeight: 8
+                        pointStyle: 'rectRounded',
+                        boxWidth: 10,
+                        boxHeight: 10
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    padding: 10,
-                    titleFont: { size: 11, weight: '500' },
-                    bodyFont: { size: 10, weight: '400' },
-                    titleColor: 'rgba(255, 255, 255, 0.9)',
-                    bodyColor: 'rgba(255, 255, 255, 0.85)',
-                    cornerRadius: 6,
+                    backgroundColor: 'rgba(13, 31, 60, 0.95)',
+                    padding: 12,
+                    titleFont: { size: 11, weight: '700' },
+                    bodyFont: { size: 11, weight: '500' },
+                    titleColor: '#fff',
+                    bodyColor: 'rgba(255, 255, 255, 0.9)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    boxPadding: 4,
                     callbacks: {
                         label: function(context) {
                             let label = context.label || '';
