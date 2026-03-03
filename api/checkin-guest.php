@@ -291,9 +291,18 @@ try {
     
     // Build success message
     $successMessage = "Check-in berhasil! {$booking['guest_name']} - Room {$booking['room_number']}";
+    
     if ($isOTA && $cashbookSynced) {
         $successMessage .= "\n\n✅ Pembayaran OTA ({$booking['booking_source']}) tercatat di Buku Kas";
         $successMessage .= "\n⚠️ Sebagai ESTIMASI - dapat diedit saat rekonsiliasi akhir bulan";
+    } elseif (!$isOTA && $remaining > 0) {
+        // Direct booking with remaining balance
+        $successMessage .= "\n\n⚠️ TAGIHAN BELUM LUNAS";
+        $successMessage .= "\nTotal: Rp " . number_format($booking['final_price'], 0, ',', '.');
+        $successMessage .= "\nSudah Dibayar: Rp " . number_format($totalPaid, 0, ',', '.');
+        $successMessage .= "\nSisa Tagihan: Rp " . number_format($remaining, 0, ',', '.');
+        $successMessage .= "\n\n📋 Invoice #{$invoiceNumber} telah dibuat";
+        $successMessage .= "\nWAJIB DILUNASI sebelum CHECK-OUT!";
     }
     
     echo json_encode([
@@ -304,7 +313,10 @@ try {
         'room_number' => $booking['room_number'],
         'invoice_number' => $invoiceNumber,
         'is_ota' => $isOTA,
-        'cashbook_synced' => $cashbookSynced ?? false
+        'cashbook_synced' => $cashbookSynced ?? false,
+        'remaining_balance' => $remaining,
+        'final_price' => (float)$booking['final_price'],
+        'paid_amount' => $totalPaid
     ]);
     
 } catch (Exception $e) {
