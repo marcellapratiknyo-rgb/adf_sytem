@@ -75,6 +75,10 @@ $today = date('Y-m-d');
 $thisMonth = date('Y-m');
 $thisYear = date('Y');
 
+// Initialize CQC account IDs at global scope (will be populated if CQC business)
+$pettyCashAccountId = 0;
+$bankAccountId = 0;
+
 // ============================================
 // EXCLUDE OWNER CAPITAL FROM OPERATIONAL STATS
 // ============================================
@@ -1012,11 +1016,11 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     
     <!-- Recent Bank Expenses -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Expenses</div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Bank Expenses <!-- DEBUG: bankAccountId=<?php echo $bankAccountId ?? 'NULL'; ?> --></div>
         <?php
         // Get recent expenses from Bank
         $recentBankExpenses = [];
-        if (isset($bankAccountId) && $bankAccountId > 0) {
+        if ($bankAccountId > 0) {
             $recentBankExpenses = $db->fetchAll(
                 "SELECT cb.description, cb.amount, cb.transaction_date, c.name as category
                  FROM cash_book cb
@@ -1085,11 +1089,11 @@ div[style*="grid-template-columns: repeat(4"] > div:hover .card-top-bar {
     
     <!-- Recent Petty Cash Expenses -->
     <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f3f4f6;">
-        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses</div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.75rem;">📋 Recent Petty Cash Expenses <!-- DEBUG: pettyCashAccountId=<?php echo $pettyCashAccountId ?? 'NULL'; ?> --></div>
         <?php
         // Get recent expenses from Petty Cash
         $recentPettyExpenses = [];
-        if (isset($pettyCashAccountId) && $pettyCashAccountId > 0) {
+        if ($pettyCashAccountId > 0) {
             $recentPettyExpenses = $db->fetchAll(
                 "SELECT cb.description, cb.amount, cb.transaction_date, c.name as category
                  FROM cash_book cb
