@@ -1713,50 +1713,71 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
         
         <!-- Kas Harian (Today's Cash Book) -->
         <?php
-        // Fetch today's cash book entries
+        // Fetch this month's cash book entries (same as index.php logic)
         $todayKas = [];
-        $todaySaldoAwal = 0;
-        $todayMasuk = 0;
-        $todayKeluar = 0;
+        $startKasHariIni = 0;
+        $monthMasuk = 0;
+        $monthKeluar = 0;
+        $kasAvailable = 0;
         
         try {
             $kasDb = new PDO("mysql:host=" . $dbHost . ";dbname=" . $businessDbName . ";charset=utf8mb4", $dbUser, $dbPass);
             $kasDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             
-            // Get yesterday's closing balance as today's opening
-            $stmtSaldo = $kasDb->prepare("
-                SELECT closing_balance FROM cash_book 
-                WHERE DATE(transaction_date) < CURDATE() 
-                ORDER BY transaction_date DESC, id DESC LIMIT 1
-            ");
-            $stmtSaldo->execute();
-            $todaySaldoAwal = (float)($stmtSaldo->fetchColumn() ?: 0);
+            $today = date('Y-m-d');
+            $thisMonth = date('Y-m');
             
-            // Get today's transactions
-            $stmtKas = $kasDb->prepare("
-                SELECT id, account_type, description, 
-                       COALESCE(debit, 0) as debit, 
-                       COALESCE(credit, 0) as credit,
-                       closing_balance,
-                       TIME_FORMAT(transaction_date, '%H:%i') as jam
+            // Get start kas (all balance before today)
+            $stmtSaldo = $kasDb->prepare("
+                SELECT 
+                    COALESCE(SUM(CASE WHEN transaction_type='income' THEN amount ELSE 0 END),0) -
+                    COALESCE(SUM(CASE WHEN transaction_type='expense' THEN amount ELSE 0 END),0) as bal
                 FROM cash_book 
-                WHERE DATE(transaction_date) = CURDATE()
+                WHERE transaction_date < ?
+            ");
+            $stmtSaldo->execute([$today]);
+            $startKasHariIni = (float)($stmtSaldo->fetchColumn() ?: 0);
+            
+            // Get this month's totals (income & expense)
+            $stmtMonth = $kasDb->prepare("
+                SELECT 
+                    COALESCE(SUM(CASE WHEN transaction_type='income' THEN amount ELSE 0 END),0) as masuk,
+                    COALESCE(SUM(CASE WHEN transaction_type='expense' THEN amount ELSE 0 END),0) as keluar
+                FROM cash_book 
+                WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ?
+            ");
+            $stmtMonth->execute([$thisMonth]);
+            $monthRow = $stmtMonth->fetch(PDO::FETCH_ASSOC);
+            $monthMasuk = (float)($monthRow['masuk'] ?? 0);
+            $monthKeluar = (float)($monthRow['keluar'] ?? 0);
+            
+            // Calculate kas available (all time balance)
+            $stmtAll = $kasDb->prepare("
+                SELECT 
+                    COALESCE(SUM(CASE WHEN transaction_type='income' THEN amount ELSE 0 END),0) -
+                    COALESCE(SUM(CASE WHEN transaction_type='expense' THEN amount ELSE 0 END),0) as bal
+                FROM cash_book
+            ");
+            $stmtAll->execute();
+            $kasAvailable = (float)($stmtAll->fetchColumn() ?: 0);
+            
+            // Get recent transactions (today first, then this month)
+            $stmtKas = $kasDb->prepare("
+                SELECT id, transaction_type, description, amount,
+                       TIME_FORMAT(CONCAT(transaction_date, ' ', COALESCE(transaction_time, '00:00:00')), '%H:%i') as jam,
+                       transaction_date
+                FROM cash_book 
+                WHERE DATE_FORMAT(transaction_date, '%Y-%m') = ?
                 ORDER BY transaction_date DESC, id DESC
                 LIMIT 8
             ");
-            $stmtKas->execute();
+            $stmtKas->execute([$thisMonth]);
             $todayKas = $stmtKas->fetchAll(PDO::FETCH_ASSOC);
             
-            // Calculate totals
-            foreach ($todayKas as $row) {
-                $todayMasuk += (float)$row['debit'];
-                $todayKeluar += (float)$row['credit'];
-            }
         } catch (PDOException $e) {
-            // Silent fail
+            // Silent fail - error_log for debugging
+            error_log("Kas Harian Error: " . $e->getMessage());
         }
-        
-        $currentSaldo = $todaySaldoAwal + $todayMasuk - $todayKeluar;
         ?>
         <div class="kas-harian-section">
             <div class="kas-harian-header">
@@ -1764,27 +1785,27 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
                     Kas Harian
                 </div>
-                <div class="kas-harian-date"><?= date('d M Y') ?></div>
+                <div class="kas-harian-date"><?= date('M Y') ?></div>
             </div>
             
             <div class="kas-summary-row">
                 <div class="kas-summary-box">
-                    <div class="kas-summary-label">Saldo</div>
-                    <div class="kas-summary-value saldo"><?= number_format($currentSaldo, 0, ',', '.') ?></div>
+                    <div class="kas-summary-label">Saldo Kas</div>
+                    <div class="kas-summary-value saldo"><?= number_format($kasAvailable, 0, ',', '.') ?></div>
                 </div>
                 <div class="kas-summary-box">
                     <div class="kas-summary-label">Masuk</div>
-                    <div class="kas-summary-value masuk"><?= number_format($todayMasuk, 0, ',', '.') ?></div>
+                    <div class="kas-summary-value masuk"><?= number_format($monthMasuk, 0, ',', '.') ?></div>
                 </div>
                 <div class="kas-summary-box">
                     <div class="kas-summary-label">Keluar</div>
-                    <div class="kas-summary-value keluar"><?= number_format($todayKeluar, 0, ',', '.') ?></div>
+                    <div class="kas-summary-value keluar"><?= number_format($monthKeluar, 0, ',', '.') ?></div>
                 </div>
             </div>
             
             <div class="kas-table-wrapper">
                 <?php if (empty($todayKas)): ?>
-                <div class="kas-empty">Belum ada transaksi hari ini</div>
+                <div class="kas-empty">Belum ada transaksi bulan ini</div>
                 <?php else: ?>
                 <table class="kas-table">
                     <thead>
@@ -1796,8 +1817,8 @@ $expenseRatio = $stats['month_income'] > 0 ? ($stats['month_expense'] / $stats['
                     </thead>
                     <tbody>
                         <?php foreach ($todayKas as $kas): 
-                            $isMasuk = $kas['debit'] > 0;
-                            $amount = $isMasuk ? $kas['debit'] : $kas['credit'];
+                            $isMasuk = $kas['transaction_type'] === 'income';
+                            $amount = (float)$kas['amount'];
                         ?>
                         <tr>
                             <td><?= $kas['jam'] ?></td>
