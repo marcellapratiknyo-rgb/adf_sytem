@@ -21,6 +21,15 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
+// Fetch customers from Database module
+$customers = [];
+try {
+    $bizDb = Database::getInstance();
+    $customers = $bizDb->fetchAll("SELECT id, customer_code, customer_name, company_name, phone, email, address, city FROM customers WHERE is_active = 1 ORDER BY customer_name");
+} catch (Exception $e) {
+    // Customers table may not exist yet
+}
+
 $message = '';
 $error = '';
 
@@ -218,21 +227,36 @@ include '../../includes/header.php';
             <div class="card-head">👤 Informasi Client</div>
             <div class="card-body">
                 <div class="form-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Pilih dari Database</label>
+                        <select id="customer_select" onchange="fillCustomerData()" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); color: var(--text);">
+                            <option value="">-- Pilih Customer atau input manual --</option>
+                            <?php foreach ($customers as $cust): ?>
+                            <option value="<?php echo $cust['id']; ?>"
+                                data-name="<?php echo htmlspecialchars($cust['customer_name'] . ($cust['company_name'] ? ' (' . $cust['company_name'] . ')' : '')); ?>"
+                                data-phone="<?php echo htmlspecialchars($cust['phone'] ?? ''); ?>"
+                                data-email="<?php echo htmlspecialchars($cust['email'] ?? ''); ?>"
+                                data-address="<?php echo htmlspecialchars(($cust['address'] ?? '') . ($cust['city'] ? ', ' . $cust['city'] : '')); ?>">
+                                <?php echo htmlspecialchars($cust['customer_code'] . ' - ' . $cust['customer_name']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Nama Client *</label>
-                        <input type="text" name="client_name" required placeholder="PT ABC atau Nama Perorangan">
+                        <input type="text" name="client_name" id="client_name" required placeholder="PT ABC atau Nama Perorangan">
                     </div>
                     <div class="form-group">
                         <label>No. Telepon</label>
-                        <input type="text" name="client_phone" placeholder="+62...">
+                        <input type="text" name="client_phone" id="client_phone" placeholder="+62...">
                     </div>
                     <div class="form-group">
                         <label>Email</label>
-                        <input type="email" name="client_email" placeholder="email@example.com">
+                        <input type="email" name="client_email" id="client_email" placeholder="email@example.com">
                     </div>
                     <div class="form-group">
                         <label>Alamat</label>
-                        <input type="text" name="client_address" placeholder="Alamat lengkap">
+                        <input type="text" name="client_address" id="client_address" placeholder="Alamat lengkap">
                     </div>
                 </div>
             </div>
@@ -334,6 +358,19 @@ function removeRow(btn) {
     if (rows.length > 1) {
         btn.closest('tr').remove();
         calculateTotal();
+    }
+}
+
+// Auto-fill customer data from dropdown
+function fillCustomerData() {
+    const select = document.getElementById('customer_select');
+    const option = select.options[select.selectedIndex];
+    
+    if (option.value) {
+        document.getElementById('client_name').value = option.dataset.name || '';
+        document.getElementById('client_phone').value = option.dataset.phone || '';
+        document.getElementById('client_email').value = option.dataset.email || '';
+        document.getElementById('client_address').value = option.dataset.address || '';
     }
 }
 
