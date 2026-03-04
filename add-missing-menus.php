@@ -3,18 +3,22 @@
  * Add Missing Menu Items to Database
  * Run this script once on hosting to add missing menus
  */
-
-require_once __DIR__ . '/public/includes/config.php';
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 echo "<h2>Adding Missing Menu Items</h2>";
 
+// Hosting database credentials
+$dbHost = 'localhost';
+$dbUser = 'adfb2574_adfsystem';
+$dbPass = '@Nnoc2025';
+$dbName = 'adfb2574_adf';  // Master database on hosting
+
 try {
-    // Connect to MASTER database (adf_system), not business database
-    $masterDbName = defined('MASTER_DB_NAME') ? MASTER_DB_NAME : 'adfb2574_adfsystem';
-    $masterDb = new PDO("mysql:host=" . DB_HOST . ";dbname=" . $masterDbName, DB_USER, DB_PASS);
+    $masterDb = new PDO("mysql:host={$dbHost};dbname={$dbName}", $dbUser, $dbPass);
     $masterDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    echo "<p>Connected to: {$masterDbName}</p>";
+    echo "<p>Connected to: {$dbName}</p>";
     
     $menusToAdd = [
         ['bills', 'Tagihan', 'modules/bills/', 7],
