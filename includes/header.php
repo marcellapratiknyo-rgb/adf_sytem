@@ -466,6 +466,42 @@ if (isset($_SESSION['user_id'])) {
                         </a>
                     </li>
                     <?php endif; ?>
+                    
+                    <!-- Database Master Menu (CQC) -->
+                    <?php if ($auth->hasPermission('database')): ?>
+                    <li class="nav-item has-submenu <?php echo (strpos($_SERVER['REQUEST_URI'], '/database/') !== false) ? 'open' : ''; ?>">
+                        <a href="javascript:void(0)" class="nav-link dropdown-toggle <?php echo activeMenu('database'); ?>">
+                            <i data-feather="database" class="nav-icon"></i>
+                            <span>Database</span>
+                        </a>
+                        <ul class="submenu">
+                            <li class="submenu-item">
+                                <a href="<?php echo BASE_URL; ?>/modules/database/" class="submenu-link">
+                                    <i data-feather="home" class="submenu-icon"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="<?php echo BASE_URL; ?>/modules/database/suppliers.php" class="submenu-link">
+                                    <i data-feather="truck" class="submenu-icon"></i>
+                                    <span>Supplier</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="<?php echo BASE_URL; ?>/modules/database/customers.php" class="submenu-link">
+                                    <i data-feather="users" class="submenu-icon"></i>
+                                    <span>Customer</span>
+                                </a>
+                            </li>
+                            <li class="submenu-item">
+                                <a href="<?php echo BASE_URL; ?>/modules/database/staff.php" class="submenu-link">
+                                    <i data-feather="user-check" class="submenu-icon"></i>
+                                    <span>Staf</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <?php endif; ?>
 
                     <?php if ($auth->hasPermission('settings')): ?>
                     <li class="nav-item has-submenu <?php echo (strpos($_SERVER['REQUEST_URI'], '/settings/') !== false) ? 'open' : ''; ?>" style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--bg-tertiary);">

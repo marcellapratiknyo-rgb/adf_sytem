@@ -30,6 +30,8 @@ try {
         ['project', 'Project', 'modules/project/', 10],
         ['investor', 'Investor', 'modules/investor/', 9],
         ['payroll', 'Payroll', 'modules/payroll/', 14],
+        ['database', 'Database Master', 'modules/database/', 11],
+        ['finance', 'Manajemen Keuangan', 'modules/finance/', 12],
     ];
     
     echo "<h3>Step 1: Add missing menus</h3>";
